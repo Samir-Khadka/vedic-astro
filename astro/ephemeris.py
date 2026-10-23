@@ -14,6 +14,28 @@ from .names import NAKSHATRA_SPAN
 
 swe.set_sid_mode(swe.SIDM_LAHIRI)
 
+
+def _ensure_lahiri() -> None:
+    """Re-assert the Lahiri sidereal mode in the CALLING thread.
+
+    pyswisseph keeps the sidereal mode in thread-local state: the
+    module-level set_sid_mode() above only affects the thread that
+    imports this module. FastAPI/uvicorn serve sync endpoints from a
+    threadpool, and those worker threads default to Fagan-Bradley —
+    which silently shifted every production longitude by -0.8832 deg
+    (found live 2026-10-23: worker-thread ayanamsa 24.7175 vs Lahiri
+    23.8342). Every public entry point below therefore re-asserts the
+    mode before computing; all swe calls in the codebase funnel
+    through this module, so this covers every code path.
+    """
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+
+
+def ayanamsa_ut(jd: float) -> float:
+    """Lahiri ayanamsa (degrees) at Julian day `jd` (UT), mode-safe."""
+    _ensure_lahiri()
+    return swe.get_ayanamsa_ut(jd)
+
 _FLAGS = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | swe.FLG_SPEED
 _SWE_PLANETS = {
     "Sun": swe.SUN, "Moon": swe.MOON, "Mars": swe.MARS, "Mercury": swe.MERCURY,
@@ -50,6 +72,7 @@ def degree_in_sign(longitude: float) -> float:
 
 def planet_longitudes(jd: float) -> dict[str, dict]:
     """Sidereal longitudes and speeds for the 9 grahas at Julian day `jd`."""
+    _ensure_lahiri()
     out: dict[str, dict] = {}
     for name, pid in _SWE_PLANETS.items():
         res, _ret = swe.calc_ut(jd, pid, _FLAGS)
@@ -85,17 +108,20 @@ def planet_longitudes(jd: float) -> dict[str, dict]:
 def ascendant(jd: float, lat: float, lon: float, house_system: bytes = b"W") -> float:
     """Sidereal ascendant longitude. house_system b'W' whole-sign use (only
     the ascendant point matters); b'P' Placidus for KP cusps."""
+    _ensure_lahiri()
     _cusps, ascmc = swe.houses_ex(jd, lat, lon, house_system, swe.FLG_SIDEREAL)
     return ascmc[0] % 360.0
 
 
 def placidus_cusps(jd: float, lat: float, lon: float) -> list[float]:
     """Sidereal Placidus house cusp longitudes (12), used by KP."""
+    _ensure_lahiri()
     cusps, _ascmc = swe.houses_ex(jd, lat, lon, b"P", swe.FLG_SIDEREAL)
     return [c % 360.0 for c in cusps]
 
 
 def _rise_trans(jd_start: float, lat: float, lon: float, rsmi: int) -> float | None:
+    _ensure_lahiri()
     try:
         ret, tret = swe.rise_trans(jd_start, swe.SUN, rsmi, (lon, lat, 0.0), 0.0, 0.0)
         if ret == 0:
@@ -130,6 +156,7 @@ def sunrise_sunset(local_date: date, lat: float, lon: float, tz_name: str) -> tu
 
 
 def sun_moon_longitudes(jd: float) -> tuple[float, float]:
+    _ensure_lahiri()
     sun, _ = swe.calc_ut(jd, swe.SUN, _FLAGS)
     moon, _ = swe.calc_ut(jd, swe.MOON, _FLAGS)
     return sun[0] % 360.0, moon[0] % 360.0
