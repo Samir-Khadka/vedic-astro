@@ -72,6 +72,30 @@ const I18N = {
     chart_caption_d1:"Rashi chart (D1) — Nepali janma-patri style", chart_caption_d9:"Navamsa chart (D9)", chart_caption_d10:"Dashamsa chart (D10)",
     glance_lagna:"Lagna (Ascendant)", glance_moon:"Moon sign", glance_sun:"Sun sign", glance_lagna_lord:"Lagna lord", pada_word:"Pada",
     sarva:"Sarvashtakavarga",
+    nav_prashna:"KP Prashna",
+    style_nepali:"Nepali", style_north:"North Indian", style_south:"South Indian",
+    chart_caption_south:"South Indian style — signs are fixed; houses count from the marked Lagna sign",
+    dasha_phala_title:"Dasha Phala — what each period brings",
+    strength_title:"Planetary Strength — Shadbala", bhava_bala_title:"Bhava Bala — house strength (Rupas)",
+    vimshopaka_title:"Vimshopaka Bala (of 20)",
+    th_sthana:"Sthana", th_dig:"Dig", th_kala:"Kala", th_cheshta:"Cheshta", th_naisargika:"Naisargika",
+    th_drik:"Drik", th_total:"Total", th_rupas:"Rupas", th_min:"Min", th_ratio:"Ratio", th_rank:"Rank",
+    th_ishta:"Ishta", th_kashta:"Kashta", th_lord:"Lord", th_lord_bala:"Lord's Shadbala",
+    transit_title:"Transits (Gochar) & Ingress Dates", th_now:"Now", th_from_moon:"From Moon", th_ingress:"Next ingress",
+    numerology_title:"Numerology & Name Letter",
+    moolank:"Moolank (root number)", bhagyank:"Bhagyank (destiny number)", name_letter:"Name letter (Moon nakshatra)",
+    ruler_word:"Ruler",
+    lalkitab_title:"Lal Kitab — the chart in fixed khanas",
+    lalkitab_hint:"In Lal Kitab, khana 1 is Aries for everyone; a planet's house is its sign. A planet in its pakka ghar (permanent house) is always awake (jagta).",
+    pakka_word:"Pakka ghar", jagta:"Awake (jagta)", soya:"Sleeping (soya)", sleeping_houses:"Sleeping houses",
+    rin_title:"Rin — karmic debts & remedies", remedy_word:"Remedy", detected:"Indicated in this chart", reference_only:"Reference (formation rules vary by source)",
+    year_ahead_title:"Year Ahead — by your Moon sign",
+    prashna_title:"KP Prashna — Horary (1–249)", prashna_sub:"Hold your question in mind, pick a number between 1 and 249, and cast the chart of this moment.",
+    p_number:"Your number (1–249)", p_question:"Question (optional)", prashna_submit:"Cast Prashna Chart",
+    prashna_chart:"Prashna Chart", ruling_title:"Ruling Planets",
+    yogini_word:"Yogini Dasha", tribhagi_word:"Tribhagi Dasha",
+    strongest_word:"Strongest planet", weakest_word:"Weakest planet",
+    casting:"Casting…",
   },
   ne: {
     nav_kundali:"कुण्डली", nav_premium:"प्रिमियम रिपोर्ट", nav_matching:"मेल मिलान", nav_panchang:"पञ्चाङ्ग",
@@ -124,6 +148,30 @@ const I18N = {
     chart_caption_d1:"राशि कुण्डली (D1) — नेपाली जन्मपत्री शैली", chart_caption_d9:"नवांश कुण्डली (D9)", chart_caption_d10:"दशमांश कुण्डली (D10)",
     glance_lagna:"लग्न", glance_moon:"चन्द्र राशि", glance_sun:"सूर्य राशि", glance_lagna_lord:"लग्न स्वामी", pada_word:"पद",
     sarva:"सर्वाष्टकवर्ग",
+    nav_prashna:"KP प्रश्न",
+    style_nepali:"नेपाली", style_north:"उत्तर भारतीय", style_south:"दक्षिण भारतीय",
+    chart_caption_south:"दक्षिण भारतीय शैली — राशिहरू स्थिर छन्; भावहरू चिन्ह लगाइएको लग्न राशिबाट गनिन्छन्",
+    dasha_phala_title:"दशाफल — प्रत्येक अवधिले के ल्याउँछ",
+    strength_title:"ग्रह बल — षड्बल", bhava_bala_title:"भाव बल — भावहरूको शक्ति (रूपामा)",
+    vimshopaka_title:"विंशोपक बल (२० मा)",
+    th_sthana:"स्थान", th_dig:"दिग्", th_kala:"काल", th_cheshta:"चेष्टा", th_naisargika:"नैसर्गिक",
+    th_drik:"दृष्टि", th_total:"जम्मा", th_rupas:"रूपा", th_min:"न्यूनतम", th_ratio:"अनुपात", th_rank:"क्रम",
+    th_ishta:"इष्ट", th_kashta:"कष्ट", th_lord:"स्वामी", th_lord_bala:"स्वामीको षड्बल",
+    transit_title:"गोचर र प्रवेश मितिहरू", th_now:"हाल", th_from_moon:"चन्द्रमाबाट", th_ingress:"अर्को प्रवेश",
+    numerology_title:"अङ्कशास्त्र र नामको अक्षर",
+    moolank:"मूलाङ्क", bhagyank:"भाग्याङ्क", name_letter:"नामको अक्षर (चन्द्र नक्षत्र)",
+    ruler_word:"स्वामी ग्रह",
+    lalkitab_title:"लाल किताब — स्थिर खानामा कुण्डली",
+    lalkitab_hint:"लाल किताबमा खाना १ सबैका लागि मेष हो; ग्रहको घर उसको राशि नै हो। आफ्नो पक्का घरमा बसेको ग्रह सधैँ जागेको (जागता) हुन्छ।",
+    pakka_word:"पक्का घर", jagta:"जागेको (जागता)", soya:"सुतेको (सोया)", sleeping_houses:"सुतेका घरहरू",
+    rin_title:"ऋण — कर्मिक ऋण र उपाय", remedy_word:"उपाय", detected:"यस कुण्डलीमा देखिएको", reference_only:"सन्दर्भ (बन्ने नियम स्रोतअनुसार फरक छन्)",
+    year_ahead_title:"वर्ष अगाडि — तपाईंको चन्द्र राशिअनुसार",
+    prashna_title:"KP प्रश्न — होरारी (१–२४९)", prashna_sub:"प्रश्न मनमा राख्नुहोस्, १ देखि २४९ बीचको एउटा अङ्क रोज्नुहोस्, र यस क्षणको कुण्डली बनाउनुहोस्।",
+    p_number:"तपाईंको अङ्क (१–२४९)", p_question:"प्रश्न (ऐच्छिक)", prashna_submit:"प्रश्न कुण्डली बनाउनुहोस्",
+    prashna_chart:"प्रश्न कुण्डली", ruling_title:"शासक ग्रहहरू (Ruling Planets)",
+    yogini_word:"योगिनी दशा", tribhagi_word:"त्रिभागी दशा",
+    strongest_word:"सबैभन्दा बलियो ग्रह", weakest_word:"सबैभन्दा कमजोर ग्रह",
+    casting:"बनाउँदै…",
   }
 };
 
@@ -133,7 +181,9 @@ const planetName = (p) => (LANG === "ne" ? (PLANET_NE[p] || p) : p);
 const signName = (s) => (LANG === "ne" ? SIGNS_NE[s] : SIGNS_EN[s]);
 const bi = (obj) => (obj ? (obj[LANG] || obj.en || "") : "");
 
-const STATE = { bundle: null, birthPayload: null, match: null, varga: "D1" };
+const STATE = { bundle: null, birthPayload: null, match: null, varga: "D1",
+                chartStyle: localStorage.getItem("vedic-astro-style") || "nepali",
+                prashna: null };
 
 /* ---------------- Starfield ---------------- */
 (function starfield() {
@@ -196,6 +246,7 @@ function applyLang() {
   loadPanchang();
   if (STATE.bundle) renderBundle();
   if (STATE.match) renderMatch();
+  if (STATE.prashna) renderPrashna();
 }
 document.getElementById("lang-en").addEventListener("click", () => { LANG = "en"; localStorage.setItem("vedic-astro-lang", LANG); applyLang(); });
 document.getElementById("lang-ne").addEventListener("click", () => { LANG = "ne"; localStorage.setItem("vedic-astro-lang", LANG); applyLang(); });
@@ -309,7 +360,7 @@ async function searchPlaces(inputEl) {
   box.hidden = box.childElementCount === 0;
 }
 
-["f-place", "m1-place", "m2-place"].forEach((id) => {
+["f-place", "m1-place", "m2-place", "p-place"].forEach((id) => {
   const el = document.getElementById(id);
   if (!el) return;
   el.addEventListener("input", () => {
@@ -323,7 +374,7 @@ async function searchPlaces(inputEl) {
   el.addEventListener("blur", () => setTimeout(() => closeSuggest(el), 150));
 });
 document.addEventListener("click", (ev) => {
-  ["f-place", "m1-place", "m2-place"].forEach((id) => {
+  ["f-place", "m1-place", "m2-place", "p-place"].forEach((id) => {
     const el = document.getElementById(id);
     if (el && !el.closest(".place-wrap").contains(ev.target)) closeSuggest(el);
   });
@@ -429,7 +480,7 @@ document.getElementById("birth-form").addEventListener("submit", async (ev) => {
     STATE.bundle = await res.json();
     STATE.birthPayload = payload;
     STATE.varga = "D1";
-    document.querySelectorAll(".mini-btn").forEach((b) =>
+    document.querySelectorAll(".mini-btn[data-varga]").forEach((b) =>
       b.classList.toggle("is-active", b.dataset.varga === "D1"));
     renderBundle();
     document.getElementById("results").hidden = false;
@@ -442,8 +493,17 @@ document.getElementById("birth-form").addEventListener("submit", async (ev) => {
   }
 });
 
-/* ---------------- Kundali chart (SVG) — North-Indian diamond geometry
-   with Nepali janma-patri labelling (written-out sign/planet names) --- */
+/* ---------------- Kundali charts (SVG) -------------------------------
+   Three styles, one geometry family tree:
+   * "nepali" (default) — the authentic Nepali janma-patri presentation:
+     North-Indian fixed-house diamond, Lagna top-centre, houses counted
+     counterclockwise, sign name + number in every cell, and each planet
+     written WITH its degree-in-sign, the way Nepali apps (Mero Jyotish)
+     and printed patris show it.
+   * "north" — the same diamond, compact software style (abbreviations
+     only, no degrees).
+   * "south" — South-Indian fixed-sign square grid: signs never move,
+     the Lagna sign is marked and houses count clockwise from it.     */
 const HOUSE_REGIONS = [
   { poly: "200,0 300,100 100,100", label: [200, 62], sign: [200, 24] },
   { poly: "0,0 200,0 100,100", label: [100, 46], sign: [28, 24] },
@@ -467,45 +527,113 @@ const ABBR_NE = { Sun: "सू", Moon: "चं", Mars: "मं", Mercury: "ब�
 const SIGN_ANCHORS = ["middle", "start", "start", "start", "start", "start",
                       "middle", "end", "end", "end", "end", "end"];
 
-function drawChart(chartMap) {
+/* opts: {degrees: {body: degreeInSign}, lagnaDegree, retro: Set, style} */
+function diamondSVG(chartMap, opts) {
   const lagnaSign = chartMap["Lagna"];
-  const wrap = document.getElementById("chart-svg-wrap");
-  let svg = `<svg class="kundali-svg" viewBox="0 0 400 400" role="img" aria-label="Kundali chart">`;
+  const withDeg = opts.style === "nepali";
+  let svg = `<svg class="kundali-svg${withDeg ? " nepali" : ""}" viewBox="0 0 400 400" role="img" aria-label="Kundali chart">`;
   HOUSE_REGIONS.forEach((region, idx) => {
     const house = idx + 1;
     const sign = (lagnaSign + house - 1) % 12;
     const bodies = Object.keys(chartMap).filter((k) => k !== "Lagna" && chartMap[k] === sign);
     const isLagna = house === 1;
     svg += `<polygon class="house-poly${isLagna ? " lagna-house" : ""}" points="${region.poly}"/>`;
-    /* Nepali janma-patri style: the sign's NAME written out (localized),
-       with its number beneath — Nepali digits in Nepali mode — instead of
-       a bare cryptic number. */
     const anchor = SIGN_ANCHORS[idx];
     svg += `<text class="sign-name" style="text-anchor:${anchor}" x="${region.sign[0]}" y="${region.sign[1]}">${signName(sign)}</text>`;
     svg += `<text class="sign-num" style="text-anchor:${anchor}" x="${region.sign[0]}" y="${region.sign[1] + 12}">${locNum(sign + 1)}</text>`;
     if (isLagna) {
-      svg += `<text class="lagna-txt" x="${region.label[0]}" y="${region.label[1] - 16}">${LANG === "ne" ? "लग्न" : "Lagna"}</text>`;
+      const degTxt = withDeg && opts.lagnaDegree != null ? " " + locNum(Math.floor(opts.lagnaDegree)) + "°" : "";
+      svg += `<text class="lagna-txt" x="${region.label[0]}" y="${region.label[1] - 16}">${LANG === "ne" ? "लग्न" : "Lagna"}${degTxt}</text>`;
     }
-    const abbrs = bodies.map((b) => (LANG === "ne" ? ABBR_NE[b] : ABBR[b]) + (isRetro(b) ? "ᴿ" : ""));
+    const labelOf = (b) => {
+      let s = (LANG === "ne" ? ABBR_NE[b] : ABBR[b]);
+      if (opts.retro && opts.retro.has(b)) s += "ᴿ";
+      if (withDeg && opts.degrees && opts.degrees[b] != null) s += " " + locNum(Math.floor(opts.degrees[b])) + "°";
+      return s;
+    };
+    const labels = bodies.map(labelOf);
+    const perLine = withDeg ? 2 : 3;
     const lines = [];
-    for (let i = 0; i < abbrs.length; i += 3) lines.push(abbrs.slice(i, i + 3).join(" "));
+    for (let i = 0; i < labels.length; i += perLine) lines.push(labels.slice(i, i + perLine).join(" "));
     lines.forEach((line, li) => {
       svg += `<text class="planet-txt" x="${region.label[0]}" y="${region.label[1] + li * 15}">${line}</text>`;
     });
   });
   svg += "</svg>";
-  wrap.innerHTML = svg;
-  document.getElementById("chart-caption").textContent =
-    STATE.varga === "D1" ? t("chart_caption_d1") : STATE.varga === "D9" ? t("chart_caption_d9") : t("chart_caption_d10");
+  return svg;
 }
-function isRetro(planet) {
-  const row = (STATE.bundle?.planets || []).find((p) => p.planet === planet);
-  return !!(row && row.retrograde);
+
+/* South-Indian fixed-sign grid: sign -> [row, col]; signs never move. */
+const SOUTH_POS = { 11: [0, 0], 0: [0, 1], 1: [0, 2], 2: [0, 3], 10: [1, 0],
+                    3: [1, 3], 9: [2, 0], 4: [2, 3], 8: [3, 0], 7: [3, 1],
+                    6: [3, 2], 5: [3, 3] };
+
+function southSVG(chartMap, opts) {
+  const lagnaSign = chartMap["Lagna"];
+  let svg = `<svg class="kundali-svg south" viewBox="0 0 400 400" role="img" aria-label="Kundali chart, South Indian style">`;
+  svg += `<rect class="house-poly" x="0" y="0" width="400" height="400"/>`;
+  for (let i = 1; i < 4; i++) {
+    svg += `<line class="grid-line" x1="${i * 100}" y1="0" x2="${i * 100}" y2="400"/>`;
+    svg += `<line class="grid-line" x1="0" y1="${i * 100}" x2="400" y2="${i * 100}"/>`;
+  }
+  svg += `<rect class="centre-cell" x="100" y="100" width="200" height="200"/>`;
+  svg += `<text class="centre-txt" x="200" y="192">${LANG === "ne" ? "जन्म कुण्डली" : "Janma Kundali"}</text>`;
+  svg += `<text class="centre-sub" x="200" y="216">${opts.captionShort || ""}</text>`;
+  Object.entries(SOUTH_POS).forEach(([signStr, [row, col]]) => {
+    const sign = +signStr;
+    const x = col * 100, y = row * 100;
+    const isLagna = sign === lagnaSign;
+    if (isLagna) {
+      svg += `<rect class="lagna-cell" x="${x}" y="${y}" width="100" height="100"/>`;
+      svg += `<line class="lagna-stroke" x1="${x}" y1="${y}" x2="${x + 26}" y2="${y + 26}"/>`;
+      svg += `<text class="lagna-txt small" x="${x + 97}" y="${y + 14}" style="text-anchor:end">${LANG === "ne" ? "लग्न" : "Asc"}</text>`;
+    }
+    svg += `<text class="sign-name" x="${x + 6}" y="${y + 15}">${signName(sign)}</text>`;
+    svg += `<text class="sign-num" x="${x + 6}" y="${y + 27}" style="text-anchor:start">${locNum(sign + 1)}</text>`;
+    const bodies = Object.keys(chartMap).filter((k) => k !== "Lagna" && chartMap[k] === sign);
+    const labels = bodies.map((b) => (LANG === "ne" ? ABBR_NE[b] : ABBR[b]) + (opts.retro && opts.retro.has(b) ? "ᴿ" : ""));
+    const lines = [];
+    for (let i = 0; i < labels.length; i += 3) lines.push(labels.slice(i, i + 3).join(" "));
+    lines.forEach((line, li) => {
+      svg += `<text class="planet-txt" x="${x + 50}" y="${y + 48 + li * 15}">${line}</text>`;
+    });
+  });
+  svg += "</svg>";
+  return svg;
 }
-document.querySelectorAll(".mini-btn").forEach((btn) => {
+
+function bundleChartOpts() {
+  const b = STATE.bundle;
+  const retro = new Set((b?.planets || []).filter((p) => p.retrograde).map((p) => p.planet));
+  if (STATE.varga !== "D1") return { style: STATE.chartStyle, retro, captionShort: STATE.varga };
+  const degrees = {};
+  (b?.planets || []).forEach((p) => { degrees[p.planet] = p.degree_in_sign; });
+  return {
+    style: STATE.chartStyle, retro, degrees,
+    lagnaDegree: b ? b.lagna.degree_in_sign : null, captionShort: STATE.varga,
+  };
+}
+
+function drawChart(chartMap) {
+  const wrap = document.getElementById("chart-svg-wrap");
+  const opts = bundleChartOpts();
+  wrap.innerHTML = STATE.chartStyle === "south" ? southSVG(chartMap, opts) : diamondSVG(chartMap, opts);
+  const cap = document.getElementById("chart-caption");
+  if (STATE.chartStyle === "south") cap.textContent = t("chart_caption_south");
+  else cap.textContent = STATE.varga === "D1" ? t("chart_caption_d1") : STATE.varga === "D9" ? t("chart_caption_d9") : t("chart_caption_d10");
+}
+document.querySelectorAll(".mini-btn[data-varga]").forEach((btn) => {
   btn.addEventListener("click", () => {
     STATE.varga = btn.dataset.varga;
-    document.querySelectorAll(".mini-btn").forEach((b) => b.classList.toggle("is-active", b === btn));
+    document.querySelectorAll(".mini-btn[data-varga]").forEach((b) => b.classList.toggle("is-active", b === btn));
+    if (STATE.bundle) drawChart(STATE.bundle.charts[STATE.varga]);
+  });
+});
+document.querySelectorAll(".mini-btn[data-style]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    STATE.chartStyle = btn.dataset.style;
+    localStorage.setItem("vedic-astro-style", STATE.chartStyle);
+    document.querySelectorAll(".mini-btn[data-style]").forEach((b) => b.classList.toggle("is-active", b === btn));
     if (STATE.bundle) drawChart(STATE.bundle.charts[STATE.varga]);
   });
 });
@@ -568,6 +696,10 @@ function renderBundle() {
   renderDoshasYogas(b);
   renderAV(b);
   renderPredictions(b);
+  renderStrength(b);
+  renderTransits(b);
+  renderNumerology(b);
+  renderLalKitab(b);
   renderPremium(b);
 }
 
@@ -593,6 +725,24 @@ function renderDasha(b) {
       <div class="tl-head"><span class="lord">${planetName(md.lord)}</span>
       <span class="tl-dates">${md.display_start || md.start} → ${md.end}</span></div>
       <div class="tl-bar"><i style="width:${width}%"></i></div>${ads}</div>`;
+  }).join("");
+
+  const yg = b.yogini && b.yogini.current;
+  document.getElementById("yogini-line").textContent = yg
+    ? `${t("yogini_word")}: ${yg.name} (${planetName(yg.planet)}) · ${yg.start} → ${yg.end}` : "";
+  const tb = b.tribhagi && b.tribhagi.current;
+  document.getElementById("tribhagi-line").textContent = tb
+    ? `${t("tribhagi_word")}: ${planetName(tb.lord)} · ${tb.start} → ${tb.end}` : "";
+
+  document.getElementById("dasha-phala").innerHTML = (b.dasha_phala || []).map((e) => {
+    let html = `<div class="pred-block"><h4>${planetName(e.lord)} · ${e.start} → ${e.end}</h4>` +
+      e.summary.map((f) => `<p>${bi(f)}</p>`).join("");
+    if (e.antardashas) {
+      html += e.antardashas.map((ad) =>
+        `<p class="ad-line"><b>${planetName(ad.lord)}</b> ${ad.start} → ${ad.end}</p>` +
+        ad.summary.map((f) => `<p>${bi(f)}</p>`).join("")).join("");
+    }
+    return html + "</div>";
   }).join("");
 }
 
@@ -643,7 +793,83 @@ function renderPredictions(b) {
       ${facts.map((f) => `<p>${bi(f)}</p>`).join("")}</div>`).join("");
 }
 
-/* ---------------- Premium ---------------- */
+/* ---------------- Premium strengths, transits, Lal Kitab, numerology --- */
+const PLANET_ORDER = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"];
+
+function renderStrength(b) {
+  const sb = b.strength.shadbala;
+  const rows = PLANET_ORDER.map((p) => sb.planets[p]);
+  document.getElementById("strength-summary").textContent =
+    `${t("strongest_word")}: ${planetName(sb.strongest)} (${sb.planets[sb.strongest].rupas}) · ` +
+    `${t("weakest_word")}: ${planetName(sb.weakest)} (${sb.planets[sb.weakest].rupas})`;
+  document.querySelector("#shadbala-table tbody").innerHTML = PLANET_ORDER.map((p) => {
+    const r = sb.planets[p];
+    return `<tr><td><b>${planetName(p)}</b></td><td>${r.sthana.total.toFixed(1)}</td><td>${r.dig.toFixed(1)}</td>` +
+      `<td>${r.kala.total.toFixed(1)}</td><td>${r.cheshta.toFixed(1)}</td><td>${r.naisargika.toFixed(1)}</td>` +
+      `<td>${r.drik.toFixed(1)}</td><td>${r.total_virupas.toFixed(1)}</td><td><b>${r.rupas.toFixed(2)}</b></td>` +
+      `<td>${r.min_rupas.toFixed(1)}</td><td>${r.ratio.toFixed(2)}</td><td>${locNum(r.rank)}</td>` +
+      `<td>${r.ishta.toFixed(1)}</td><td>${r.kashta.toFixed(1)}</td></tr>`;
+  }).join("");
+  document.querySelector("#bhava-bala-table tbody").innerHTML = b.strength.bhava_bala.map((h) =>
+    `<tr><td>${locNum(h.house)}</td><td>${planetName(h.lord)}</td><td>${h.lord_bala_rupas.toFixed(2)}</td>` +
+    `<td>${h.drik_bala_rupas.toFixed(2)}</td><td><b>${h.total_rupas.toFixed(2)}</b></td></tr>`).join("");
+  document.getElementById("bhava-bala-note").textContent = bi(b.strength.bhava_bala_note);
+  document.querySelector("#vimshopaka-table tbody").innerHTML = PLANET_ORDER.map((p) => {
+    const v = b.strength.vimshopaka[p];
+    return `<tr><td><b>${planetName(p)}</b></td><td>${v.shadvarga.toFixed(2)}</td><td>${v.saptavarga.toFixed(2)}</td><td>${v.shodashavarga.toFixed(2)}</td></tr>`;
+  }).join("");
+}
+
+function renderTransits(b) {
+  document.querySelector("#transit-table tbody").innerHTML = b.transits_detail.ingress.map((r) =>
+    `<tr><td><b>${planetName(r.planet)}</b></td><td>${LANG === "ne" ? r.current_sign_ne : r.current_sign_en}</td>` +
+    `<td>${locNum(r.house_from_moon)}</td><td>${r.next_ingress_date} → ${LANG === "ne" ? r.next_sign_ne : r.next_sign_en}</td></tr>`).join("");
+  const ss = b.doshas.sade_sati;
+  const note = document.getElementById("dhaiya-note");
+  if (ss.dhaiya) {
+    note.textContent = LANG === "ne"
+      ? "ढैया (कण्टक शनि) सक्रिय छ — गोचरको शनि चन्द्र राशिबाट चौथो/आठौँ स्थानमा छ।"
+      : "Dhaiya (Kantaka Shani) is active — transiting Saturn is in the 4th/8th sign from your Moon sign.";
+  } else if (ss.active) {
+    note.textContent = LANG === "ne" ? `साढेसाती सक्रिय छ (${ss.phase})।` : `Sade Sati is active (${ss.phase} phase).`;
+  } else {
+    note.textContent = "";
+  }
+}
+
+function renderNumerology(b) {
+  const n = b.numerology, nl = b.name_letters;
+  const moon = b.planets.find((p) => p.planet === "Moon");
+  const entry = (label, e) =>
+    `<p><b>${label}: ${locNum(e.value)}</b> — ${t("ruler_word")}: ${planetName(e.ruler)}<br>${bi(e.trait)}</p>`;
+  document.getElementById("numerology-body").innerHTML =
+    entry(t("moolank"), n.moolank) + entry(t("bhagyank"), n.bhagyank) +
+    `<p><b>${t("name_letter")}: ${LANG === "ne" ? nl.syllable_ne : nl.syllable_en}</b> ` +
+    `(${(LANG === "ne" ? moon.nakshatra_ne : moon.nakshatra_en)} · ${t("pada_word")} ${locNum(nl.pada)})<br>` +
+    nl.options.map((o) => `${LANG === "ne" ? o.ne : o.en}`).join(" · ") + `</p>`;
+}
+
+function renderLalKitab(b) {
+  const lk = b.lal_kitab;
+  const grid = document.getElementById("lalkitab-chart");
+  grid.innerHTML = Array.from({ length: 12 }, (_, i) => {
+    const k = i + 1;
+    const planets = (lk.chart[String(k)] || []).map((p) => planetName(p)).join(", ");
+    return `<div class="lk-cell"><span class="k">${locNum(k)} · ${signName(k - 1)}</span><span class="v">${planets || "—"}</span></div>`;
+  }).join("");
+  const rows = lk.planets.map((r) =>
+    `<div class="yoga-item"><b>${planetName(r.planet)}</b> — ${LANG === "ne" ? "खाना" : "khana"} ${locNum(r.khana)} · ` +
+    `${r.state === "jagta" ? t("jagta") : t("soya")}${r.in_pakka_ghar ? " · " + t("pakka_word") + " ✓" : ""}` +
+    `<span>${bi(r.reading)}</span></div>`).join("");
+  let html = rows;
+  if (lk.sleeping_houses.length) {
+    html += `<p class="hint">${t("sleeping_houses")}: ${lk.sleeping_houses.map((k) => locNum(k)).join(", ")}</p>`;
+  }
+  html += `<h4 class="sub-title">${t("rin_title")}</h4>` + lk.rin.map((r) =>
+    `<div class="yoga-item"><b>${bi(r.name)}</b> — ${r.detected === true ? t("detected") : (r.detected === null ? t("reference_only") : "—")}` +
+    `<span>${t("remedy_word")}: ${bi(r.remedy)}</span></div>`).join("");
+  document.getElementById("lalkitab-body").innerHTML = html;
+}
 function renderPremium(b) {
   const rep = b.report;
   const lucky = rep.lucky;
@@ -659,8 +885,11 @@ function renderPremium(b) {
       <div class="chapter-block"><h4>${ct[key] || key}</h4>
       ${facts.map((f) => `<p>${bi(f)}</p>`).join("")}</div>`).join("");
 
-  document.getElementById("forecast-list").innerHTML = rep.favourable_periods.map((f) => `
-    <div class="fc-row"><span class="yr">${f.year}</span> — ${planetName(f.mahadasha)}${f.antardasha ? " / " + planetName(f.antardasha) : ""}
+  document.getElementById("year-ahead").innerHTML = (rep.year_ahead || []).length
+    ? `<div class="pred-block">${rep.year_ahead.map((f) => `<p>${bi(f)}</p>`).join("")}</div>`
+    : `<p class="muted">—</p>`;
+
+  document.getElementById("forecast-list").innerHTML = rep.favourable_periods.map((f) => `    <div class="fc-row"><span class="yr">${f.year}</span> — ${planetName(f.mahadasha)}${f.antardasha ? " / " + planetName(f.antardasha) : ""}
     <p>${bi(f.summary)}</p></div>`).join("");
 
   document.getElementById("varshphal-list").innerHTML = rep.varshphal.map((v) => `
@@ -734,9 +963,63 @@ function renderMatch() {
     `${t("bride_moon")}: ${LANG === "ne" ? m.bride.moon_sign_ne : m.bride.moon_sign_en} / ${LANG === "ne" ? m.bride.nakshatra_ne : m.bride.nakshatra_en}`;
   document.querySelector("#match-table tbody").innerHTML = m.breakdown.map((row) => `
     <tr><td><b>${t("kootas")[row.koota] || row.koota}</b></td>
-    <td>${row.score} / ${row.max}</td><td>${row.detail}</td></tr>`).join("");
+    <td>${row.score} / ${row.max}</td><td>${bi(row.detail)}</td></tr>`).join("");
   document.getElementById("manglik-note").textContent = bi(m.manglik_note);
 }
 
+/* ---------------- KP Prashna (Horary) ---------------- */
+document.getElementById("prashna-form").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const errEl = document.getElementById("prashna-error");
+  errEl.hidden = true;
+  const number = parseInt(document.getElementById("p-number").value, 10);
+  const question = document.getElementById("p-question").value.trim();
+  const place = resolvePlace("p-place");
+  if (!number || number < 1 || number > 249) {
+    errEl.textContent = LANG === "ne" ? "कृपया १ देखि २४९ बीचको अङ्क भर्नुहोस्।" : "Please enter a number between 1 and 249.";
+    errEl.hidden = false; return;
+  }
+  if (!place) { errEl.textContent = t("err_place"); errEl.hidden = false; return; }
+  const btn = document.getElementById("prashna-btn");
+  btn.disabled = true; btn.textContent = t("casting");
+  try {
+    const res = await fetch("/api/prashna", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ number, question, ...place }),
+    });
+    if (!res.ok) throw new Error("bad");
+    STATE.prashna = await res.json();
+    renderPrashna();
+    document.getElementById("prashna-result").hidden = false;
+    document.getElementById("prashna-result").scrollIntoView({ behavior: "smooth" });
+  } catch (e) {
+    errEl.textContent = t("err_server"); errEl.hidden = false;
+  } finally {
+    btn.disabled = false; btn.textContent = t("prashna_submit");
+  }
+});
+
+function renderPrashna() {
+  const p = STATE.prashna;
+  if (!p) return;
+  const degrees = {}, retro = new Set();
+  p.planets.forEach((r) => { degrees[r.planet] = r.degree_in_sign; if (r.retrograde) retro.add(r.planet); });
+  document.getElementById("prashna-chart-wrap").innerHTML = diamondSVG(p.chart, {
+    style: "nepali", degrees, lagnaDegree: p.lagna.degree_in_sign, retro,
+  });
+  document.getElementById("prashna-meta").textContent =
+    `#${locNum(p.number)} · ${t("lagna_word")}: ${LANG === "ne" ? p.lagna.sign_ne : p.lagna.sign_en} ${p.lagna.degree_in_sign.toFixed(2)}° · ` +
+    `${p.chart_moment_local.replace("T", " ").slice(0, 16)} · ${p.place.name}` +
+    (p.question ? ` · “${p.question}”` : "");
+  document.getElementById("ruling-list").innerHTML = p.ruling_planets.map((r) =>
+    `<div class="yoga-item"><b>${planetName(r.planet)}</b><span>${LANG === "ne" ? r.role_ne : r.role}</span></div>`).join("");
+  document.querySelector("#prashna-kp-table tbody").innerHTML = p.cusps.map((c) => `
+    <tr><td>${locNum(c.house)}</td><td>${LANG === "ne" ? c.sign_ne : c.sign_en}</td>
+    <td>${planetName(c.sign_lord)}</td><td>${planetName(c.star_lord)}</td>
+    <td><b>${planetName(c.sub_lord)}</b></td></tr>`).join("");
+}
+
 /* Init */
+document.querySelectorAll(".mini-btn[data-style]").forEach((b) =>
+  b.classList.toggle("is-active", b.dataset.style === STATE.chartStyle));
 applyLang();

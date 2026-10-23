@@ -23,7 +23,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, field_validator
 
-from astro import engine, geocode, panchang as panchang_module, pdf as pdf_module, places as places_module
+from astro import engine, geocode, panchang as panchang_module, pdf as pdf_module, places as places_module, prashna as prashna_module
 
 BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
@@ -84,6 +84,47 @@ class MatchInput(BaseModel):
     bride: BirthInput
 
 
+class PrashnaInput(BaseModel):
+    number: int
+    question: str | None = None
+    place_id: str | None = None
+    place_name: str | None = None
+    lat: float | None = None
+    lon: float | None = None
+    tz: str | None = None
+
+    @field_validator("number")
+    @classmethod
+    def _number_in_range(cls, v: int) -> int:
+        if not 1 <= v <= 249:
+            raise ValueError("horary number must be between 1 and 249")
+        return v
+
+    @field_validator("lat")
+    @classmethod
+    def _lat_in_range(cls, v: float | None) -> float | None:
+        if v is not None and not -90.0 <= v <= 90.0:
+            raise ValueError("lat must be between -90 and 90")
+        return v
+
+    @field_validator("lon")
+    @classmethod
+    def _lon_in_range(cls, v: float | None) -> float | None:
+        if v is not None and not -180.0 <= v <= 180.0:
+            raise ValueError("lon must be between -180 and 180")
+        return v
+
+    @field_validator("tz")
+    @classmethod
+    def _tz_is_real(cls, v: str | None) -> str | None:
+        if v is not None:
+            try:
+                ZoneInfo(v)
+            except Exception:
+                raise ValueError(f"unknown IANA timezone: {v}")
+        return v
+
+
 def _payload(b: BirthInput) -> dict:
     d = b.model_dump()
     if d.get("tob") and len(d["tob"]) == 5:
@@ -108,6 +149,21 @@ def kundali(body: BirthInput):
 def match(body: MatchInput):
     try:
         return engine.compute_match(_payload(body.groom), _payload(body.bride))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/prashna")
+def prashna(body: PrashnaInput):
+    """KP Horary (Prashna): the 1-249 number chart at the querent's place,
+    cast for the current moment."""
+    from datetime import datetime
+
+    payload = body.model_dump()
+    try:
+        place = engine.resolve_place(payload)
+        moment = datetime.now(ZoneInfo(place["tz"]))
+        return prashna_module.horary(body.number, place, moment, body.question or "")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

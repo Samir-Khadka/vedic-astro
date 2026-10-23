@@ -10,7 +10,7 @@ from .names import (
     COMBUSTION_ORB, EXALTATION, OWN_SIGNS, SIGN_LORDS,
 )
 
-VARGAS = ["D1", "D2", "D3", "D4", "D7", "D9", "D10", "D12", "D16", "D20", "D24", "D27", "D30", "D60"]
+VARGAS = ["D1", "D2", "D3", "D4", "D7", "D9", "D10", "D12", "D16", "D20", "D24", "D27", "D30", "D40", "D45", "D60"]
 
 
 def _navamsa(sign: int, deg: float) -> int:
@@ -78,6 +78,14 @@ def varga_sign(varga: str, sign: int, deg: float) -> int:
         if deg < 20: return 11
         if deg < 25: return 9
         return 7
+    if varga == "D40":  # Khavedamsa — 45' parts; odd signs from Aries, even from Libra
+        part = int(deg // 0.75)
+        start = 0 if sign % 2 == 0 else 6
+        return (start + part) % 12
+    if varga == "D45":  # Akshavedamsa — 40' parts; movable Aries, fixed Leo, dual Sagittarius
+        part = int(deg // (30.0 / 45.0))
+        start = {0: 0, 1: 4, 2: 8}[sign % 3]
+        return (start + part) % 12
     if varga == "D60":  # Shashtiamsa
         return (sign + int(deg // 0.5)) % 12
     raise ValueError(f"unknown varga {varga}")

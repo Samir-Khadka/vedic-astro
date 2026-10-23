@@ -15,6 +15,16 @@ VARNA_OF_SIGN = {
     2: 3, 6: 3, 10: 3,      # Gemini, Libra, Aquarius — Shudra
 }
 VARNA_NAMES = ["Brahmin", "Kshatriya", "Vaishya", "Shudra"]
+VARNA_NAMES_NE = ["ब्राह्मण", "क्षत्रिय", "वैश्य", "शूद्र"]
+VASHYA_NAMES_NE = {"Manav": "मानव", "Jalchar": "जलचर", "Chatushpad": "चतुष्पाद", "Vanchar": "वनचर", "Keet": "कीट"}
+YONI_NAMES_NE = {
+    "Horse": "घोडा", "Elephant": "हात्ती", "Goat": "बाख्रा", "Serpent": "सर्प",
+    "Dog": "कुकुर", "Cat": "बिरालो", "Rat": "मुसा", "Cow": "गाई",
+    "Buffalo": "भैंसी", "Tiger": "बाघ", "Deer": "मृग", "Monkey": "बाँदर",
+    "Mongoose": "नेवला", "Lion": "सिंह",
+}
+GANA_NAMES_NE = {"Deva": "देव", "Manushya": "मनुष्य", "Rakshasa": "राक्षस"}
+NADI_NAMES_NE = {"Aadi": "आदि", "Madhya": "मध्य", "Antya": "अन्त्य"}
 
 # --- Vashya (2): sign groups -------------------------------------------------
 # Manav (human), Jalchar (water), Chatushpad (quadruped), Vanchar (wild), Keet (insect)
@@ -145,6 +155,7 @@ def _bhakoot_points(groom_sign: int, bride_sign: int) -> float:
 
 def guna_milan(groom: dict, bride: dict) -> dict:
     """groom/bride: {'moon_sign': int, 'moon_nakshatra': int}"""
+    from .names import PLANET_NE
     gs, bs = groom["moon_sign"], bride["moon_sign"]
     gn, bn = groom["moon_nakshatra"], bride["moon_nakshatra"]
 
@@ -161,24 +172,36 @@ def guna_milan(groom: dict, bride: dict) -> dict:
     nadi_same = NADI_OF_NAKSHATRA[gn] == NADI_OF_NAKSHATRA[bn]
     nadi = 0.0 if nadi_same else 8.0
 
+    def bi(en: str, ne: str) -> dict:
+        return {"en": en, "ne": ne}
+
     parts = [
         {"koota": "Varna", "max": 1, "score": varna,
-         "detail": f"Groom {VARNA_NAMES[VARNA_OF_SIGN[gs]]}, bride {VARNA_NAMES[VARNA_OF_SIGN[bs]]}"},
+         "detail": bi(f"Groom {VARNA_NAMES[VARNA_OF_SIGN[gs]]}, bride {VARNA_NAMES[VARNA_OF_SIGN[bs]]}",
+                      f"दुलहा {VARNA_NAMES_NE[VARNA_OF_SIGN[gs]]}, दुलही {VARNA_NAMES_NE[VARNA_OF_SIGN[bs]]}")},
         {"koota": "Vashya", "max": 2, "score": vashya,
-         "detail": f"Groom {VASHYA_OF_SIGN[gs]}, bride {VASHYA_OF_SIGN[bs]}"},
+         "detail": bi(f"Groom {VASHYA_OF_SIGN[gs]}, bride {VASHYA_OF_SIGN[bs]}",
+                      f"दुलहा {VASHYA_NAMES_NE[VASHYA_OF_SIGN[gs]]}, दुलही {VASHYA_NAMES_NE[VASHYA_OF_SIGN[bs]]}")},
         {"koota": "Tara", "max": 3, "score": tara,
-         "detail": "Birth-star compatibility counted both ways"},
+         "detail": bi("Birth-star compatibility counted both ways",
+                      "जन्म नक्षत्रको अनुकूलता दुवै तर्फबाट गणना गरिएको")},
         {"koota": "Yoni", "max": 4, "score": yoni,
-         "detail": f"Groom {YONI_OF_NAKSHATRA[gn]}, bride {YONI_OF_NAKSHATRA[bn]}"},
+         "detail": bi(f"Groom {YONI_OF_NAKSHATRA[gn]}, bride {YONI_OF_NAKSHATRA[bn]}",
+                      f"दुलहा {YONI_NAMES_NE[YONI_OF_NAKSHATRA[gn]]}, दुलही {YONI_NAMES_NE[YONI_OF_NAKSHATRA[bn]]}")},
         {"koota": "Graha Maitri", "max": 5, "score": maitri,
-         "detail": f"Moon-sign lords: groom {SIGN_LORDS[gs]}, bride {SIGN_LORDS[bs]}"},
+         "detail": bi(f"Moon-sign lords: groom {SIGN_LORDS[gs]}, bride {SIGN_LORDS[bs]}",
+                      f"चन्द्र राशि स्वामी: दुलहा {PLANET_NE[SIGN_LORDS[gs]]}, दुलही {PLANET_NE[SIGN_LORDS[bs]]}")},
         {"koota": "Gana", "max": 6, "score": gana,
-         "detail": f"Groom {gana_g}, bride {gana_b}"},
+         "detail": bi(f"Groom {gana_g}, bride {gana_b}",
+                      f"दुलहा {GANA_NAMES_NE[gana_g]}, दुलही {GANA_NAMES_NE[gana_b]}")},
         {"koota": "Bhakoot", "max": 7, "score": bhakoot,
-         "detail": "Moon-sign relative positions (6-8 / 9-5 / 2-12 are dosha pairs)"},
+         "detail": bi("Moon-sign relative positions (6-8 / 9-5 / 2-12 are dosha pairs)",
+                      "चन्द्र राशिको आपसी स्थिति (६-८ / ९-५ / २-१२ दोष जोडी हुन्)")},
         {"koota": "Nadi", "max": 8, "score": nadi,
-         "detail": f"Groom {NADI_OF_NAKSHATRA[gn]}, bride {NADI_OF_NAKSHATRA[bn]}"
-                   + (" — same Nadi (Nadi dosha)" if nadi_same else "")},
+         "detail": bi(f"Groom {NADI_OF_NAKSHATRA[gn]}, bride {NADI_OF_NAKSHATRA[bn]}"
+                      + (" — same Nadi (Nadi dosha)" if nadi_same else ""),
+                      f"दुलहा {NADI_NAMES_NE[NADI_OF_NAKSHATRA[gn]]}, दुलही {NADI_NAMES_NE[NADI_OF_NAKSHATRA[bn]]}"
+                      + (" — एउटै नाडी (नाडी दोष)" if nadi_same else ""))},
     ]
     total = sum(p["score"] for p in parts)
     if total >= 32:

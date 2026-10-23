@@ -423,4 +423,53 @@ def generate_premium_report(ctx: dict) -> dict:
         "varshphal": varshphal(ctx, years_ahead=3),
         "remedies": remedies(ctx),
         "lucky": lucky_attributes(ctx),
+        "year_ahead": year_ahead(ctx),
     }
+
+
+# ---------------------------------------------------------------------------
+# Year ahead by Moon sign — the reading Nepali patros print annually:
+# slow-planet transits counted from the Chandra rashi, with the exact
+# ingress dates at which the picture changes, plus dasha turning points.
+# ---------------------------------------------------------------------------
+def year_ahead(ctx: dict) -> list[dict]:
+    moon_sign = ctx["planets"]["Moon"]["sign"]
+    now: datetime = ctx["now"]
+    facts: list[dict] = []
+
+    good_from_moon = {
+        "Saturn": (3, 6, 10, 11), "Jupiter": (2, 5, 7, 9, 11), "Rahu": (3, 6, 10, 11),
+    }
+    for row in ctx.get("transit_ingress", []):
+        p = row["planet"]
+        if p not in good_from_moon:
+            continue
+        rel = row["house_from_moon"]
+        good = rel in good_from_moon[p]
+        tone_en = "supportive" if good else "demanding"
+        tone_ne = "सहयोगी" if good else "मेहनत माग्ने"
+        facts.append(_bi(
+            f"{p} is transiting {row['current_sign_en']}, the {HOUSE_NAMES_EN[rel-1]} sign from your Moon sign "
+            f"({SIGNS_EN[moon_sign]}) — a {tone_en} placement. On {row['next_ingress_date']} it moves into "
+            f"{row['next_sign_en']}, the {HOUSE_NAMES_EN[(row['next_sign'] - moon_sign) % 12]} sign from your Moon.",
+            f"{PLANET_NE[p]} गोचरमा {row['current_sign_ne']} राशिमा छ, जुन तपाईंको चन्द्र राशि ({SIGNS_NE[moon_sign]}) बाट "
+            f"{HOUSE_NAMES_NE[rel-1]} स्थान हो — यो {tone_ne} स्थिति हो। {row['next_ingress_date']} मा यो "
+            f"{row['next_sign_ne']} राशिमा प्रवेश गर्छ, जुन चन्द्रमाबाट {HOUSE_NAMES_NE[(row['next_sign'] - moon_sign) % 12]} स्थान हो।",
+        ))
+
+    # Dasha turning points inside the next 12 months.
+    horizon = now + timedelta(days=365)
+    tree = ctx["dasha_tree"]
+    for md in tree["mahadashas"]:
+        if now < md["start"] <= horizon:
+            facts.append(_bi(
+                f"A new Mahadasha of {md['lord']} begins on {md['start'].date().isoformat()} — the year's most important turning point.",
+                f"{md['start'].date().isoformat()} मा {PLANET_NE[md['lord']]}को नयाँ महादशा सुरु हुन्छ — वर्षको सबैभन्दा महत्त्वपूर्ण मोड।",
+            ))
+        for ad in md["antardashas"]:
+            if now < ad["start"] <= horizon:
+                facts.append(_bi(
+                    f"{ad['lord']} Antardasha (within {md['lord']} Mahadasha) begins on {ad['start'].date().isoformat()}.",
+                    f"{ad['start'].date().isoformat()} मा {PLANET_NE[ad['lord']]} अन्तर्दशा ({PLANET_NE[md['lord']]} महादशाभित्र) सुरु हुन्छ।",
+                ))
+    return facts

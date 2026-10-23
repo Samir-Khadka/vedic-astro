@@ -101,3 +101,44 @@ def test_kundali_custom_coordinates():
 def test_kundali_bad_place_is_400():
     r = client.post("/api/kundali", json={"dob": "2000-01-01", "tob": "12:00", "place_id": "nowhere"})
     assert r.status_code == 400
+
+
+def test_bundle_has_phase2_sections():
+    r = client.post("/api/kundali", json=SAMPLE)
+    assert r.status_code == 200
+    data = r.json()
+    for key in ("strength", "transits_detail", "lal_kitab", "numerology",
+                "name_letters", "dasha_phala", "yogini", "tribhagi"):
+        assert key in data, key
+    sb = data["strength"]["shadbala"]["planets"]
+    assert set(sb) == {"Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"}
+    assert data["name_letters"]["syllable_en"] == "Yu"
+    assert data["numerology"]["moolank"]["value"] == 5
+    assert len(data["report"]["year_ahead"]) >= 3
+    # koota details are bilingual now
+    m = client.post("/api/match", json={"groom": SAMPLE, "bride": SAMPLE})
+    assert m.status_code == 200
+    for row in m.json()["breakdown"]:
+        assert set(row["detail"]) == {"en", "ne"}
+
+
+def test_prashna_endpoint():
+    r = client.post("/api/prashna", json={
+        "number": 108, "question": "Will I get the job?",
+        "place_name": "Kathmandu", "lat": 27.7172, "lon": 85.324,
+        "tz": "Asia/Kathmandu",
+    })
+    assert r.status_code == 200
+    data = r.json()
+    assert data["number"] == 108
+    assert len(data["ruling_planets"]) == 7
+    assert len(data["cusps"]) == 12
+    assert data["sub"]["start_longitude"] < data["sub"]["end_longitude"]
+
+
+def test_prashna_invalid_number():
+    r = client.post("/api/prashna", json={
+        "number": 250, "place_name": "Kathmandu", "lat": 27.7172, "lon": 85.324,
+        "tz": "Asia/Kathmandu",
+    })
+    assert r.status_code == 422

@@ -270,8 +270,26 @@ legend { padding: 0 8px; color: var(--gold-strong); font-weight: 600; }
 .reveal { animation: rise 0.7s ease both; }
 @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 
+/* Phase-2 additions: chart styles, Lal Kitab grid, dasha phala */
+.style-toggle { margin: 8px 0 4px; }
+.kundali-svg.nepali .planet-txt { font-size: 11px; }
+.kundali-svg .grid-line { stroke: rgba(229, 193, 92, 0.55); stroke-width: 1; }
+.kundali-svg .centre-cell { fill: rgba(123, 111, 208, 0.10); }
+.kundali-svg .centre-txt { fill: #e3d194; font-size: 17px; font-weight: 700; text-anchor: middle; }
+.kundali-svg .centre-sub { fill: #a89fd0; font-size: 12px; text-anchor: middle; }
+.kundali-svg .lagna-cell { fill: rgba(229, 193, 92, 0.13); }
+.kundali-svg .lagna-stroke { stroke: var(--gold); stroke-width: 1.4; }
+.kundali-svg .lagna-txt.small { font-size: 10px; }
+.lk-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0 16px; }
+.lk-cell { border: 1px solid rgba(229, 193, 92, 0.35); border-radius: 8px; padding: 7px 9px; display: flex; flex-direction: column; gap: 2px; }
+.lk-cell .k { color: #a89fd0; font-size: 11.5px; }
+.lk-cell .v { color: #f5e9c8; font-size: 13px; font-weight: 600; }
+.phala-list .pred-block { margin-bottom: 14px; }
+.ad-line { margin: 8px 0 2px; color: var(--gold); }
+
 @media (max-width: 880px) {
   .results-grid, .pred-grid, .chapter-grid, .match-cols { grid-template-columns: 1fr; }
+  .lk-grid { grid-template-columns: repeat(3, 1fr); }
   .strip-grid { grid-template-columns: repeat(3, 1fr); }
   .glance-strip { grid-template-columns: repeat(2, 1fr); }
   .lucky-strip, .gem-grid { grid-template-columns: repeat(2, 1fr); }

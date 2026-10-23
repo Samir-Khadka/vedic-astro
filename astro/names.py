@@ -83,6 +83,14 @@ COMBUSTION_ORB = {
     "Moon": 12, "Mars": 17, "Mercury": 14, "Jupiter": 11,
     "Venus": 10, "Saturn": 15,
 }
+# Moolatrikona: planet -> (sign index, start degree-in-sign, end degree).
+# (The Moon's first 3 degrees of Taurus are its exaltation zone; the rest
+# of Taurus is moolatrikona.)
+MOOLATRIKONA = {
+    "Sun": (4, 0.0, 20.0), "Moon": (1, 3.0, 30.0), "Mars": (0, 0.0, 12.0),
+    "Mercury": (5, 15.0, 20.0), "Jupiter": (8, 0.0, 10.0),
+    "Venus": (6, 0.0, 15.0), "Saturn": (10, 0.0, 20.0),
+}
 
 # Natural (naisargika) friendships: planet -> (friends, neutral, enemies)
 FRIENDSHIP = {

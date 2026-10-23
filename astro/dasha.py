@@ -79,3 +79,63 @@ def _resolve(mahadashas: list[dict], at: datetime) -> dict | None:
                     return {"mahadasha": md, "antardasha": ad, "at": at}
             return {"mahadasha": md, "antardasha": None, "at": at}
     return None
+
+
+# ---------------------------------------------------------------------------
+# Yogini dasha — the 36-year, 8-yogini cycle offered by Nepali patros
+# (Hamro Patro lists Vimshottari, Yogini and Trivagi side by side).
+# Starting yogini: (nakshatra index + 3) mod 8 over the sequence below;
+# the balance is the untraversed fraction of the starting yogini's years.
+# ---------------------------------------------------------------------------
+YOGINI_SEQUENCE = [
+    ("Mangala", "Moon", 1), ("Pingala", "Sun", 2), ("Dhanya", "Jupiter", 3),
+    ("Bhramari", "Mars", 4), ("Bhadrika", "Mercury", 5), ("Ulka", "Saturn", 6),
+    ("Siddha", "Venus", 7), ("Sankata", "Rahu", 8),
+]
+
+
+def yogini_periods(birth_dt: datetime, moon_longitude: float,
+                   now: datetime | None = None, cycles: int = 3) -> dict:
+    nak_idx = int((moon_longitude % 360.0) // NAKSHATRA_SPAN)
+    traversed = ((moon_longitude % 360.0) - nak_idx * NAKSHATRA_SPAN) / NAKSHATRA_SPAN
+    start_idx = (nak_idx + 3) % 8
+    name0, planet0, years0 = YOGINI_SEQUENCE[start_idx]
+    balance_years = (1.0 - traversed) * years0
+
+    periods = []
+    cursor = birth_dt - _days(traversed * years0)
+    total = cycles * len(YOGINI_SEQUENCE)
+    for k in range(total):
+        name, planet, years = YOGINI_SEQUENCE[(start_idx + k) % 8]
+        end = cursor + _days(float(years))
+        periods.append({"name": name, "planet": planet, "start": cursor, "end": end, "years": float(years)})
+        cursor = end
+    at = now or datetime.now(birth_dt.tzinfo)
+    current = next((p for p in periods if p["start"] <= at < p["end"]), None)
+    return {"periods": periods, "current": current, "balance_years": balance_years}
+
+
+# ---------------------------------------------------------------------------
+# Tribhagi (Trivagi) dasha — Vimshottari with every period divided by 3,
+# the third Nepali-patro system. The 120-year cycle becomes three rounds
+# of ~40 years; the starting balance is the Vimshottari balance / 3.
+# ---------------------------------------------------------------------------
+def tribhagi_periods(birth_dt: datetime, moon_longitude: float,
+                     now: datetime | None = None) -> dict:
+    nak_idx = int((moon_longitude % 360.0) // NAKSHATRA_SPAN)
+    first_lord = NAKSHATRA_LORDS[nak_idx]
+    traversed = ((moon_longitude % 360.0) - nak_idx * NAKSHATRA_SPAN) / NAKSHATRA_SPAN
+    balance_years = (1.0 - traversed) * DASHA_YEARS[first_lord] / 3.0
+
+    i0 = DASHA_SEQUENCE.index(first_lord)
+    periods = []
+    cursor = birth_dt - _days(traversed * DASHA_YEARS[first_lord] / 3.0)
+    for k in range(27):  # three full rounds = 120 years
+        lord = DASHA_SEQUENCE[(i0 + k) % 9]
+        years = DASHA_YEARS[lord] / 3.0
+        end = cursor + _days(years)
+        periods.append({"lord": lord, "start": cursor, "end": end, "years": years})
+        cursor = end
+    at = now or datetime.now(birth_dt.tzinfo)
+    current = next((p for p in periods if p["start"] <= at < p["end"]), None)
+    return {"periods": periods, "current": current, "balance_years": balance_years}

@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vedic Astro — ज्योतिष | Kundali, KP, Matching & Premium Reports</title>
 <meta name="description" content="Precision Vedic astrology: Swiss Ephemeris kundali with Parashari, KP and Jaimini methods, Guna Milan matching, panchang and premium life reports in English and Nepali.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Vedic Astro">
+<meta property="og:title" content="Vedic Astro — ज्योतिष | Kundali, KP, Shadbala, Lal Kitab, Matching & Premium Reports">
+<meta property="og:description" content="Nepali janma-patri style kundali with Shadbala, Bhava Bala, KP Prashna, Lal Kitab, transits and premium life reports — in English and Nepali.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Vedic Astro — ज्योतिष">
+<meta name="twitter:description" content="Swiss Ephemeris kundali, Shadbala, KP, Lal Kitab and premium reports in English and Nepali.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;700&display=swap" rel="stylesheet">
@@ -22,6 +29,7 @@
   <nav class="main-nav" aria-label="Primary">
     <a href="#kundali-form" data-i18n="nav_kundali">Kundali</a>
     <a href="#premium" data-i18n="nav_premium">Premium Report</a>
+    <a href="#prashna" data-i18n="nav_prashna">KP Prashna</a>
     <a href="#matching" data-i18n="nav_matching">Matching</a>
     <a href="#panchang-strip" data-i18n="nav_panchang">Panchang</a>
   </nav>
@@ -132,6 +140,11 @@
             <button type="button" class="mini-btn" data-varga="D10">D10</button>
           </div>
         </div>
+        <div class="chart-toggle style-toggle" role="group" aria-label="Chart style">
+          <button type="button" class="mini-btn is-active" data-style="nepali" data-i18n="style_nepali">Nepali</button>
+          <button type="button" class="mini-btn" data-style="north" data-i18n="style_north">North Indian</button>
+          <button type="button" class="mini-btn" data-style="south" data-i18n="style_south">South Indian</button>
+        </div>
         <div id="chart-svg-wrap"></div>
         <p class="chart-caption" id="chart-caption"></p>
       </div>
@@ -157,6 +170,10 @@
         <h3 data-i18n="dasha_title">Vimshottari Dasha</h3>
         <p class="current-dasha" id="current-dasha"></p>
         <div id="dasha-timeline" class="timeline"></div>
+        <p class="current-dasha" id="yogini-line"></p>
+        <p class="current-dasha" id="tribhagi-line"></p>
+        <h3 class="sub-title" data-i18n="dasha_phala_title">Dasha Phala — what each period brings</h3>
+        <div id="dasha-phala" class="phala-list"></div>
       </div>
       <div class="glass card">
         <h3 data-i18n="kp_title">KP — Cuspal Sub Lords</h3>
@@ -196,6 +213,73 @@
       <h3 data-i18n="pred_title">Predictions — from your chart facts</h3>
       <div id="prediction-sections" class="pred-grid"></div>
     </div>
+
+    <div class="glass card wide">
+      <h3 data-i18n="strength_title">Planetary Strength — Shadbala</h3>
+      <p class="hint" id="strength-summary"></p>
+      <div class="table-scroll">
+        <table class="data-table" id="shadbala-table">
+          <thead><tr>
+            <th data-i18n="th_planet">Planet</th><th data-i18n="th_sthana">Sthana</th>
+            <th data-i18n="th_dig">Dig</th><th data-i18n="th_kala">Kala</th>
+            <th data-i18n="th_cheshta">Cheshta</th><th data-i18n="th_naisargika">Naisargika</th>
+            <th data-i18n="th_drik">Drik</th><th data-i18n="th_total">Total</th>
+            <th data-i18n="th_rupas">Rupas</th><th data-i18n="th_min">Min</th>
+            <th data-i18n="th_ratio">Ratio</th><th data-i18n="th_rank">Rank</th>
+            <th data-i18n="th_ishta">Ishta</th><th data-i18n="th_kashta">Kashta</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <h3 class="sub-title" data-i18n="bhava_bala_title">Bhava Bala — house strength (Rupas)</h3>
+      <div class="table-scroll">
+        <table class="data-table" id="bhava-bala-table">
+          <thead><tr>
+            <th data-i18n="th_house">House</th><th data-i18n="th_lord">Lord</th>
+            <th data-i18n="th_lord_bala">Lord's Shadbala</th><th data-i18n="th_drik">Drik</th>
+            <th data-i18n="th_total">Total</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="hint" id="bhava-bala-note"></p>
+      <h3 class="sub-title" data-i18n="vimshopaka_title">Vimshopaka Bala (of 20)</h3>
+      <div class="table-scroll">
+        <table class="data-table" id="vimshopaka-table">
+          <thead><tr>
+            <th data-i18n="th_planet">Planet</th><th>Shadvarga</th><th>Saptavarga</th><th>Shodashavarga</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="results-grid">
+      <div class="glass card">
+        <h3 data-i18n="transit_title">Transits (Gochar) & Ingress Dates</h3>
+        <div class="table-scroll">
+          <table class="data-table" id="transit-table">
+            <thead><tr>
+              <th data-i18n="th_planet">Planet</th><th data-i18n="th_now">Now</th>
+              <th data-i18n="th_from_moon">From Moon</th><th data-i18n="th_ingress">Next ingress</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="hint" id="dhaiya-note"></p>
+      </div>
+      <div class="glass card">
+        <h3 data-i18n="numerology_title">Numerology & Name Letter</h3>
+        <div id="numerology-body"></div>
+      </div>
+    </div>
+
+    <div class="glass card wide">
+      <h3 data-i18n="lalkitab_title">Lal Kitab — the chart in fixed khanas</h3>
+      <p class="hint" data-i18n="lalkitab_hint">In Lal Kitab, khana 1 is Aries for everyone; a planet's house is its sign. A planet in its pakka ghar (permanent house) is always awake (jagta).</p>
+      <div id="lalkitab-chart" class="lk-grid"></div>
+      <div id="lalkitab-body"></div>
+    </div>
   </section>
 
   <!-- PREMIUM REPORT -->
@@ -204,6 +288,10 @@
     <p class="results-meta" data-i18n="premium_sub">The full multi-chapter reading — the depth the premium sites sell, generated from your computed chart.</p>
     <div class="lucky-strip" id="lucky-strip"></div>
     <div id="premium-chapters" class="chapter-grid"></div>
+    <div class="glass card wide">
+      <h3 data-i18n="year_ahead_title">Year Ahead — by your Moon sign</h3>
+      <div id="year-ahead" class="pred-grid"></div>
+    </div>
     <div class="results-grid">
       <div class="glass card">
         <h3 data-i18n="forecast_title">Favourable Periods — 10 Years</h3>
@@ -220,6 +308,57 @@
     </div>
     <div class="pdf-row">
       <button type="button" class="btn btn-gold" id="pdf-btn" data-i18n="pdf_btn">Download Premium Report (PDF)</button>
+    </div>
+  </section>
+
+  <!-- KP PRASHNA (HORARY) -->
+  <section id="prashna" class="section">
+    <h2 class="section-title" data-i18n="prashna_title">KP Prashna — Horary (1–249)</h2>
+    <p class="results-meta" data-i18n="prashna_sub">Hold your question in mind, pick a number between 1 and 249, and cast the chart of this moment.</p>
+    <form id="prashna-form" class="glass form-card" novalidate>
+      <div class="field-row">
+        <div class="field">
+          <label for="p-number" data-i18n="p_number">Your number (1–249)</label>
+          <input id="p-number" type="number" min="1" max="249" required placeholder="e.g. 108">
+        </div>
+        <div class="field">
+          <label for="p-question" data-i18n="p_question">Question (optional)</label>
+          <input id="p-question" type="text" placeholder="e.g. Will I get the job?">
+        </div>
+      </div>
+      <div class="field">
+        <label for="p-place" data-i18n="f_place">Birth place</label>
+        <div class="place-wrap">
+          <input id="p-place" type="text" autocomplete="off" placeholder="Where you are now">
+          <div class="place-suggest" id="p-place-suggest" role="listbox" hidden></div>
+        </div>
+      </div>
+      <p class="form-error" id="prashna-error" role="alert" hidden></p>
+      <button type="submit" class="btn btn-gold btn-wide" id="prashna-btn" data-i18n="prashna_submit">Cast Prashna Chart</button>
+    </form>
+    <div id="prashna-result" hidden>
+      <div class="results-grid">
+        <div class="glass card chart-card">
+          <div class="card-head"><h3 data-i18n="prashna_chart">Prashna Chart</h3></div>
+          <div id="prashna-chart-wrap"></div>
+          <p class="chart-caption" id="prashna-meta"></p>
+        </div>
+        <div class="glass card">
+          <h3 data-i18n="ruling_title">Ruling Planets</h3>
+          <div id="ruling-list" class="yoga-list"></div>
+          <h3 class="sub-title" data-i18n="kp_title">KP — Cuspal Sub Lords</h3>
+          <div class="table-scroll">
+            <table class="data-table" id="prashna-kp-table">
+              <thead><tr>
+                <th data-i18n="th_house">House</th><th data-i18n="th_sign">Sign</th>
+                <th data-i18n="th_signlord">Sign Lord</th><th data-i18n="th_starlord">Star Lord</th>
+                <th data-i18n="th_sublord">Sub Lord</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 

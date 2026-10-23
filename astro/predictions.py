@@ -153,3 +153,62 @@ def generate_predictions(ctx: dict) -> dict:
     sections["health"] = theme([1, 6, 8], [])
 
     return sections
+
+
+# ---------------------------------------------------------------------------
+# Dasha-phala — an interpretation for every Mahadasha, and for every
+# Antardasha of the currently running Mahadasha, built from the same
+# placement facts as the rest of the report.
+# ---------------------------------------------------------------------------
+def _nature_line(lord: str) -> dict:
+    if lord in NATURAL_BENEFICS:
+        return _bi(
+            f"As a natural benefic, {lord}'s periods tend to support growth, goodwill and steady gains when pursued sincerely.",
+            f"नैसर्गिक शुभ ग्रहका रूपमा, {PLANET_NE[lord]}को अवधिले इमानदारीपूर्वक लाग्दा प्रगति, सद्भाव र स्थिर लाभलाई साथ दिन्छ।",
+        )
+    if lord in NATURAL_MALEFICS:
+        return _bi(
+            f"As a natural malefic, {lord}'s periods test discipline and patience; results come through sustained effort rather than shortcuts.",
+            f"नैसर्गिक पाप ग्रहका रूपमा, {PLANET_NE[lord]}को अवधिले अनुशासन र धैर्यको परीक्षा लिन्छ; फल छोटो बाटोभन्दा निरन्तर मेहनतबाट आउँछ।",
+        )
+    return _bi(
+        f"{lord}'s periods are mixed in tone and take their colour from the planets it is joined with and aspected by.",
+        f"{PLANET_NE[lord]}को अवधि मिश्रित हुन्छ र यसले सँगै बसेका तथा दृष्टि दिने ग्रहहरूको रङ लिन्छ।",
+    )
+
+
+def dasha_phala(tree: dict, planets: dict, lagna_sign: int) -> list[dict]:
+    lords = house_lords(lagna_sign)
+    cur = tree.get("current")
+    cur_md_start = cur["mahadasha"]["start"] if cur else None
+    out = []
+    for md in tree["mahadashas"]:
+        entry = {
+            "lord": md["lord"],
+            "start": md["start"].date().isoformat(),
+            "end": md["end"].date().isoformat(),
+            "summary": [
+                _placement_fact(md["lord"], planets, lagna_sign, lords),
+                _nature_line(md["lord"]),
+            ],
+        }
+        if cur_md_start is not None and md["start"] == cur_md_start:
+            ads = []
+            for ad in md["antardashas"]:
+                facts = [_placement_fact(ad["lord"], planets, lagna_sign, lords)]
+                if ad["lord"] == md["lord"]:
+                    facts.append(_bi(
+                        f"The Antardasha lord is the same as the Mahadasha lord, so the themes of {md['lord']} run undiluted through this sub-period.",
+                        f"अन्तर्दशा स्वामी र महादशा स्वामी एउटै भएकाले {PLANET_NE[md['lord']]}का विषय यस उप-अवधिमा अविरल रूपमा चल्छन्।",
+                    ))
+                else:
+                    facts.append(_nature_line(ad["lord"]))
+                ads.append({
+                    "lord": ad["lord"],
+                    "start": ad["start"].date().isoformat(),
+                    "end": ad["end"].date().isoformat(),
+                    "summary": facts,
+                })
+            entry["antardashas"] = ads
+        out.append(entry)
+    return out

@@ -5,7 +5,7 @@ so the astronomy lives in exactly one place.
 """
 from __future__ import annotations
 
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import swisseph as swe
@@ -160,3 +160,35 @@ def sun_moon_longitudes(jd: float) -> tuple[float, float]:
     sun, _ = swe.calc_ut(jd, swe.SUN, _FLAGS)
     moon, _ = swe.calc_ut(jd, swe.MOON, _FLAGS)
     return sun[0] % 360.0, moon[0] % 360.0
+
+
+def declinations(jd: float) -> dict[str, float]:
+    """Equatorial declination (degrees, +north) of the 7 grahas at `jd`.
+
+    Needed for Ayana Bala. Declination is a tropical/equatorial quantity,
+    so no ayanamsa is involved; the sidereal flag is harmless here.
+    """
+    _ensure_lahiri()
+    flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | swe.FLG_EQUATORIAL
+    out: dict[str, float] = {}
+    for name, pid in _SWE_PLANETS.items():
+        res, _ret = swe.calc_ut(jd, pid, flags)
+        out[name] = res[1]
+    return out
+
+
+def planet_longitude_at(name: str, jd: float) -> float:
+    """Sidereal longitude of one graha at an arbitrary Julian day."""
+    return planet_longitudes(jd)[name]["longitude"]
+
+
+def jd_to_utc_datetime(jd: float) -> datetime:
+    """Timezone-aware UTC datetime for a Julian day."""
+    y, m, d, h = swe.revjul(jd)
+    base = datetime(y, m, d, tzinfo=timezone.utc)
+    return base + timedelta(hours=h)
+
+
+def jd_to_date_str(jd: float) -> str:
+    dt = jd_to_utc_datetime(jd)
+    return dt.date().isoformat()

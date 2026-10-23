@@ -6,14 +6,19 @@ from zoneinfo import ZoneInfo
 
 from . import (
     ashtakavarga as av_module,
+    bala as bala_module,
     charts as charts_module,
     dasha as dasha_module,
     doshas as doshas_module,
     ephemeris,
     kp as kp_module,
+    lalkitab as lk_module,
+    naming as naming_module,
+    numerology as numerology_module,
     panchang as panchang_module,
     places as places_module,
     predictions as predictions_module,
+    transits as transits_module,
     yogas as yogas_module,
 )
 from .names import (
@@ -120,6 +125,18 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         "dasha": dasha_tree, "transit_signs": transit_signs, "sade_sati": sade_sati,
     }
     preds = predictions_module.generate_predictions(ctx)
+    dasha_phala = predictions_module.dasha_phala(dasha_tree, planets, lagna_sign)
+
+    # Premium-strength layer: Shadbala / Bhava Bala / Vimshopaka,
+    # transit ingress table, Lal Kitab, Yogini + Tribhagi dashas.
+    sb = bala_module.shadbala(planets, lagna_sign, cusps, varga_charts,
+                              birth_dt, place["lat"], place["lon"], place["tz"], jd)
+    bb = bala_module.bhava_bala(planets, lagna_sign, cusps, sb)
+    vs = bala_module.vimshopaka(planets, varga_charts)
+    transit_tbl = transits_module.transit_table(jd_now, planets["Moon"]["sign"])
+    lk = lk_module.lal_kitab(planets)
+    yogini = dasha_module.yogini_periods(birth_dt, planets["Moon"]["longitude"], now)
+    tribhagi = dasha_module.tribhagi_periods(birth_dt, planets["Moon"]["longitude"], now)
 
     from . import report as report_module
     report_ctx = dict(ctx)
@@ -127,6 +144,7 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         "predictions": preds, "yogas": yoga_list, "doshas": dosha_results,
         "karakas": karakas, "dasha_tree": dasha_tree, "now": now,
         "birth_dt": birth_dt, "place": place,
+        "transit_ingress": transit_tbl["ingress"],
     })
     premium = report_module.generate_premium_report(report_ctx)
 
@@ -193,6 +211,49 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         "transits_now": {p: {"sign": s, "sign_en": SIGNS_EN[s], "sign_ne": SIGNS_NE[s]} for p, s in transit_signs.items()},
         "predictions": preds,
         "report": premium,
+        "strength": {
+            "shadbala": sb,
+            "bhava_bala": bb,
+            "vimshopaka": vs,
+            "bhava_bala_note": {
+                "en": "Bhava Bala = house lord's Shadbala + Drik Bala on the house (Dig Bala of houses omitted — see the method note in the analysis).",
+                "ne": "भाव बल = भाव स्वामीको षड्बल + भावमाथिको दृष्टि बल (भावहरूको दिग्बल छाडिएको छ — विश्लेषणको विधि-टिप्पणी हेर्नुहोस्)।",
+            },
+        },
+        "transits_detail": transit_tbl,
+        "lal_kitab": lk,
+        "numerology": numerology_module.numerology(dob),
+        "name_letters": naming_module.name_letters(planets["Moon"]["nakshatra"], planets["Moon"]["pada"]),
+        "dasha_phala": dasha_phala,
+        "yogini": {
+            "periods": [
+                {"name": p["name"], "planet": p["planet"],
+                 "start": p["start"].date().isoformat(), "end": p["end"].date().isoformat(),
+                 "years": p["years"]}
+                for p in yogini["periods"][:16]
+            ],
+            "current": (
+                {"name": yogini["current"]["name"], "planet": yogini["current"]["planet"],
+                 "start": yogini["current"]["start"].date().isoformat(),
+                 "end": yogini["current"]["end"].date().isoformat()}
+                if yogini["current"] else None
+            ),
+            "balance_years": round(yogini["balance_years"], 3),
+        },
+        "tribhagi": {
+            "periods": [
+                {"lord": p["lord"], "start": p["start"].date().isoformat(),
+                 "end": p["end"].date().isoformat(), "years": round(p["years"], 3)}
+                for p in tribhagi["periods"][:12]
+            ],
+            "current": (
+                {"lord": tribhagi["current"]["lord"],
+                 "start": tribhagi["current"]["start"].date().isoformat(),
+                 "end": tribhagi["current"]["end"].date().isoformat()}
+                if tribhagi["current"] else None
+            ),
+            "balance_years": round(tribhagi["balance_years"], 3),
+        },
     }
     return bundle
 
