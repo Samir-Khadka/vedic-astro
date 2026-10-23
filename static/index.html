@@ -75,12 +75,13 @@
       </div>
       <div class="field">
         <label for="f-place" data-i18n="f_place">Birth place</label>
-        <input id="f-place" type="text" list="place-list" autocomplete="off" placeholder="Start typing — Kathmandu, Urlabari, Delhi…">
-        <datalist id="place-list"></datalist>
-        <input type="hidden" id="f-place-id">
-        <p class="hint" data-i18n="f_place_hint">Pick from the list, or leave and enter coordinates below.</p>
+        <div class="place-wrap">
+          <input id="f-place" type="text" autocomplete="off" placeholder="Start typing any place — Kathmandu, Tokyo, New York…">
+          <div class="place-suggest" id="f-place-suggest" role="listbox" hidden></div>
+        </div>
+        <p class="hint" data-i18n="f_place_hint">Search any place in the world, or enter coordinates below.</p>
       </div>
-      <details class="manual-coords">
+      <details class="manual-coords" id="manual-coords">
         <summary data-i18n="manual_coords">Enter coordinates manually</summary>
         <div class="field-row">
           <div class="field">
@@ -220,8 +221,10 @@
           <div class="field"><label for="m1-tob" data-i18n="f_tob">Time of birth</label>
             <input id="m1-tob" type="time" required></div>
           <div class="field"><label for="m1-place" data-i18n="f_place">Birth place</label>
-            <input id="m1-place" type="text" list="place-list" autocomplete="off">
-            <input type="hidden" id="m1-place-id"></div>
+            <div class="place-wrap">
+              <input id="m1-place" type="text" autocomplete="off">
+              <div class="place-suggest" id="m1-place-suggest" role="listbox" hidden></div>
+            </div></div>
         </fieldset>
         <fieldset>
           <legend data-i18n="bride">Bride / Partner 2</legend>
@@ -230,8 +233,10 @@
           <div class="field"><label for="m2-tob" data-i18n="f_tob">Time of birth</label>
             <input id="m2-tob" type="time" required></div>
           <div class="field"><label for="m2-place" data-i18n="f_place">Birth place</label>
-            <input id="m2-place" type="text" list="place-list" autocomplete="off">
-            <input type="hidden" id="m2-place-id"></div>
+            <div class="place-wrap">
+              <input id="m2-place" type="text" autocomplete="off">
+              <div class="place-suggest" id="m2-place-suggest" role="listbox" hidden></div>
+            </div></div>
         </fieldset>
       </div>
       <p class="form-error" id="match-error" role="alert" hidden></p>

@@ -24,7 +24,8 @@ const I18N = {
     hero_cta:"Create my Kundali",
     panchang_title:"Today's Panchang", loading:"Loading…",
     form_title:"Birth Details", f_name:"Name", f_dob:"Date of birth", f_tob:"Time of birth",
-    f_place:"Birth place", f_place_hint:"Pick from the list, or enter coordinates below.",
+    f_place:"Birth place", f_place_hint:"Search any place in the world, or enter coordinates below.",
+    place_global_unavailable:"Worldwide search is unavailable right now — try entering coordinates manually.",
     manual_coords:"Enter coordinates manually", f_lat:"Latitude", f_lon:"Longitude", f_tz:"Timezone (IANA)",
     submit:"Generate Kundali", generating:"Computing…",
     chart_title:"Birth Chart", planets_title:"Planetary Positions",
@@ -70,7 +71,8 @@ const I18N = {
     hero_cta:"मेरो कुण्डली बनाउनुहोस्",
     panchang_title:"आजको पञ्चाङ्ग", loading:"लोड हुँदैछ…",
     form_title:"जन्म विवरण", f_name:"नाम", f_dob:"जन्म मिति", f_tob:"जन्म समय",
-    f_place:"जन्म स्थान", f_place_hint:"सूचीबाट छान्नुहोस्, वा तल निर्देशाङ्क भर्नुहोस्।",
+    f_place:"जन्म स्थान", f_place_hint:"विश्वको कुनै पनि ठाउँ खोज्नुहोस्, वा तल निर्देशाङ्क भर्नुहोस्।",
+    place_global_unavailable:"विश्वव्यापी खोज अहिले उपलब्ध छैन — निर्देशाङ्क आफैँ भरेर प्रयास गर्नुहोस्।",
     manual_coords:"निर्देशाङ्क आफैँ भर्नुहोस्", f_lat:"अक्षांश", f_lon:"देशान्तर", f_tz:"समय क्षेत्र (IANA)",
     submit:"कुण्डली बनाउनुहोस्", generating:"गणना हुँदैछ…",
     chart_title:"जन्म कुण्डली", planets_title:"ग्रहहरूको स्थिति",
@@ -212,41 +214,131 @@ async function loadPanchang() {
   }
 }
 
-/* ---------------- Places ---------------- */
-const placeLabelToId = new Map();
-let placeTimer = null;
+/* ---------------- Places: search-as-you-type, anywhere on Earth --------
+   The backend merges the built-in gazetteer (entries with an `id`) with
+   worldwide OpenStreetMap results (entries with `source: "global"`, each
+   carrying lat/lon + its IANA timezone). The selected place is stored as
+   a ready-to-submit payload fragment per input:
+     {place_id}  or  {place_name, lat, lon, tz}
+   Suggestions are real DOM elements (a rendered dropdown), not the
+   browser's native datalist popup. */
+const PLACE_SELECTED = {};
+const placeTimers = {};
+
+const suggestBox = (inputEl) => document.getElementById(inputEl.id + "-suggest");
+
+function closeSuggest(inputEl) {
+  const box = suggestBox(inputEl);
+  if (box) { box.hidden = true; box.innerHTML = ""; }
+}
+
+function selectPlace(inputEl, p) {
+  if (p.id) {
+    PLACE_SELECTED[inputEl.id] = { place_id: p.id };
+    inputEl.value = `${p.name}, ${p.country}`;
+  } else {
+    const frag = { place_name: p.label || p.name, lat: p.lat, lon: p.lon, tz: p.tz || null };
+    PLACE_SELECTED[inputEl.id] = frag;
+    inputEl.value = p.label || p.name;
+    if (!p.tz) {
+      // Land places virtually always resolve; for the rare miss, try the
+      // offline resolver, then hand the coordinates to the manual fields.
+      fetch(`/api/tz?lat=${encodeURIComponent(p.lat)}&lon=${encodeURIComponent(p.lon)}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (d && d.tz) frag.tz = d.tz; })
+        .catch(() => {});
+      if (inputEl.id === "f-place") {
+        document.getElementById("f-lat").value = p.lat;
+        document.getElementById("f-lon").value = p.lon;
+        document.getElementById("manual-coords").open = true;
+      }
+    }
+  }
+  closeSuggest(inputEl);
+}
+
 async function searchPlaces(inputEl) {
   const q = inputEl.value.trim();
+  const box = suggestBox(inputEl);
+  if (!box || q.length < 2) { closeSuggest(inputEl); return; }
+  let data;
   try {
     const res = await fetch("/api/places?q=" + encodeURIComponent(q));
-    const data = await res.json();
-    const list = document.getElementById("place-list");
-    list.innerHTML = "";
-    placeLabelToId.clear();
-    for (const p of data.places) {
-      const label = `${p.name}, ${p.country}`;
-      placeLabelToId.set(label, p.id);
-      const opt = document.createElement("option");
-      opt.value = label;
-      list.appendChild(opt);
-    }
-  } catch (e) { /* silent */ }
+    if (!res.ok) { closeSuggest(inputEl); return; }
+    data = await res.json();
+  } catch (e) { closeSuggest(inputEl); return; }
+  if (inputEl.value.trim() !== q) return;  // user typed on meanwhile
+  box.innerHTML = "";
+  for (const p of data.places || []) {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "place-item";
+    item.setAttribute("role", "option");
+    const nameEl = document.createElement("span");
+    nameEl.className = "place-item-name";
+    nameEl.textContent = p.id ? `${p.name}, ${p.country}` : (p.label || p.name);
+    const metaEl = document.createElement("span");
+    metaEl.className = "place-item-meta";
+    metaEl.textContent = p.tz || "";
+    item.append(nameEl, metaEl);
+    item.addEventListener("mousedown", (ev) => { ev.preventDefault(); selectPlace(inputEl, p); });
+    box.appendChild(item);
+  }
+  if (data.global_available === false) {
+    const hint = document.createElement("div");
+    hint.className = "place-item-hint";
+    hint.textContent = t("place_global_unavailable");
+    box.appendChild(hint);
+  }
+  box.hidden = box.childElementCount === 0;
 }
+
 ["f-place", "m1-place", "m2-place"].forEach((id) => {
   const el = document.getElementById(id);
-  if (el) el.addEventListener("input", () => {
-    clearTimeout(placeTimer);
-    placeTimer = setTimeout(() => searchPlaces(el), 220);
+  if (!el) return;
+  el.addEventListener("input", () => {
+    delete PLACE_SELECTED[id];
+    clearTimeout(placeTimers[id]);
+    placeTimers[id] = setTimeout(() => searchPlaces(el), 350);
+  });
+  el.addEventListener("focus", () => {
+    if (el.value.trim().length >= 2 && !PLACE_SELECTED[id]) searchPlaces(el);
+  });
+  el.addEventListener("blur", () => setTimeout(() => closeSuggest(el), 150));
+});
+document.addEventListener("click", (ev) => {
+  ["f-place", "m1-place", "m2-place"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el && !el.closest(".place-wrap").contains(ev.target)) closeSuggest(el);
   });
 });
-searchPlaces(document.getElementById("f-place"));
 
-function resolvePlace(placeInputId, hiddenId) {
-  const label = document.getElementById(placeInputId).value.trim();
-  const id = placeLabelToId.get(label);
-  if (id) return { place_id: id };
+function resolvePlace(placeInputId) {
+  const sel = PLACE_SELECTED[placeInputId];
+  if (!sel) return null;
+  if (sel.place_id) return { place_id: sel.place_id };
+  if (sel.lat !== undefined && sel.lon !== undefined && sel.tz) {
+    return { place_name: sel.place_name, lat: sel.lat, lon: sel.lon, tz: sel.tz };
+  }
   return null;
 }
+
+/* Manual coordinates: auto-fill the IANA timezone from the backend. */
+let tzTimer = null;
+["f-lat", "f-lon"].forEach((id) => {
+  document.getElementById(id).addEventListener("input", () => {
+    clearTimeout(tzTimer);
+    tzTimer = setTimeout(async () => {
+      const lat = parseFloat(document.getElementById("f-lat").value);
+      const lon = parseFloat(document.getElementById("f-lon").value);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+      try {
+        const res = await fetch(`/api/tz?lat=${lat}&lon=${lon}`);
+        if (res.ok) document.getElementById("f-tz").value = (await res.json()).tz;
+      } catch (e) { /* leave the field for manual entry */ }
+    }, 400);
+  });
+});
 
 /* ---------------- Birth form ---------------- */
 document.getElementById("birth-form").addEventListener("submit", async (ev) => {
@@ -510,7 +602,10 @@ document.getElementById("pdf-btn").addEventListener("click", () => {
   q.set("dob", p.dob); q.set("tob", p.tob); q.set("lang", LANG);
   if (p.name) q.set("name", p.name);
   if (p.place_id) q.set("place_id", p.place_id);
-  else { q.set("lat", p.lat); q.set("lon", p.lon); q.set("tz", p.tz); }
+  else {
+    q.set("lat", p.lat); q.set("lon", p.lon); q.set("tz", p.tz);
+    if (p.place_name) q.set("place_name", p.place_name);
+  }
   window.open("/api/report.pdf?" + q.toString(), "_blank");
 });
 

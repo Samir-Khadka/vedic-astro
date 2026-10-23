@@ -4,7 +4,10 @@ Endpoints:
   POST /api/kundali    full chart bundle incl. premium report (en+ne)
   POST /api/match      Ashtakoota Guna Milan for two births
   GET  /api/panchang   daily panchang (?date=YYYY-MM-DD&place_id=..|lat&lon&tz)
-  GET  /api/places     gazetteer search (?q=)
+  GET  /api/places     place search (?q=) — built-in gazetteer first, then
+                       global OpenStreetMap results with IANA timezones;
+                       body: {places: [...], global_available: bool}
+  GET  /api/tz         offline timezone lookup (?lat=&lon=) -> {tz}
   GET  /api/report.pdf downloadable premium report PDF
   GET  /health
 The static single-page frontend is served from /static and /.
@@ -13,13 +16,14 @@ from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
-from astro import engine, panchang as panchang_module, pdf as pdf_module, places as places_module
+from astro import engine, geocode, panchang as panchang_module, pdf as pdf_module, places as places_module
 
 BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
@@ -36,6 +40,43 @@ class BirthInput(BaseModel):
     lat: float | None = None
     lon: float | None = None
     tz: str | None = None
+
+    @field_validator("lat")
+    @classmethod
+    def _lat_in_range(cls, v: float | None) -> float | None:
+        if v is not None and not -90.0 <= v <= 90.0:
+            raise ValueError("lat must be between -90 and 90")
+        return v
+
+    @field_validator("lon")
+    @classmethod
+    def _lon_in_range(cls, v: float | None) -> float | None:
+        if v is not None and not -180.0 <= v <= 180.0:
+            raise ValueError("lon must be between -180 and 180")
+        return v
+
+    @field_validator("tz")
+    @classmethod
+    def _tz_is_real(cls, v: str | None) -> str | None:
+        if v is not None:
+            try:
+                ZoneInfo(v)
+            except Exception:
+                raise ValueError(f"unknown IANA timezone: {v}")
+        return v
+
+
+def _validate_coords_tz(lat: float | None, lon: float | None, tz: str | None) -> None:
+    """422 guard for the GET endpoints (query params skip pydantic models)."""
+    if lat is not None and not -90.0 <= lat <= 90.0:
+        raise HTTPException(status_code=422, detail="lat must be between -90 and 90")
+    if lon is not None and not -180.0 <= lon <= 180.0:
+        raise HTTPException(status_code=422, detail="lon must be between -180 and 180")
+    if tz is not None:
+        try:
+            ZoneInfo(tz)
+        except Exception:
+            raise HTTPException(status_code=422, detail=f"unknown IANA timezone: {tz}")
 
 
 class MatchInput(BaseModel):
@@ -73,7 +114,26 @@ def match(body: MatchInput):
 
 @app.get("/api/places")
 def places(q: str = Query(default="")):
-    return {"places": places_module.search_places(q)}
+    local = places_module.search_places(q)
+    global_hits, global_available = geocode.search_global(q)
+    local_names = {p["name"].lower() for p in local}
+    merged = list(local)
+    for g in global_hits:
+        if g["name"].lower() in local_names:
+            continue  # gazetteer entry already covers this place
+        if any(abs(g["lat"] - p["lat"]) < 0.05 and abs(g["lon"] - p["lon"]) < 0.05 for p in local):
+            continue
+        merged.append(g)
+    return {"places": merged, "global_available": global_available}
+
+
+@app.get("/api/tz")
+def tz_lookup(lat: float, lon: float):
+    _validate_coords_tz(lat, lon, None)
+    tz = geocode.timezone_at(lat, lon)
+    if tz is None:
+        raise HTTPException(status_code=422, detail="no timezone found for these coordinates")
+    return {"tz": tz}
 
 
 @app.get("/api/panchang")
@@ -85,6 +145,7 @@ def panchang(
     tz: str | None = None,
 ):
     payload = {"place_id": place_id, "lat": lat, "lon": lon, "tz": tz}
+    _validate_coords_tz(lat, lon, tz)
     try:
         place = engine.resolve_place(payload)
         day = date.fromisoformat(date_str) if date_str else date.today()
@@ -99,13 +160,15 @@ def panchang(
 def report_pdf(
     dob: str, tob: str,
     place_id: str | None = None,
+    place_name: str | None = None,
     lat: float | None = None, lon: float | None = None, tz: str | None = None,
     name: str | None = None, lang: str = "en",
 ):
     payload = {
         "name": name, "dob": dob, "tob": tob if len(tob) > 5 else tob + ":00",
-        "place_id": place_id, "lat": lat, "lon": lon, "tz": tz,
+        "place_id": place_id, "place_name": place_name, "lat": lat, "lon": lon, "tz": tz,
     }
+    _validate_coords_tz(lat, lon, tz)
     try:
         bundle = engine.compute_kundali(payload)
     except ValueError as e:
