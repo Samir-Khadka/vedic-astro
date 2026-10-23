@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vedic Astro — ज्योतिष | Kundali, KP, Matching & Premium Reports</title>
+<meta name="description" content="Precision Vedic astrology: Swiss Ephemeris kundali with Parashari, KP and Jaimini methods, Guna Milan matching, panchang and premium life reports in English and Nepali.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<canvas id="starfield" aria-hidden="true"></canvas>
+<div class="nebula" aria-hidden="true"></div>
+
+<header class="site-header">
+  <a class="brand" href="#top" aria-label="Vedic Astro home">
+    <span class="brand-mark" aria-hidden="true">ॐ</span>
+    <span class="brand-name">Vedic<em>Astro</em></span>
+  </a>
+  <nav class="main-nav" aria-label="Primary">
+    <a href="#kundali-form" data-i18n="nav_kundali">Kundali</a>
+    <a href="#premium" data-i18n="nav_premium">Premium Report</a>
+    <a href="#matching" data-i18n="nav_matching">Matching</a>
+    <a href="#panchang-strip" data-i18n="nav_panchang">Panchang</a>
+  </nav>
+  <div class="lang-toggle" role="group" aria-label="Language">
+    <button type="button" id="lang-en" class="lang-btn is-active">EN</button>
+    <button type="button" id="lang-ne" class="lang-btn">नेपाली</button>
+  </div>
+</header>
+
+<main id="top">
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-ring" aria-hidden="true">
+      <svg viewBox="0 0 200 200" class="ring-svg">
+        <circle cx="100" cy="100" r="96" class="ring-outer"/>
+        <circle cx="100" cy="100" r="72" class="ring-inner"/>
+        <g class="ring-signs"></g>
+      </svg>
+      <div class="hero-om" aria-hidden="true">ॐ</div>
+    </div>
+    <h1 class="hero-title" data-i18n="hero_title">Your stars, computed precisely.</h1>
+    <p class="hero-sub" data-i18n="hero_sub">Swiss Ephemeris astronomy with Lahiri ayanamsa — Parashari depth, KP timing, Jaimini insight. In English and Nepali.</p>
+    <a class="btn btn-gold" href="#kundali-form" data-i18n="hero_cta">Create my Kundali</a>
+  </section>
+
+  <!-- PANCHANG STRIP -->
+  <section id="panchang-strip" class="panchang-strip glass" aria-label="Today's Panchang">
+    <h2 class="strip-title" data-i18n="panchang_title">Today's Panchang</h2>
+    <div class="strip-grid" id="panchang-grid">
+      <p class="muted" data-i18n="loading">Loading…</p>
+    </div>
+  </section>
+
+  <!-- BIRTH FORM -->
+  <section id="kundali-form" class="section">
+    <h2 class="section-title" data-i18n="form_title">Birth Details</h2>
+    <form id="birth-form" class="glass form-card" novalidate>
+      <div class="field">
+        <label for="f-name" data-i18n="f_name">Name</label>
+        <input id="f-name" name="name" type="text" autocomplete="name" placeholder="e.g. Aarav Sharma">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="f-dob" data-i18n="f_dob">Date of birth</label>
+          <input id="f-dob" name="dob" type="date" required>
+        </div>
+        <div class="field">
+          <label for="f-tob" data-i18n="f_tob">Time of birth</label>
+          <input id="f-tob" name="tob" type="time" required>
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-place" data-i18n="f_place">Birth place</label>
+        <input id="f-place" type="text" list="place-list" autocomplete="off" placeholder="Start typing — Kathmandu, Urlabari, Delhi…">
+        <datalist id="place-list"></datalist>
+        <input type="hidden" id="f-place-id">
+        <p class="hint" data-i18n="f_place_hint">Pick from the list, or leave and enter coordinates below.</p>
+      </div>
+      <details class="manual-coords">
+        <summary data-i18n="manual_coords">Enter coordinates manually</summary>
+        <div class="field-row">
+          <div class="field">
+            <label for="f-lat" data-i18n="f_lat">Latitude</label>
+            <input id="f-lat" type="number" step="0.0001" placeholder="27.7172">
+          </div>
+          <div class="field">
+            <label for="f-lon" data-i18n="f_lon">Longitude</label>
+            <input id="f-lon" type="number" step="0.0001" placeholder="85.3240">
+          </div>
+          <div class="field">
+            <label for="f-tz" data-i18n="f_tz">Timezone (IANA)</label>
+            <input id="f-tz" type="text" placeholder="Asia/Kathmandu">
+          </div>
+        </div>
+      </details>
+      <p class="form-error" id="form-error" role="alert" hidden></p>
+      <button type="submit" class="btn btn-gold btn-wide" id="submit-btn" data-i18n="submit">Generate Kundali</button>
+    </form>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results" class="section" hidden>
+    <h2 class="section-title" id="results-title">Your Kundali</h2>
+    <p class="results-meta" id="results-meta"></p>
+
+    <div class="results-grid">
+      <div class="glass card chart-card">
+        <div class="card-head">
+          <h3 data-i18n="chart_title">Birth Chart</h3>
+          <div class="chart-toggle" role="group" aria-label="Chart type">
+            <button type="button" class="mini-btn is-active" data-varga="D1">D1</button>
+            <button type="button" class="mini-btn" data-varga="D9">D9</button>
+            <button type="button" class="mini-btn" data-varga="D10">D10</button>
+          </div>
+        </div>
+        <div id="chart-svg-wrap"></div>
+        <p class="chart-caption" id="chart-caption"></p>
+      </div>
+
+      <div class="glass card">
+        <h3 data-i18n="planets_title">Planetary Positions</h3>
+        <div class="table-scroll">
+          <table class="data-table" id="planet-table">
+            <thead><tr>
+              <th data-i18n="th_planet">Planet</th><th data-i18n="th_sign">Sign</th>
+              <th data-i18n="th_degree">Degree</th><th data-i18n="th_nakshatra">Nakshatra</th>
+              <th data-i18n="th_house">House</th><th data-i18n="th_state">State</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="karaka-box" id="karaka-box"></div>
+      </div>
+    </div>
+
+    <div class="results-grid">
+      <div class="glass card">
+        <h3 data-i18n="dasha_title">Vimshottari Dasha</h3>
+        <p class="current-dasha" id="current-dasha"></p>
+        <div id="dasha-timeline" class="timeline"></div>
+      </div>
+      <div class="glass card">
+        <h3 data-i18n="kp_title">KP — Cuspal Sub Lords</h3>
+        <div class="table-scroll">
+          <table class="data-table" id="kp-table">
+            <thead><tr>
+              <th data-i18n="th_house">House</th><th data-i18n="th_sign">Sign</th>
+              <th data-i18n="th_signlord">Sign Lord</th><th data-i18n="th_starlord">Star Lord</th>
+              <th data-i18n="th_sublord">Sub Lord</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="results-grid">
+      <div class="glass card">
+        <h3 data-i18n="dosha_title">Doshas</h3>
+        <div id="dosha-cards" class="badge-grid"></div>
+        <h3 class="sub-title" data-i18n="yoga_title">Yogas</h3>
+        <div id="yoga-list" class="yoga-list"></div>
+      </div>
+      <div class="glass card">
+        <h3 data-i18n="av_title">Ashtakavarga (Bindus)</h3>
+        <div class="table-scroll">
+          <table class="data-table av-table" id="av-table">
+            <thead><tr id="av-head"></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="hint" data-i18n="av_hint">Higher bindus (28+) in a house strengthen its results. Sarvashtakavarga total: 337.</p>
+      </div>
+    </div>
+
+    <div class="glass card wide">
+      <h3 data-i18n="pred_title">Predictions — from your chart facts</h3>
+      <div id="prediction-sections" class="pred-grid"></div>
+    </div>
+  </section>
+
+  <!-- PREMIUM REPORT -->
+  <section id="premium" class="section" hidden>
+    <h2 class="section-title" data-i18n="premium_title">Premium Life Report</h2>
+    <p class="results-meta" data-i18n="premium_sub">The full multi-chapter reading — the depth the premium sites sell, generated from your computed chart.</p>
+    <div class="lucky-strip" id="lucky-strip"></div>
+    <div id="premium-chapters" class="chapter-grid"></div>
+    <div class="results-grid">
+      <div class="glass card">
+        <h3 data-i18n="forecast_title">Favourable Periods — 10 Years</h3>
+        <div id="forecast-list" class="forecast-list"></div>
+      </div>
+      <div class="glass card">
+        <h3 data-i18n="varshphal_title">Varshphal — Annual Charts</h3>
+        <div id="varshphal-list" class="forecast-list"></div>
+      </div>
+    </div>
+    <div class="glass card wide">
+      <h3 data-i18n="remedies_title">Remedies</h3>
+      <div id="remedies-body"></div>
+    </div>
+    <div class="pdf-row">
+      <button type="button" class="btn btn-gold" id="pdf-btn" data-i18n="pdf_btn">Download Premium Report (PDF)</button>
+    </div>
+  </section>
+
+  <!-- MATCHING -->
+  <section id="matching" class="section">
+    <h2 class="section-title" data-i18n="match_title">Kundali Matching — Guna Milan</h2>
+    <form id="match-form" class="glass form-card" novalidate>
+      <div class="match-cols">
+        <fieldset>
+          <legend data-i18n="groom">Groom / Partner 1</legend>
+          <div class="field"><label for="m1-dob" data-i18n="f_dob">Date of birth</label>
+            <input id="m1-dob" type="date" required></div>
+          <div class="field"><label for="m1-tob" data-i18n="f_tob">Time of birth</label>
+            <input id="m1-tob" type="time" required></div>
+          <div class="field"><label for="m1-place" data-i18n="f_place">Birth place</label>
+            <input id="m1-place" type="text" list="place-list" autocomplete="off">
+            <input type="hidden" id="m1-place-id"></div>
+        </fieldset>
+        <fieldset>
+          <legend data-i18n="bride">Bride / Partner 2</legend>
+          <div class="field"><label for="m2-dob" data-i18n="f_dob">Date of birth</label>
+            <input id="m2-dob" type="date" required></div>
+          <div class="field"><label for="m2-tob" data-i18n="f_tob">Time of birth</label>
+            <input id="m2-tob" type="time" required></div>
+          <div class="field"><label for="m2-place" data-i18n="f_place">Birth place</label>
+            <input id="m2-place" type="text" list="place-list" autocomplete="off">
+            <input type="hidden" id="m2-place-id"></div>
+        </fieldset>
+      </div>
+      <p class="form-error" id="match-error" role="alert" hidden></p>
+      <button type="submit" class="btn btn-gold btn-wide" data-i18n="match_submit">Match Kundalis</button>
+    </form>
+    <div id="match-result" class="glass card wide" hidden>
+      <div class="score-hero">
+        <div class="score-number"><span id="score-value">0</span><span class="score-max">/36</span></div>
+        <p class="score-verdict" id="score-verdict"></p>
+        <p class="hint" id="match-meta"></p>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table" id="match-table">
+          <thead><tr><th data-i18n="th_koota">Koota</th><th data-i18n="th_score">Score</th><th data-i18n="th_detail">Detail</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="hint" id="manglik-note"></p>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <p data-i18n="footer_text">Vedic Astro — Swiss Ephemeris · Lahiri Ayanamsa · Parashari, KP & Jaimini methods. For guidance and reflection.</p>
+  </footer>
+</main>
+<script src="/static/app.js" defer></script>
+</body>
+</html>

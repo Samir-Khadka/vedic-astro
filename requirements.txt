@@ -1,0 +1,6 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pyswisseph>=2.10
+pydantic>=2.6
+weasyprint>=60
+reportlab>=4.0
