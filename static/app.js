@@ -5,6 +5,10 @@
 const SIGNS_EN = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"];
 const SIGNS_NE = ["मेष","वृष","मिथुन","कर्कट","सिंह","कन्या","तुला","वृश्चिक","धनु","मकर","कुम्भ","मीन"];
 const SIGN_GLYPHS = ["♈","♉","♊","♋","♌","♍","♎","♏","♐","♑","♒","♓"];
+const SIGN_LORDS = ["Mars","Venus","Mercury","Moon","Sun","Mercury","Venus","Mars","Jupiter","Saturn","Saturn","Jupiter"];
+const NE_DIGITS = "०१२३४५६७८९";
+const nepNum = (n) => String(n).replace(/\d/g, (d) => NE_DIGITS[+d]);
+const locNum = (n) => (LANG === "ne" ? nepNum(n) : String(n));
 const PLANET_NE = {Sun:"सूर्य",Moon:"चन्द्र",Mars:"मङ्गल",Mercury:"बुध",Jupiter:"बृहस्पति",Venus:"शुक्र",Saturn:"शनि",Rahu:"राहु",Ketu:"केतु",Lagna:"लग्न"};
 const NAK_EN = ["Ashwini","Bharani","Krittika","Rohini","Mrigashira","Ardra","Punarvasu","Pushya","Ashlesha","Magha","Purva Phalguni","Uttara Phalguni","Hasta","Chitra","Swati","Vishakha","Anuradha","Jyeshtha","Mula","Purva Ashadha","Uttara Ashadha","Shravana","Dhanishta","Shatabhisha","Purva Bhadrapada","Uttara Bhadrapada","Revati"];
 const NAK_NE = ["अश्विनी","भरणी","कृत्तिका","रोहिणी","मृगशिरा","आर्द्रा","पुनर्वसु","पुष्य","अश्लेषा","मघा","पूर्व फाल्गुनी","उत्तर फाल्गुनी","हस्त","चित्रा","स्वाती","विशाखा","अनुराधा","ज्येष्ठा","मूल","पूर्वाषाढा","उत्तराषाढा","श्रवण","धनिष्ठा","शतभिषा","पूर्व भाद्रपदा","उत्तर भाद्रपदा","रेवती"];
@@ -65,7 +69,8 @@ const I18N = {
     err_place:"Please pick a birth place from the list, or enter latitude, longitude and timezone.",
     err_fields:"Please fill in date and time of birth.",
     err_server:"Something went wrong while computing. Please check the details and try again.",
-    chart_caption_d1:"Rashi chart (D1) — North Indian style", chart_caption_d9:"Navamsa chart (D9)", chart_caption_d10:"Dashamsa chart (D10)",
+    chart_caption_d1:"Rashi chart (D1) — Nepali janma-patri style", chart_caption_d9:"Navamsa chart (D9)", chart_caption_d10:"Dashamsa chart (D10)",
+    glance_lagna:"Lagna (Ascendant)", glance_moon:"Moon sign", glance_sun:"Sun sign", glance_lagna_lord:"Lagna lord", pada_word:"Pada",
     sarva:"Sarvashtakavarga",
   },
   ne: {
@@ -116,7 +121,8 @@ const I18N = {
     err_place:"कृपया सूचीबाट जन्म स्थान छान्नुहोस्, वा अक्षांश, देशान्तर र समय क्षेत्र भर्नुहोस्।",
     err_fields:"कृपया जन्म मिति र समय भर्नुहोस्।",
     err_server:"गणना गर्दा समस्या भयो। विवरण जाँचेर फेरि प्रयास गर्नुहोस्।",
-    chart_caption_d1:"राशि कुण्डली (D1) — उत्तर भारतीय शैली", chart_caption_d9:"नवांश कुण्डली (D9)", chart_caption_d10:"दशमांश कुण्डली (D10)",
+    chart_caption_d1:"राशि कुण्डली (D1) — नेपाली जन्मपत्री शैली", chart_caption_d9:"नवांश कुण्डली (D9)", chart_caption_d10:"दशमांश कुण्डली (D10)",
+    glance_lagna:"लग्न", glance_moon:"चन्द्र राशि", glance_sun:"सूर्य राशि", glance_lagna_lord:"लग्न स्वामी", pada_word:"पद",
     sarva:"सर्वाष्टकवर्ग",
   }
 };
@@ -436,7 +442,8 @@ document.getElementById("birth-form").addEventListener("submit", async (ev) => {
   }
 });
 
-/* ---------------- North Indian chart (SVG) ---------------- */
+/* ---------------- Kundali chart (SVG) — North-Indian diamond geometry
+   with Nepali janma-patri labelling (written-out sign/planet names) --- */
 const HOUSE_REGIONS = [
   { poly: "200,0 300,100 100,100", label: [200, 62], sign: [200, 24] },
   { poly: "0,0 200,0 100,100", label: [100, 46], sign: [28, 24] },
@@ -452,7 +459,13 @@ const HOUSE_REGIONS = [
   { poly: "200,0 400,0 300,100", label: [300, 46], sign: [370, 24] },
 ];
 const ABBR = { Sun: "Su", Moon: "Mo", Mars: "Ma", Mercury: "Me", Jupiter: "Ju", Venus: "Ve", Saturn: "Sa", Rahu: "Ra", Ketu: "Ke" };
-const ABBR_NE = { Sun: "सू", Moon: "च", Mars: "मं", Mercury: "बु", Jupiter: "बृ", Venus: "शु", Saturn: "श", Rahu: "रा", Ketu: "के" };
+const ABBR_NE = { Sun: "सू", Moon: "चं", Mars: "मं", Mercury: "बु", Jupiter: "बृ", Venus: "शु", Saturn: "श", Rahu: "रा", Ketu: "के" };
+
+/* Text anchoring for each house's sign label, so written-out sign names
+   stay inside the diamond: left-side houses grow rightwards, right-side
+   houses grow leftwards, top/bottom centre houses are centred. */
+const SIGN_ANCHORS = ["middle", "start", "start", "start", "start", "start",
+                      "middle", "end", "end", "end", "end", "end"];
 
 function drawChart(chartMap) {
   const lagnaSign = chartMap["Lagna"];
@@ -464,9 +477,16 @@ function drawChart(chartMap) {
     const bodies = Object.keys(chartMap).filter((k) => k !== "Lagna" && chartMap[k] === sign);
     const isLagna = house === 1;
     svg += `<polygon class="house-poly${isLagna ? " lagna-house" : ""}" points="${region.poly}"/>`;
-    svg += `<text class="sign-num" x="${region.sign[0]}" y="${region.sign[1]}">${sign + 1}</text>`;
+    /* Nepali janma-patri style: the sign's NAME written out (localized),
+       with its number beneath — Nepali digits in Nepali mode — instead of
+       a bare cryptic number. */
+    const anchor = SIGN_ANCHORS[idx];
+    svg += `<text class="sign-name" style="text-anchor:${anchor}" x="${region.sign[0]}" y="${region.sign[1]}">${signName(sign)}</text>`;
+    svg += `<text class="sign-num" style="text-anchor:${anchor}" x="${region.sign[0]}" y="${region.sign[1] + 12}">${locNum(sign + 1)}</text>`;
+    if (isLagna) {
+      svg += `<text class="lagna-txt" x="${region.label[0]}" y="${region.label[1] - 16}">${LANG === "ne" ? "लग्न" : "Lagna"}</text>`;
+    }
     const abbrs = bodies.map((b) => (LANG === "ne" ? ABBR_NE[b] : ABBR[b]) + (isRetro(b) ? "ᴿ" : ""));
-    if (isLagna) abbrs.unshift(LANG === "ne" ? "ल" : "Asc");
     const lines = [];
     for (let i = 0; i < abbrs.length; i += 3) lines.push(abbrs.slice(i, i + 3).join(" "));
     lines.forEach((line, li) => {
@@ -510,6 +530,20 @@ function renderBundle() {
   document.getElementById("results-meta").textContent =
     `${t("born_at")} ${b.birth.date} · ${b.birth.time} · ${b.birth.place.name} — ` +
     `${t("lagna_word")}: ${signName(b.lagna.sign)} · ${t("moon_word")}: ${signName(moon.sign)} / ${LANG === "ne" ? moon.nakshatra_ne : moon.nakshatra_en}`;
+
+  /* Chart at a glance — the four facts a layperson checks first, in plain
+     language, so the chart can be verified without reading the diamond. */
+  const sun = b.planets.find((p) => p.planet === "Sun");
+  const lordPlanet = SIGN_LORDS[b.lagna.sign];
+  const lordRow = b.planets.find((p) => p.planet === lordPlanet);
+  const glanceItems = [
+    [t("glance_lagna"), signName(b.lagna.sign)],
+    [t("glance_moon"), `${signName(moon.sign)} · ${LANG === "ne" ? moon.nakshatra_ne : moon.nakshatra_en} · ${t("pada_word")} ${locNum(moon.pada)}`],
+    [t("glance_sun"), signName(sun.sign)],
+    [t("glance_lagna_lord"), lordRow ? `${planetName(lordPlanet)} · ${t("house_word")} ${locNum(lordRow.house)}` : "—"],
+  ];
+  document.getElementById("glance-strip").innerHTML = glanceItems.map(([k, v]) =>
+    `<div class="strip-item"><span class="k">${k}</span><span class="v">${v}</span></div>`).join("");
 
   drawChart(b.charts[STATE.varga]);
 

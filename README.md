@@ -78,8 +78,9 @@ Swiss Ephemeris calls.
 
 ## Notes & limitations
 
-- Mean node is used for Rahu/Ketu; whole-sign houses for Parashari and
-  Placidus cusps for KP, per mainstream practice.
+- True node is used for Rahu/Ketu (the convention Hamro Patro and
+  Jagannatha Hora print in Nepali janma-patris); whole-sign houses for
+  Parashari and Placidus cusps for KP, per mainstream practice.
 - Varshphal is a documented simplification of the Tajika annual system
   (solar-return Lagna + Muntha + Lagna-lord as year lord).
 - Matching koota `detail` strings are English; all verdicts, names and UI

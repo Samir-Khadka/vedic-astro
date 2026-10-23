@@ -35,6 +35,25 @@ def test_sample_chart_cross_checked_with_raw_swe():
     assert abs(by_name["Sun"]["longitude"] - sun) < 0.01
 
 
+def test_true_node_rahu_ketu():
+    """Rahu/Ketu use the TRUE node (Hamro Patro / Jagannatha Hora print
+    convention for Nepali janma-patris), cross-checked against a raw
+    swisseph TRUE_NODE call, and the two nodes stay exactly 180 deg apart."""
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+    jd = swe.julday(1998, 5, 14, 0.75)  # sample chart instant (UTC)
+    flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | swe.FLG_SPEED
+    rahu_raw = swe.calc_ut(jd, swe.TRUE_NODE, flags)[0][0] % 360
+    mean_raw = swe.calc_ut(jd, swe.MEAN_NODE, flags)[0][0] % 360
+    # Sanity: the two node flavours genuinely differ at this instant,
+    # so matching the true one is a meaningful assertion.
+    assert abs(rahu_raw - mean_raw) > 0.1
+
+    bundle = engine.compute_kundali(SAMPLE)
+    by_name = {p["planet"]: p for p in bundle["planets"]}
+    assert abs(by_name["Rahu"]["longitude"] - rahu_raw) < 0.01
+    assert abs(((by_name["Ketu"]["longitude"] - by_name["Rahu"]["longitude"]) % 360.0) - 180.0) < 1e-9
+
+
 def test_nakshatra_and_pada_boundaries():
     assert ephemeris.nakshatra_of(0.0) == (0, 1)          # Ashwini pada 1
     assert ephemeris.nakshatra_of(3.34) == (0, 2)         # second pada

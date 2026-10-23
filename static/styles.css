@@ -115,6 +115,14 @@ main { max-width: 1120px; margin: 0 auto; padding: 0 20px 64px; }
   display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;
 }
 .results-meta { color: var(--ink-dim); margin-top: -8px; }
+
+/* Chart at a glance strip */
+.glance-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
+.glance-strip .strip-item {
+  background: var(--glass); border: 1px solid var(--glass-border);
+  border-radius: 14px; padding: 12px 14px;
+}
+.glance-strip .strip-item .v { color: var(--gold-strong); }
 .muted { color: var(--ink-dim); }
 .hint { color: var(--ink-dim); font-size: 13px; }
 
@@ -166,7 +174,8 @@ legend { padding: 0 8px; color: var(--gold-strong); font-weight: 600; }
 .kundali-svg { width: min(420px, 100%); height: auto; }
 .kundali-svg .house-poly { fill: rgba(123, 111, 208, 0.07); stroke: rgba(229, 193, 92, 0.55); stroke-width: 1; }
 .kundali-svg .house-poly.lagna-house { fill: rgba(229, 193, 92, 0.13); }
-.kundali-svg .sign-num { fill: #a89fd0; font-size: 10px; text-anchor: middle; }
+.kundali-svg .sign-name { fill: #e3d194; font-size: 11.5px; font-weight: 600; }
+.kundali-svg .sign-num { fill: #a89fd0; font-size: 9px; text-anchor: middle; }
 .kundali-svg .planet-txt { fill: #f5e9c8; font-size: 12.5px; font-weight: 600; text-anchor: middle; }
 .kundali-svg .lagna-txt { fill: var(--gold); font-size: 11px; font-weight: 700; text-anchor: middle; }
 .chart-caption { text-align: center; color: var(--ink-dim); font-size: 14px; margin: 10px 0 0; }
@@ -264,6 +273,7 @@ legend { padding: 0 8px; color: var(--gold-strong); font-weight: 600; }
 @media (max-width: 880px) {
   .results-grid, .pred-grid, .chapter-grid, .match-cols { grid-template-columns: 1fr; }
   .strip-grid { grid-template-columns: repeat(3, 1fr); }
+  .glance-strip { grid-template-columns: repeat(2, 1fr); }
   .lucky-strip, .gem-grid { grid-template-columns: repeat(2, 1fr); }
   .field-row { grid-template-columns: 1fr; }
   .main-nav { display: none; }

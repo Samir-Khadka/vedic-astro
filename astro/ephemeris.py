@@ -64,8 +64,9 @@ def planet_longitudes(jd: float) -> dict[str, dict]:
             "retrograde": speed < 0,
             "speed": speed,
         }
-    # Rahu = mean node; Ketu is exactly opposite.
-    res, _ret = swe.calc_ut(jd, swe.MEAN_NODE, _FLAGS)
+    # Rahu = TRUE node (the convention Hamro Patro and Jagannatha Hora
+    # print, i.e. what Nepali janma-patris use); Ketu is exactly opposite.
+    res, _ret = swe.calc_ut(jd, swe.TRUE_NODE, _FLAGS)
     rahu_lon = res[0] % 360.0
     for name, lon in (("Rahu", rahu_lon), ("Ketu", (rahu_lon + 180.0) % 360.0)):
         nak, pada = nakshatra_of(lon)
