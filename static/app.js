@@ -27,6 +27,10 @@ const I18N = {
     f_place:"Birth place", f_place_hint:"Search any place in the world, or enter coordinates below.",
     place_global_unavailable:"Worldwide search is unavailable right now — try entering coordinates manually.",
     manual_coords:"Enter coordinates manually", f_lat:"Latitude", f_lon:"Longitude", f_tz:"Timezone (IANA)",
+    dir_n:"N · North", dir_s:"S · South", dir_e:"E · East", dir_w:"W · West",
+    err_coord_invalid:"That coordinate doesn't look right — try 27.7172 N or 27°43′2″ N.",
+    err_coord_lat_range:"Latitude must be between 0° and 90°.",
+    err_coord_lon_range:"Longitude must be between 0° and 180°.",
     submit:"Generate Kundali", generating:"Computing…",
     chart_title:"Birth Chart", planets_title:"Planetary Positions",
     th_planet:"Planet", th_sign:"Sign", th_degree:"Degree", th_nakshatra:"Nakshatra", th_house:"House", th_state:"State",
@@ -74,6 +78,10 @@ const I18N = {
     f_place:"जन्म स्थान", f_place_hint:"विश्वको कुनै पनि ठाउँ खोज्नुहोस्, वा तल निर्देशाङ्क भर्नुहोस्।",
     place_global_unavailable:"विश्वव्यापी खोज अहिले उपलब्ध छैन — निर्देशाङ्क आफैँ भरेर प्रयास गर्नुहोस्।",
     manual_coords:"निर्देशाङ्क आफैँ भर्नुहोस्", f_lat:"अक्षांश", f_lon:"देशान्तर", f_tz:"समय क्षेत्र (IANA)",
+    dir_n:"N · उत्तर", dir_s:"S · दक्षिण", dir_e:"E · पूर्व", dir_w:"W · पश्चिम",
+    err_coord_invalid:"यो निर्देशाङ्क मिलेन — जस्तै 27.7172 N वा 27°43′2″ N प्रयास गर्नुहोस्।",
+    err_coord_lat_range:"अक्षांश ०° देखि ९०° भित्र हुनुपर्छ।",
+    err_coord_lon_range:"देशान्तर ०° देखि १८०° भित्र हुनुपर्छ।",
     submit:"कुण्डली बनाउनुहोस्", generating:"गणना हुँदैछ…",
     chart_title:"जन्म कुण्डली", planets_title:"ग्रहहरूको स्थिति",
     th_planet:"ग्रह", th_sign:"राशि", th_degree:"अंश", th_nakshatra:"नक्षत्र", th_house:"भाव", th_state:"अवस्था",
@@ -250,6 +258,8 @@ function selectPlace(inputEl, p) {
       if (inputEl.id === "f-place") {
         document.getElementById("f-lat").value = p.lat;
         document.getElementById("f-lon").value = p.lon;
+        document.getElementById("f-lat-dir").value = p.lat < 0 ? "S" : "N";
+        document.getElementById("f-lon-dir").value = p.lon < 0 ? "W" : "E";
         document.getElementById("manual-coords").open = true;
       }
     }
@@ -323,21 +333,59 @@ function resolvePlace(placeInputId) {
   return null;
 }
 
-/* Manual coordinates: auto-fill the IANA timezone from the backend. */
+/* Manual coordinates: free-form text + N/S/E/W selects, resolved by the
+   pure parser in coords.js. The parser always yields ONE signed value
+   and the hemisphere it implies; we mirror that hemisphere back into the
+   select, so the field and the select can never contradict each other. */
+const coordEls = {
+  lat: { input: document.getElementById("f-lat"), dir: document.getElementById("f-lat-dir"), kind: "lat" },
+  lon: { input: document.getElementById("f-lon"), dir: document.getElementById("f-lon-dir"), kind: "lon" },
+};
+const coordErrEl = document.getElementById("coord-error");
+
+function readCoord(which) {
+  const c = coordEls[which];
+  const r = parseCoordinate(c.input.value, c.kind, c.dir.value);
+  if (r.ok) c.dir.value = r.direction; // keep the select in sync with the text
+  return r;
+}
+
+function coordErrorText(r, which) {
+  if (r.error === "range") {
+    return t(which === "lat" ? "err_coord_lat_range" : "err_coord_lon_range");
+  }
+  return t("err_coord_invalid");
+}
+
+function showCoordError(r, which) {
+  coordErrEl.textContent = coordErrorText(r, which);
+  coordErrEl.hidden = false;
+}
+function clearCoordError() { coordErrEl.hidden = true; coordErrEl.textContent = ""; }
+
+/* Auto-fill the IANA timezone from the backend once both fields parse. */
 let tzTimer = null;
-["f-lat", "f-lon"].forEach((id) => {
-  document.getElementById(id).addEventListener("input", () => {
-    clearTimeout(tzTimer);
-    tzTimer = setTimeout(async () => {
-      const lat = parseFloat(document.getElementById("f-lat").value);
-      const lon = parseFloat(document.getElementById("f-lon").value);
-      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
-      try {
-        const res = await fetch(`/api/tz?lat=${lat}&lon=${lon}`);
-        if (res.ok) document.getElementById("f-tz").value = (await res.json()).tz;
-      } catch (e) { /* leave the field for manual entry */ }
-    }, 400);
+function scheduleTzLookup() {
+  clearTimeout(tzTimer);
+  tzTimer = setTimeout(async () => {
+    const latR = readCoord("lat"), lonR = readCoord("lon");
+    if (!latR.ok || !lonR.ok) return;
+    clearCoordError();
+    try {
+      const res = await fetch(`/api/tz?lat=${latR.value}&lon=${lonR.value}`);
+      if (res.ok) document.getElementById("f-tz").value = (await res.json()).tz;
+    } catch (e) { /* leave the field for manual entry */ }
+  }, 400);
+}
+["lat", "lon"].forEach((which) => {
+  const c = coordEls[which];
+  c.input.addEventListener("input", () => { clearCoordError(); scheduleTzLookup(); });
+  c.input.addEventListener("change", () => {
+    const r = readCoord(which);
+    if (!r.ok && r.error !== "empty") showCoordError(r, which);
+    else if (r.ok) clearCoordError();
   });
+  c.dir.addEventListener("change", () => { clearCoordError(); scheduleTzLookup(); });
 });
 
 /* ---------------- Birth form ---------------- */
@@ -354,11 +402,15 @@ document.getElementById("birth-form").addEventListener("submit", async (ev) => {
   if (place) {
     payload = { ...payload, ...place };
   } else {
-    const lat = document.getElementById("f-lat").value;
-    const lon = document.getElementById("f-lon").value;
     const tz = document.getElementById("f-tz").value.trim();
-    if (lat && lon && tz) payload = { ...payload, lat: parseFloat(lat), lon: parseFloat(lon), tz };
-    else { errEl.textContent = t("err_place"); errEl.hidden = false; return; }
+    const latR = readCoord("lat"), lonR = readCoord("lon");
+    if (latR.ok && lonR.ok && tz) {
+      payload = { ...payload, lat: latR.value, lon: lonR.value, tz };
+    } else if (!latR.ok && latR.error !== "empty") {
+      showCoordError(latR, "lat"); return;
+    } else if (!lonR.ok && lonR.error !== "empty") {
+      showCoordError(lonR, "lon"); return;
+    } else { errEl.textContent = t("err_place"); errEl.hidden = false; return; }
   }
   const btn = document.getElementById("submit-btn");
   btn.disabled = true; btn.textContent = t("generating");

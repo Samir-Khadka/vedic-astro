@@ -86,17 +86,30 @@
         <div class="field-row">
           <div class="field">
             <label for="f-lat" data-i18n="f_lat">Latitude</label>
-            <input id="f-lat" type="number" step="0.0001" placeholder="27.7172">
+            <div class="coord-row">
+              <input id="f-lat" type="text" inputmode="decimal" autocomplete="off" placeholder="27.7172 or 27°43′ N">
+              <select id="f-lat-dir" aria-label="Latitude direction">
+                <option value="N" data-i18n="dir_n">N · North</option>
+                <option value="S" data-i18n="dir_s">S · South</option>
+              </select>
+            </div>
           </div>
           <div class="field">
             <label for="f-lon" data-i18n="f_lon">Longitude</label>
-            <input id="f-lon" type="number" step="0.0001" placeholder="85.3240">
+            <div class="coord-row">
+              <input id="f-lon" type="text" inputmode="decimal" autocomplete="off" placeholder="85.3240 or 85°19′ E">
+              <select id="f-lon-dir" aria-label="Longitude direction">
+                <option value="E" data-i18n="dir_e">E · East</option>
+                <option value="W" data-i18n="dir_w">W · West</option>
+              </select>
+            </div>
           </div>
           <div class="field">
             <label for="f-tz" data-i18n="f_tz">Timezone (IANA)</label>
             <input id="f-tz" type="text" placeholder="Asia/Kathmandu">
           </div>
         </div>
+        <p class="coord-error" id="coord-error" role="alert" hidden></p>
       </details>
       <p class="form-error" id="form-error" role="alert" hidden></p>
       <button type="submit" class="btn btn-gold btn-wide" id="submit-btn" data-i18n="submit">Generate Kundali</button>
@@ -262,6 +275,7 @@
     <p data-i18n="footer_text">Vedic Astro — Swiss Ephemeris · Lahiri Ayanamsa · Parashari, KP & Jaimini methods. For guidance and reflection.</p>
   </footer>
 </main>
+<script src="/static/coords.js" defer></script>
 <script src="/static/app.js" defer></script>
 </body>
 </html>
