@@ -96,6 +96,18 @@ const I18N = {
     yogini_word:"Yogini Dasha", tribhagi_word:"Tribhagi Dasha",
     strongest_word:"Strongest planet", weakest_word:"Weakest planet",
     casting:"Casting…",
+    deep_special_title:"Special Lagnas — Arudha & Upapada",
+    deep_planets_title:"The Planets — Chapter by Chapter",
+    deep_houses_title:"The Twelve Houses",
+    deep_div_title:"Divisional Charts — the Vargas Speak",
+    chara_title:"Jaimini Chara Dasha (K. N. Rao)",
+    timing_title:"Timing Synthesis — Two Clocks, One Chart",
+    transit_phala_title:"Transit Phala — Gochar from Lagna & Moon",
+    av_reading_title:"Ashtakavarga — What the Bindus Say",
+    arudha_word:"Arudha Lagna", upapada_word:"Upapada Lagna", chandra_lagna_word:"Chandra Lagna",
+    chara_current:"Current Chara period", direction_word:"Direction",
+    weak_support_title:"Weak-Planet Support (by Shadbala)",
+    house_word_cap:"House",
   },
   ne: {
     nav_kundali:"कुण्डली", nav_premium:"प्रिमियम रिपोर्ट", nav_matching:"मेल मिलान", nav_panchang:"पञ्चाङ्ग",
@@ -172,6 +184,18 @@ const I18N = {
     yogini_word:"योगिनी दशा", tribhagi_word:"त्रिभागी दशा",
     strongest_word:"सबैभन्दा बलियो ग्रह", weakest_word:"सबैभन्दा कमजोर ग्रह",
     casting:"बनाउँदै…",
+    deep_special_title:"विशेष लग्नहरू — आरूढ र उपपद",
+    deep_planets_title:"ग्रहहरू — अध्यायगत विश्लेषण",
+    deep_houses_title:"बाह्र भावहरू",
+    deep_div_title:"वर्ग कुण्डलीहरू — वर्गहरूको विश्लेषण",
+    chara_title:"जैमिनी चर दशा (के. एन. राव)",
+    timing_title:"समय संश्लेषण — दुई घडी, एउटै कुण्डली",
+    transit_phala_title:"गोचर फल — लग्न र चन्द्रमाबाट",
+    av_reading_title:"अष्टकवर्ग — बिन्दुहरूले के भन्छन्",
+    arudha_word:"आरूढ लग्न", upapada_word:"उपपद लग्न", chandra_lagna_word:"चन्द्र लग्न",
+    chara_current:"हालको चर अवधि", direction_word:"दिशा",
+    weak_support_title:"कमजोर ग्रहको साथ (षड्बलअनुसार)",
+    house_word_cap:"भाव",
   }
 };
 
@@ -701,6 +725,7 @@ function renderBundle() {
   renderNumerology(b);
   renderLalKitab(b);
   renderPremium(b);
+  renderDeep(b);
 }
 
 function renderDasha(b) {
@@ -901,6 +926,10 @@ function renderPremium(b) {
   let html = `<h4>${t("gemstones")}</h4><div class="gem-grid">` + r.gemstones.map((g) => `
     <div class="gem-item"><b>${bi(g.role)}</b>
     ${bi(g.stone)} · ${bi(g.metal)} · ${bi(g.finger)} · ${bi(g.day)} · ${g.weight}</div>`).join("") + "</div>";
+  if (r.weak_planet_support && r.weak_planet_support.length) {
+    html += `<h4>${t("weak_support_title")}</h4>` + r.weak_planet_support.map((w) => `
+      <p><b>${planetName(w.planet)}</b> — ${bi(w.rudraksha)} · ${w.mantra_ne}<br>${bi(w.note)}</p>`).join("");
+  }
   html += `<h4>${t("rudraksha")}</h4><p><b>${bi(r.rudraksha.recommendation)}</b> (${planetName(r.rudraksha.for_planet)}) — ${bi(r.rudraksha.reason)}</p>`;
   html += `<h4>${t("mantra")} — ${planetName(r.mantra.for_planet)}</h4><p>${r.mantra.beej_ne}<br><i>${r.mantra.transliteration}</i><br>${bi(r.mantra.instruction)}</p>`;
   if (r.dosha_remedies.length) {
@@ -923,6 +952,76 @@ document.getElementById("pdf-btn").addEventListener("click", () => {
   }
   window.open("/api/report.pdf?" + q.toString(), "_blank");
 });
+
+/* ---------------- Deep report (interpretation engine v2) ---------------- */
+function renderDeep(b) {
+  const deep = b.deep_report || {};
+  const sl = b.special_lagnas || {};
+  const signOf = (s) => signName(s);
+
+  if (sl.arudha_lagna) {
+    document.getElementById("special-lagna-line").textContent =
+      `${t("arudha_word")}: ${signOf(sl.arudha_lagna.sign)} (${t("house_word_cap")} ${locNum(sl.arudha_lagna.house_from_lagna)}) · ` +
+      `${t("upapada_word")}: ${signOf(sl.upapada.sign)} (${t("house_word_cap")} ${locNum(sl.upapada.house_from_lagna)}) · ` +
+      `${t("chandra_lagna_word")}: ${signOf(sl.chandra_lagna.sign)}`;
+  }
+  const sr = deep.special_readings || {};
+  document.getElementById("deep-special").innerHTML = ["arudha", "upapada"]
+    .filter((k) => sr[k] && sr[k].length)
+    .map((k) => `<div class="pred-block"><h4>${k === "arudha" ? t("arudha_word") : t("upapada_word")}</h4>` +
+      sr[k].map((f) => `<p>${bi(f)}</p>`).join("") + "</div>").join("");
+
+  const pc = deep.planet_chapters || {};
+  document.getElementById("deep-planets").innerHTML =
+    ["Sun","Moon","Mars","Mercury","Jupiter","Venus","Saturn","Rahu","Ketu"]
+      .filter((p) => pc[p] && pc[p].length)
+      .map((p) => `<div class="chapter-block"><h4>${planetName(p)}</h4>` +
+        pc[p].map((f) => `<p>${bi(f)}</p>`).join("") + "</div>").join("");
+
+  document.getElementById("deep-houses").innerHTML = (deep.house_chapters || [])
+    .map((row) => `<div class="chapter-block"><h4>${t("house_word_cap")} ${locNum(row.house)} · ${signOf(row.sign)} · ${planetName(row.lord)}</h4>` +
+      row.facts.map((f) => `<p>${bi(f)}</p>`).join("") + "</div>").join("");
+
+  const dv = deep.divisional_chapters || {};
+  document.getElementById("deep-divisional").innerHTML = Object.values(dv)
+    .map((ch) => `<div class="chapter-block"><h4>${bi(ch.title)}</h4>` +
+      ch.facts.map((f) => `<p>${bi(f)}</p>`).join("") + "</div>").join("");
+
+  const cd = b.chara_dasha || {};
+  const curEl = document.getElementById("chara-current");
+  if (cd.current) {
+    curEl.textContent = `${t("chara_current")}: ${signOf(cd.current.sign)} (${planetName(cd.current.lord)}) · ` +
+      `${cd.current.start} → ${cd.current.end} · ${t("direction_word")}: ${cd.direction}`;
+  } else {
+    curEl.textContent = "";
+  }
+  document.getElementById("chara-timeline").innerHTML = (cd.periods || []).slice(0, 12).map((p) => {
+    const isCur = cd.current && p.start === cd.current.start;
+    return `<div class="tl-row${isCur ? " is-current" : ""}">
+      <div class="tl-head"><span class="lord">${signOf(p.sign)}</span>
+      <span class="tl-dates">${p.start} → ${p.end} · ${locNum(p.years)}y · ${planetName(p.lord)}</span></div>
+      <div class="tl-bar"><i style="width:${Math.min(100, (p.years / 12) * 100)}%"></i></div></div>`;
+  }).join("");
+
+  document.getElementById("deep-timing").innerHTML = (deep.timing_synthesis || []).length
+    ? `<div class="pred-block">${deep.timing_synthesis.map((f) => `<p>${bi(f)}</p>`).join("")}</div>`
+    : `<p class="muted">—</p>`;
+
+  const tp = deep.transit_phala || {};
+  document.getElementById("deep-transits").innerHTML =
+    ["Saturn","Jupiter","Rahu","Ketu","Mars","Sun"]
+      .filter((p) => tp.planets && tp.planets[p])
+      .map((p) => `<div class="pred-block"><h4>${planetName(p)}</h4>` +
+        tp.planets[p].map((f) => `<p>${bi(f)}</p>`).join("") + "</div>").join("");
+  document.getElementById("sade-sati-detail").textContent =
+    tp.sade_sati_detail ? bi(tp.sade_sati_detail) : "";
+  document.getElementById("double-transit-note").textContent =
+    tp.double_transit && tp.double_transit.note ? bi(tp.double_transit.note) : "";
+
+  document.getElementById("deep-av").innerHTML = (deep.ashtakavarga_reading || []).length
+    ? `<div class="pred-block">${deep.ashtakavarga_reading.map((f) => `<p>${bi(f)}</p>`).join("")}</div>`
+    : `<p class="muted">—</p>`;
+}
 
 /* ---------------- Matching ---------------- */
 document.getElementById("match-form").addEventListener("submit", async (ev) => {

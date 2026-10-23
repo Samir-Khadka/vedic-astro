@@ -175,8 +175,53 @@ def remedies(ctx: dict) -> dict:
             ],
         })
 
+    # Weak-planet support keyed to Shadbala: the two lowest-ranked
+    # planets get mantra + rudraksha support. Classical practice
+    # strengthens a weak planet by mantra and charity rather than by
+    # wearing its gemstone — and never recommends the gemstone of a
+    # dusthana/maraka lord, which would strengthen the wrong portfolio.
+    weak_support = []
+    sb = ctx.get("shadbala") or {}
+    if sb.get("planets"):
+        ranked = sorted(sb["planets"].items(), key=lambda kv: kv[1]["rank"], reverse=True)
+        for planet, row in ranked[:2]:
+            ruled = [hh for hh, lp in lords.items() if lp == planet]
+            risky = any(hh in (6, 8, 12) for hh in ruled)
+            mukhi_w, r_en, r_ne = RUDRAKSHA[planet]
+            mantra_w_ne, mantra_w_tr = BEEJ_MANTRA[planet]
+            if risky:
+                note = _bi(
+                    f"{planet} is among the two weakest planets by Shadbala ({row['rupas']:.2f} rupas, "
+                    f"rank {row['rank']} of 7) and it rules the difficult house(s) "
+                    f"{', '.join(str(x) for x in ruled if x in (6, 8, 12))} — so its gemstone is NOT "
+                    f"advised; strengthen it by mantra and charity instead, which raise the planet "
+                    f"without empowering the difficult houses.",
+                    f"{PLANET_NE[planet]} षड्बलअनुसार दुई कमजोर ग्रहमध्ये एक हो ({row['rupas']:.2f} रूपा, "
+                    f"७ मध्ये क्रम {row['rank']}) र यसले कठिन भाव "
+                    f"{', '.join(str(x) for x in ruled if x in (6, 8, 12))} को शासन गर्छ — त्यसैले यसको रत्न "
+                    f"सल्लाह दिइँदैन; यसलाई मन्त्र र दानले बलियो बनाउनुहोस्, जसले कठिन भावहरूलाई शक्ति "
+                    f"नदिई ग्रहलाई उठाउँछ।",
+                )
+            else:
+                note = _bi(
+                    f"{planet} is among the two weakest planets by Shadbala ({row['rupas']:.2f} rupas, "
+                    f"rank {row['rank']} of 7). Mantra and the matching Rudraksha are the safe way to "
+                    f"support it; a gemstone, if worn at all, belongs to a trial period under guidance.",
+                    f"{PLANET_NE[planet]} षड्बलअनुसार दुई कमजोर ग्रहमध्ये एक हो ({row['rupas']:.2f} रूपा, "
+                    f"७ मध्ये क्रम {row['rank']})। मन्त्र र मिल्दो रुद्राक्ष यसलाई साथ दिने सुरक्षित उपाय हुन्; "
+                    f"रत्न लगाउने भए मार्गदर्शनमा परीक्षण अवधिका लागि मात्र।",
+                )
+            weak_support.append({
+                "planet": planet,
+                "rupas": row["rupas"], "rank": row["rank"],
+                "rudraksha": _bi(r_en, r_ne),
+                "mantra_ne": mantra_w_ne, "mantra_transliteration": mantra_w_tr,
+                "note": note,
+            })
+
     return {
         "gemstones": gems,
+        "weak_planet_support": weak_support,
         "rudraksha": {
             "for_planet": weak,
             "recommendation": _bi(r_en, r_ne),
@@ -313,10 +358,31 @@ def _period_at(tree: dict, at: datetime):
     return None, None
 
 
+_MONTHS_EN = ["January", "February", "March", "April", "May", "June",
+              "July", "August", "September", "October", "November", "December"]
+_GOOD_FROM_MOON = {"Saturn": (3, 6, 10, 11), "Jupiter": (2, 5, 7, 9, 11), "Rahu": (3, 6, 10, 11)}
+
+
+def _chara_at(chara: dict | None, at: datetime) -> dict | None:
+    if not chara:
+        return None
+    for p in chara["periods"]:
+        if p["start"] <= at < p["end"]:
+            return p
+    return None
+
+
 def forecast(ctx: dict, years: int = 10) -> list[dict]:
+    """Year-by-year outlook v2: each year is read through the active
+    Vimshottari MD/AD lords' actual roles in this chart, the Jaimini
+    Chara sign period running alongside, and the year's real slow-planet
+    ingresses counted from this chart's Moon sign."""
     planets, lagna_sign = ctx["planets"], ctx["lagna_sign"]
     lords = house_lords(lagna_sign)
+    moon_sign = planets["Moon"]["sign"]
     now = ctx["now"]
+    chara = ctx.get("chara")
+    chains = ctx.get("ingress_chains") or {}
     out = []
     for i in range(years):
         year = now.year + i
@@ -331,16 +397,57 @@ def forecast(ctx: dict, years: int = 10) -> list[dict]:
         nature_ne = "सहयोगी" if nature == "supportive" else ("परीक्षणशील" if nature == "testing" else "मिश्रित")
         ad_txt_en = f" with {ad['lord']} Antardasha in focus" if ad else ""
         ad_txt_ne = f", {PLANET_NE[ad['lord']]} अन्तर्दशाको प्रभावसहित" if ad else ""
+        summary_en = (
+            f"{year} runs under {lord} Mahadasha{ad_txt_en}. {lord} sits in your {HOUSE_NAMES_EN[h-1]} house "
+            f"({HOUSE_THEMES_EN[h]}) and rules house(s) {', '.join(str(x) for x in ruled)} — a {nature} year for those themes."
+        )
+        summary_ne = (
+            f"{year} {PLANET_NE[lord]} महादशामा पर्छ{ad_txt_ne}। {PLANET_NE[lord]} तपाईंको {HOUSE_NAMES_NE[h-1]} भावमा "
+            f"({HOUSE_THEMES_NE[h]}) छ र भाव {', '.join(str(x) for x in ruled)} को स्वामी हो — ती विषयका लागि {nature_ne} वर्ष।"
+        )
+        # Chara sign period overlapping the year (Jaimini cross-check).
+        cp = _chara_at(chara, mid)
+        chara_sign_en = None
+        if cp is not None:
+            chara_sign_en = cp["sign_en"]
+            ch_house = house_of(cp["sign"], lagna_sign)
+            summary_en += (
+                f" The Jaimini Chara period is {cp['sign_en']} — your {HOUSE_NAMES_EN[ch_house-1]} house "
+                f"({HOUSE_THEMES_EN[ch_house]}) — so the sign clock and the planetary clock frame the year together."
+            )
+            summary_ne += (
+                f" जैमिनी चर अवधि {cp['sign_ne']} हो — तपाईंको {HOUSE_NAMES_NE[ch_house-1]} भाव "
+                f"({HOUSE_THEMES_NE[ch_house]}) — त्यसैले राशि-घडी र ग्रह-घडीले सँगै वर्षलाई आकार दिन्छन्।"
+            )
+        # The year's real ingresses of the slow planets, from this Moon.
+        events: list[dict] = []
+        for planet, chain in chains.items():
+            for ev in chain:
+                if int(ev["date"][:4]) != year:
+                    continue
+                rel = (ev["to_sign"] - moon_sign) % 12 + 1
+                good = rel in _GOOD_FROM_MOON[planet]
+                tone_en = "a classically favourable station from your Moon" if good else \
+                    "a station that asks for patience from your Moon"
+                tone_ne = "तपाईंको चन्द्रमाबाट शास्त्रीय अनुकूल स्थान" if good else \
+                    "तपाईंको चन्द्रमाबाट धैर्य माग्ने स्थान"
+                month_en = _MONTHS_EN[int(ev["date"][5:7]) - 1]
+                events.append(_bi(
+                    f"In {month_en} {year}, {planet} enters {SIGNS_EN[ev['to_sign']]} — the "
+                    f"{HOUSE_NAMES_EN[rel-1]} sign from your Moon sign, {tone_en}.",
+                    f"{year} को {month_en} मा {PLANET_NE[planet]} {SIGNS_NE[ev['to_sign']]} राशिमा प्रवेश गर्छ — "
+                    f"तपाईंको चन्द्र राशिबाट {HOUSE_NAMES_NE[rel-1]} स्थान, {tone_ne}।",
+                ))
+        if events:
+            summary_en += " " + " ".join(e["en"] for e in events)
+            summary_ne += " " + " ".join(e["ne"] for e in events)
         out.append({
             "year": year,
             "mahadasha": lord,
             "antardasha": ad["lord"] if ad else None,
-            "summary": _bi(
-                f"{year} runs under {lord} Mahadasha{ad_txt_en}. {lord} sits in your {HOUSE_NAMES_EN[h-1]} house "
-                f"({HOUSE_THEMES_EN[h]}) and rules house(s) {', '.join(str(x) for x in ruled)} — a {nature} year for those themes.",
-                f"{year} {PLANET_NE[lord]} महादशामा पर्छ{ad_txt_ne}। {PLANET_NE[lord]} तपाईंको {HOUSE_NAMES_NE[h-1]} भावमा "
-                f"({HOUSE_THEMES_NE[h]}) छ र भाव {', '.join(str(x) for x in ruled)} को स्वामी हो — ती विषयका लागि {nature_ne} वर्ष।",
-            ),
+            "chara_sign": chara_sign_en,
+            "transit_events": events,
+            "summary": _bi(summary_en, summary_ne),
         })
     return out
 

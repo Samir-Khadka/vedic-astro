@@ -7,10 +7,13 @@ from zoneinfo import ZoneInfo
 from . import (
     ashtakavarga as av_module,
     bala as bala_module,
+    chara as chara_module,
     charts as charts_module,
     dasha as dasha_module,
     doshas as doshas_module,
     ephemeris,
+    interpret as interpret_module,
+    jaimini as jaimini_module,
     kp as kp_module,
     lalkitab as lk_module,
     naming as naming_module,
@@ -105,7 +108,7 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
     # Transits right now (signs of the slow movers) for gochar / Sade Sati.
     jd_now = ephemeris.to_julian_day(now)
     now_planets = ephemeris.planet_longitudes(jd_now)
-    transit_signs = {p: now_planets[p]["sign"] for p in ("Saturn", "Jupiter", "Rahu", "Ketu", "Moon", "Sun")}
+    transit_signs = {p: now_planets[p]["sign"] for p in ("Saturn", "Jupiter", "Rahu", "Ketu", "Moon", "Sun", "Mars")}
     sade_sati = doshas_module.sade_sati(planets["Moon"]["sign"], transit_signs["Saturn"])
 
     dosha_results = {
@@ -125,7 +128,6 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         "dasha": dasha_tree, "transit_signs": transit_signs, "sade_sati": sade_sati,
     }
     preds = predictions_module.generate_predictions(ctx)
-    dasha_phala = predictions_module.dasha_phala(dasha_tree, planets, lagna_sign)
 
     # Premium-strength layer: Shadbala / Bhava Bala / Vimshopaka,
     # transit ingress table, Lal Kitab, Yogini + Tribhagi dashas.
@@ -138,6 +140,19 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
     yogini = dasha_module.yogini_periods(birth_dt, planets["Moon"]["longitude"], now)
     tribhagi = dasha_module.tribhagi_periods(birth_dt, planets["Moon"]["longitude"], now)
 
+    # Deep layer (interpretation engine v2): Jaimini special lagnas,
+    # Chara dasha, Sade Sati span dates, double transit, 10-year
+    # ingress chains for the forecast.
+    special = jaimini_module.special_lagnas(planets, lagna_sign)
+    chara = chara_module.chara_periods(birth_dt, planets, lagna_sign, now)
+    saturn_span = transits_module.saturn_moon_span(planets["Moon"]["sign"], jd_now)
+    double_tr = transits_module.double_transit(jd_now)
+    jd_10y = jd_now + 10.2 * 365.25
+    ingress_chains = {
+        p: transits_module.ingress_chain(p, jd_now, jd_10y)
+        for p in ("Saturn", "Jupiter", "Rahu")
+    }
+
     from . import report as report_module
     report_ctx = dict(ctx)
     report_ctx.update({
@@ -145,8 +160,18 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         "karakas": karakas, "dasha_tree": dasha_tree, "now": now,
         "birth_dt": birth_dt, "place": place,
         "transit_ingress": transit_tbl["ingress"],
+        "shadbala": sb, "chara": chara, "ingress_chains": ingress_chains,
     })
     premium = report_module.generate_premium_report(report_ctx)
+
+    deep_ctx = dict(report_ctx)
+    deep_ctx.update({
+        "ashtakavarga": av, "bhava_bala": bb, "special": special,
+        "saturn_span": saturn_span, "double_transit": double_tr,
+        "jd_now": jd_now,
+    })
+    deep_report = interpret_module.build_deep_report(deep_ctx)
+    dasha_phala = deep_report["dasha_deep_dive"]
 
     planet_rows = []
     for name in ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"]:
@@ -225,6 +250,50 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         "numerology": numerology_module.numerology(dob),
         "name_letters": naming_module.name_letters(planets["Moon"]["nakshatra"], planets["Moon"]["pada"]),
         "dasha_phala": dasha_phala,
+        "special_lagnas": {
+            "arudha_lagna": {
+                "sign": special["arudha_lagna"]["sign"],
+                "sign_en": SIGNS_EN[special["arudha_lagna"]["sign"]],
+                "sign_ne": SIGNS_NE[special["arudha_lagna"]["sign"]],
+                "house_from_lagna": charts_module.house_of(special["arudha_lagna"]["sign"], lagna_sign),
+                "lord": special["arudha_lagna"]["lord"],
+            },
+            "upapada": {
+                "sign": special["upapada"]["sign"],
+                "sign_en": SIGNS_EN[special["upapada"]["sign"]],
+                "sign_ne": SIGNS_NE[special["upapada"]["sign"]],
+                "house_from_lagna": charts_module.house_of(special["upapada"]["sign"], lagna_sign),
+                "lord": special["upapada"]["lord"],
+            },
+            "chandra_lagna": {
+                "sign": special["chandra_lagna_sign"],
+                "sign_en": SIGNS_EN[special["chandra_lagna_sign"]],
+                "sign_ne": SIGNS_NE[special["chandra_lagna_sign"]],
+            },
+        },
+        "chara_dasha": {
+            "direction": chara["direction"],
+            "periods": [
+                {"sign": p["sign"], "sign_en": p["sign_en"], "sign_ne": p["sign_ne"],
+                 "lord": p["lord"], "start": p["start"].date().isoformat(),
+                 "end": p["end"].date().isoformat(), "years": p["years"]}
+                for p in chara["periods"][:24]
+            ],
+            "current": (
+                {"sign": chara["current"]["sign"], "sign_en": chara["current"]["sign_en"],
+                 "sign_ne": chara["current"]["sign_ne"], "lord": chara["current"]["lord"],
+                 "start": chara["current"]["start"].date().isoformat(),
+                 "end": chara["current"]["end"].date().isoformat(),
+                 "years": chara["current"]["years"]}
+                if chara["current"] else None
+            ),
+            "current_antardashas": [
+                {"sign": a["sign"], "sign_en": a["sign_en"], "sign_ne": a["sign_ne"],
+                 "start": a["start"].date().isoformat(), "end": a["end"].date().isoformat()}
+                for a in chara["current_antardashas"]
+            ],
+        },
+        "deep_report": deep_report,
         "yogini": {
             "periods": [
                 {"name": p["name"], "planet": p["planet"],
