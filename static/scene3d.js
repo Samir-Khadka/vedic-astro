@@ -33,7 +33,8 @@
   });
 
   const GLYPHS = ["♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"];
-  const GOLD = 0xe5c15c, GOLD_HI = 0xf2d584, VIOLET = 0x8a7fe0, DEEP = 0x4a3f9e;
+  /* Phase 5 — light stage: antique gold + royal violet on warm ivory */
+  const GOLD = 0xb8860b, GOLD_HI = 0xc9a227, VIOLET = 0x7c3aed, DEEP = 0x5b21b6;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
@@ -58,24 +59,26 @@
     const g = c.getContext("2d");
     g.font = "104px 'Segoe UI Symbol','Noto Sans Symbols 2','Noto Sans',serif";
     g.textAlign = "center"; g.textBaseline = "middle";
-    g.shadowColor = "rgba(242,213,132,0.95)"; g.shadowBlur = 22;
-    g.fillStyle = "#f5dfa0";
+    g.shadowColor = "rgba(184,134,11,0.5)"; g.shadowBlur = 12;
+    g.fillStyle = "#8a6508";
     g.fillText(glyph, 80, 86); g.fillText(glyph, 80, 86);
     return new THREE.CanvasTexture(c);
   }
 
-  /* ---- nebula glow sprites (behind everything) ---- */
-  const nebTexViolet = glowTexture("rgba(110,90,220,0.85)", "rgba(110,90,220,0)");
-  const nebTexGold = glowTexture("rgba(229,193,92,0.7)", "rgba(229,193,92,0)");
-  const nebTexIndigo = glowTexture("rgba(52,44,140,0.9)", "rgba(52,44,140,0)");
+  /* ---- nebula glow sprites (behind everything) ----
+   * Phase 5: normal blending — additive would blow out to white on ivory.
+   * Soft lavender + warm gold washes at low opacity instead. */
+  const nebTexViolet = glowTexture("rgba(124,58,237,0.8)", "rgba(124,58,237,0)");
+  const nebTexGold = glowTexture("rgba(231,198,91,0.85)", "rgba(231,198,91,0)");
+  const nebTexIndigo = glowTexture("rgba(167,139,250,0.85)", "rgba(167,139,250,0)");
   [
-    [nebTexViolet, -5.6, 2.4, -4.5, 13, 0.16],
-    [nebTexIndigo, 5.8, -2.2, -5.5, 15, 0.20],
-    [nebTexGold, 3.4, 3.4, -6.5, 10, 0.08],
+    [nebTexViolet, -5.6, 2.4, -4.5, 13, 0.13],
+    [nebTexIndigo, 5.8, -2.2, -5.5, 15, 0.16],
+    [nebTexGold, 3.4, 3.4, -6.5, 10, 0.12],
   ].forEach(([tex, x, y, z, s, op]) => {
     const m = new THREE.SpriteMaterial({
       map: tex, transparent: true, opacity: op,
-      blending: THREE.AdditiveBlending, depthWrite: false,
+      depthWrite: false,
     });
     const sp = new THREE.Sprite(m);
     sp.position.set(x, y, z); sp.scale.set(s, s, 1);
@@ -88,8 +91,8 @@
   const pos = new Float32Array(starCount * 3);
   const col = new Float32Array(starCount * 3);
   const palette = [
-    new THREE.Color(0xfff6dd), new THREE.Color(0xe9e2ff),
-    new THREE.Color(0xf2d584), new THREE.Color(0xb9aef0),
+    new THREE.Color(0xc9a227), new THREE.Color(0x7c3aed),
+    new THREE.Color(0xb8860b), new THREE.Color(0xa78bfa),
   ];
   for (let i = 0; i < starCount; i++) {
     pos[i * 3] = (Math.random() - 0.5) * 34;
@@ -102,8 +105,8 @@
   starGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   starGeo.setAttribute("color", new THREE.BufferAttribute(col, 3));
   const starMat = new THREE.PointsMaterial({
-    size: 0.055, vertexColors: true, transparent: true, opacity: 0.9,
-    blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true,
+    size: 0.04, vertexColors: true, transparent: true, opacity: 0.55,
+    depthWrite: false, sizeAttenuation: true,
   });
   const stars = new THREE.Points(starGeo, starMat);
   scene.add(stars);
@@ -117,8 +120,8 @@
     return mesh;
   }
   wheel.add(ring(3.15, 0.014, GOLD, 0.95));
-  wheel.add(ring(2.62, 0.008, VIOLET, 0.55));
-  wheel.add(ring(3.68, 0.006, GOLD, 0.35));
+  wheel.add(ring(2.62, 0.008, VIOLET, 0.6));
+  wheel.add(ring(3.68, 0.006, GOLD, 0.4));
   // tick marks between the signs
   const tickGeo = new THREE.BufferGeometry();
   const tickPos = [];
@@ -129,7 +132,7 @@
   }
   tickGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(tickPos), 3));
   wheel.add(new THREE.LineSegments(tickGeo,
-    new THREE.LineBasicMaterial({ color: GOLD, transparent: true, opacity: 0.4 })));
+    new THREE.LineBasicMaterial({ color: GOLD, transparent: true, opacity: 0.5 })));
 
   GLYPHS.forEach((glyph, i) => {
     const a = ((i * 30 + 90) * Math.PI) / 180; // Aries at top, wheel turns CCW visually
@@ -143,11 +146,11 @@
 
   /* ---- armillary rings (tilted, independent slow axes) ---- */
   const armillary = new THREE.Group();
-  const arm1 = ring(3.42, 0.009, GOLD_HI, 0.5);
+  const arm1 = ring(3.42, 0.009, GOLD_HI, 0.55);
   arm1.rotation.x = Math.PI / 2.6;
-  const arm2 = ring(3.42, 0.009, VIOLET, 0.4);
+  const arm2 = ring(3.42, 0.009, VIOLET, 0.5);
   arm2.rotation.y = Math.PI / 2.4; arm2.rotation.x = 0.5;
-  const arm3 = ring(2.2, 0.007, GOLD, 0.35);
+  const arm3 = ring(2.2, 0.007, GOLD, 0.45);
   arm3.rotation.x = Math.PI / 3; arm3.rotation.y = 0.8;
   armillary.add(arm1, arm2, arm3);
   rig.add(armillary);
@@ -155,14 +158,14 @@
   /* ---- central sun ---- */
   const sun = new THREE.Mesh(
     new THREE.SphereGeometry(0.52, 40, 40),
-    new THREE.MeshBasicMaterial({ color: 0xf7dd8f })
+    new THREE.MeshBasicMaterial({ color: 0xd9a62e })
   );
   rig.add(sun);
-  const sunGlowTex = glowTexture("rgba(255,224,150,0.95)", "rgba(255,224,150,0)");
-  [[2.6, 0.85], [4.6, 0.4]].forEach(([s, op]) => {
+  const sunGlowTex = glowTexture("rgba(233,196,92,0.9)", "rgba(233,196,92,0)");
+  [[2.6, 0.5], [4.6, 0.22]].forEach(([s, op]) => {
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({
       map: sunGlowTex, transparent: true, opacity: op,
-      blending: THREE.AdditiveBlending, depthWrite: false,
+      depthWrite: false,
     }));
     sp.scale.set(s, s, 1);
     rig.add(sp);
@@ -171,8 +174,8 @@
   /* ---- orbiting planets on the inner ring ---- */
   const orbiters = [];
   [
-    [2.62, 0.075, 0xfff3d6, 0.16], [2.62, 0.06, 0xd9a05a, 0.11],
-    [2.62, 0.055, 0xb9aef0, 0.07], [2.62, 0.05, 0x9fd8e8, 0.05],
+    [2.62, 0.075, 0x7c3aed, 0.16], [2.62, 0.06, 0xbe123c, 0.11],
+    [2.62, 0.055, 0x0f766e, 0.07], [2.62, 0.05, 0xb8860b, 0.05],
   ].forEach(([r, size, color, speed], i) => {
     const m = new THREE.Mesh(
       new THREE.SphereGeometry(size, 20, 20),
@@ -228,7 +231,7 @@
     arm2.rotation.z = -t * 0.045;
     arm3.rotation.z = t * 0.09;
     stars.rotation.z = t * 0.004;
-    starMat.opacity = 0.82 + 0.14 * Math.sin(t * 0.7);
+    starMat.opacity = 0.48 + 0.12 * Math.sin(t * 0.7);
     sun.scale.setScalar(1 + 0.025 * Math.sin(t * 1.4));
     orbiters.forEach((m) => {
       const a = m.userData.phase + t * m.userData.speed;

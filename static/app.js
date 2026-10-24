@@ -222,23 +222,27 @@ const STATE = { bundle: null, birthPayload: null, match: null, varga: "D1",
   const canvas = document.getElementById("starfield");
   const ctx = canvas.getContext("2d");
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  /* Phase 5: on the light ivory stage the "stars" are fine gold/violet
+     dust motes — pale starlight would vanish against the cream page. */
+  const DUST = ["#C9A227", "#7C3AED", "#B8860B"];
   let stars = [], w = 0, h = 0, raf = null;
   function resize() {
     w = canvas.width = window.innerWidth;
     h = canvas.height = window.innerHeight;
     stars = Array.from({ length: Math.min(170, w / 8) }, () => ({
       x: Math.random() * w, y: Math.random() * h,
-      r: Math.random() * 1.3 + 0.3, p: Math.random() * Math.PI * 2,
+      r: Math.random() * 1.0 + 0.3, p: Math.random() * Math.PI * 2,
       s: 0.4 + Math.random() * 0.8,
+      c: DUST[(Math.random() * DUST.length) | 0],
     }));
     draw(0);
   }
   function draw(time) {
     ctx.clearRect(0, 0, w, h);
     for (const st of stars) {
-      const a = 0.35 + 0.55 * Math.abs(Math.sin(st.p + time * 0.0004 * st.s));
+      const a = 0.16 + 0.34 * Math.abs(Math.sin(st.p + time * 0.0004 * st.s));
       ctx.globalAlpha = a;
-      ctx.fillStyle = "#e9e2ff";
+      ctx.fillStyle = st.c;
       ctx.beginPath();
       ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
       ctx.fill();
