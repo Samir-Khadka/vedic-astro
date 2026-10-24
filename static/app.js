@@ -24,6 +24,10 @@ const I18N = {
   en: {
     nav_kundali:"Kundali", nav_premium:"Premium Report", nav_matching:"Matching", nav_panchang:"Panchang",
     hero_title:"Your stars, computed precisely.",
+    hero_eyebrow:"Parashari · KP · Jaimini",
+    eb_kundali:"Chapter I — The Birth Chart", eb_results:"The Reading",
+    eb_premium:"Chapter II — The Deep Reading", eb_prashna:"Chapter III — Horary",
+    eb_matching:"Chapter IV — Compatibility",
     hero_sub:"Swiss Ephemeris astronomy with Lahiri ayanamsa — Parashari depth, KP timing, Jaimini insight. In English and Nepali.",
     hero_cta:"Create my Kundali",
     panchang_title:"Today's Panchang", loading:"Loading…",
@@ -112,6 +116,10 @@ const I18N = {
   ne: {
     nav_kundali:"कुण्डली", nav_premium:"प्रिमियम रिपोर्ट", nav_matching:"मेल मिलान", nav_panchang:"पञ्चाङ्ग",
     hero_title:"तपाईंका तारा, यथार्थ रूपमा गणना गरिएको।",
+    hero_eyebrow:"पराशरी · केपी · जैमिनी",
+    eb_kundali:"अध्याय १ — जन्म कुण्डली", eb_results:"अध्ययन",
+    eb_premium:"अध्याय २ — गहन अध्ययन", eb_prashna:"अध्याय ३ — प्रश्न ज्योतिष",
+    eb_matching:"अध्याय ४ — मेल मिलान",
     hero_sub:"लाहिरी अयनांशसहित स्विस एफेमेरिस खगोल विज्ञान — पराशरी गहिराइ, KP समय-शुद्धता, जैमिनी अन्तर्दृष्टि। अङ्ग्रेजी र नेपालीमा।",
     hero_cta:"मेरो कुण्डली बनाउनुहोस्",
     panchang_title:"आजको पञ्चाङ्ग", loading:"लोड हुँदैछ…",
@@ -509,6 +517,8 @@ document.getElementById("birth-form").addEventListener("submit", async (ev) => {
     renderBundle();
     document.getElementById("results").hidden = false;
     document.getElementById("premium").hidden = false;
+    revealSection(document.getElementById("results"));
+    revealSection(document.getElementById("premium"));
     document.getElementById("results").scrollIntoView({ behavior: "smooth" });
   } catch (e) {
     errEl.textContent = t("err_server"); errEl.hidden = false;
@@ -1046,6 +1056,7 @@ document.getElementById("match-form").addEventListener("submit", async (ev) => {
     STATE.match = await res.json();
     renderMatch();
     document.getElementById("match-result").hidden = false;
+    revealSection(document.getElementById("match-result"));
     document.getElementById("match-result").scrollIntoView({ behavior: "smooth" });
   } catch (e) {
     errEl.textContent = t("err_server"); errEl.hidden = false;
@@ -1055,7 +1066,7 @@ document.getElementById("match-form").addEventListener("submit", async (ev) => {
 function renderMatch() {
   const m = STATE.match;
   if (!m) return;
-  document.getElementById("score-value").textContent = m.total;
+  animateScore(document.getElementById("score-value"), m.total);
   document.getElementById("score-verdict").textContent = LANG === "ne" ? m.verdict_ne : m.verdict_en;
   document.getElementById("match-meta").textContent =
     `${t("groom_moon")}: ${LANG === "ne" ? m.groom.moon_sign_ne : m.groom.moon_sign_en} / ${LANG === "ne" ? m.groom.nakshatra_ne : m.groom.nakshatra_en} · ` +
@@ -1090,6 +1101,7 @@ document.getElementById("prashna-form").addEventListener("submit", async (ev) =>
     STATE.prashna = await res.json();
     renderPrashna();
     document.getElementById("prashna-result").hidden = false;
+    revealSection(document.getElementById("prashna-result"));
     document.getElementById("prashna-result").scrollIntoView({ behavior: "smooth" });
   } catch (e) {
     errEl.textContent = t("err_server"); errEl.hidden = false;
@@ -1122,3 +1134,117 @@ function renderPrashna() {
 document.querySelectorAll(".mini-btn[data-style]").forEach((b) =>
   b.classList.toggle("is-active", b.dataset.style === STATE.chartStyle));
 applyLang();
+
+/* ================================================================
+   Phase 4 — cinematic presentation layer (design only).
+   Scroll reveal, dynamic-section reveals, score count-up, sticky
+   header shrink, pointer-tracked card tilt, intro dismissal.
+   Every feature is independently guarded: a failure here can
+   never break rendering, and content is only ever hidden by JS
+   that is running and able to reveal it again.
+   ================================================================ */
+const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* Staggered rise for dynamically revealed sections (results, premium,
+   prashna, matching). Called right after the section is unhidden. */
+function revealSection(sec) {
+  if (!sec || REDUCED_MOTION || sec.dataset.revealed) return;
+  sec.dataset.revealed = "1";
+  try {
+    const items = sec.querySelectorAll(
+      ".card, .glance-strip, .lucky-strip, .pdf-row, .chapter-grid, .score-hero");
+    items.forEach((el, i) => {
+      el.classList.add("rv-pending");
+      el.style.transitionDelay = `${Math.min(i * 70, 560)}ms`;
+      requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("rv-go")));
+      setTimeout(() => { el.style.transitionDelay = ""; }, 1600);
+    });
+  } catch (e) { /* presentation only */ }
+}
+
+/* Animated count-up for the Guna Milan score (x or x.5 of 36). */
+function animateScore(el, total) {
+  if (!el) return;
+  const target = Number(total);
+  if (REDUCED_MOTION || !Number.isFinite(target)) { el.textContent = total; return; }
+  const decimals = Number.isInteger(target) ? 0 : 1;
+  const dur = 900, t0 = performance.now();
+  (function tick(now) {
+    const p = Math.min((now - t0) / dur, 1);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = (target * eased).toFixed(decimals);
+    if (p < 1) requestAnimationFrame(tick);
+    else el.textContent = total;
+  })(t0);
+}
+
+/* Scroll reveal for static blocks (.rv) */
+try {
+  const rvEls = document.querySelectorAll(".rv");
+  if (rvEls.length && !REDUCED_MOTION && "IntersectionObserver" in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (en.isIntersecting) { en.target.classList.add("in-view"); io.unobserve(en.target); }
+      });
+    }, { threshold: 0.1, rootMargin: "0px 0px -36px 0px" });
+    rvEls.forEach((el, i) => {
+      el.classList.add("rv-armed");
+      el.style.transitionDelay = `${Math.min((i % 3) * 80, 160)}ms`;
+      io.observe(el);
+    });
+  }
+} catch (e) { /* content simply stays visible */ }
+
+/* Sticky header shrink */
+try {
+  const header = document.querySelector(".site-header");
+  if (header) {
+    const onScroll = () => header.classList.toggle("scrolled", window.scrollY > 12);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+  }
+} catch (e) { /* presentation only */ }
+
+/* Pointer-tracked 3D tilt on small cards (desktop, fine pointer only) */
+try {
+  const FINE = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (FINE && !REDUCED_MOTION) {
+    const SEL = ".chapter-block, .pred-block, .lucky-item, .strip-item, .gem-item, .dosha-badge";
+    let current = null;
+    document.addEventListener("pointermove", (ev) => {
+      const el = ev.target && ev.target.closest ? ev.target.closest(SEL) : null;
+      if (current && current !== el) {
+        current.style.setProperty("--rx", "0deg");
+        current.style.setProperty("--ry", "0deg");
+        current = null;
+      }
+      if (!el) return;
+      current = el;
+      el.classList.add("tilt-on");
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      const px = (ev.clientX - r.left) / r.width - 0.5;
+      const py = (ev.clientY - r.top) / r.height - 0.5;
+      el.style.setProperty("--ry", `${(px * 7).toFixed(2)}deg`);
+      el.style.setProperty("--rx", `${(-py * 7).toFixed(2)}deg`);
+    }, { passive: true });
+    document.addEventListener("pointerleave", () => {
+      if (current) {
+        current.style.setProperty("--rx", "0deg");
+        current.style.setProperty("--ry", "0deg");
+        current = null;
+      }
+    });
+  }
+} catch (e) { /* presentation only */ }
+
+/* Intro overlay — dismiss on first interaction, sweep up regardless */
+try {
+  const intro = document.getElementById("intro");
+  if (intro) {
+    const dismiss = () => intro.classList.add("done");
+    window.addEventListener("pointerdown", dismiss, { once: true, passive: true });
+    window.addEventListener("keydown", dismiss, { once: true });
+    setTimeout(() => intro.remove(), 2400);
+  }
+} catch (e) { /* CSS animation hides it anyway */ }

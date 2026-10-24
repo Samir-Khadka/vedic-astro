@@ -12,14 +12,20 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Vedic Astro — ज्योतिष">
 <meta name="twitter:description" content="Swiss Ephemeris kundali, Shadbala, KP, Lal Kitab and premium reports in English and Nepali.">
+<meta name="theme-color" content="#05050e">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23070718'/%3E%3Ctext x='32' y='45' font-size='36' text-anchor='middle' fill='%23e5c15c'%3E%E0%A5%90%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,600&family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
 <canvas id="starfield" aria-hidden="true"></canvas>
 <div class="nebula" aria-hidden="true"></div>
+<div class="fx-vignette" aria-hidden="true"></div>
+<div class="fx-grain" aria-hidden="true"></div>
+<div id="intro" aria-hidden="true"><div class="intro-om">ॐ</div><div class="intro-ring"></div></div>
 
 <header class="site-header">
   <a class="brand" href="#top" aria-label="Vedic Astro home">
@@ -41,7 +47,8 @@
 
 <main id="top">
   <!-- HERO -->
-  <section class="hero">
+  <section class="hero" id="hero">
+    <div id="hero-3d" aria-hidden="true"></div>
     <div class="hero-ring" aria-hidden="true">
       <svg viewBox="0 0 200 200" class="ring-svg">
         <circle cx="100" cy="100" r="96" class="ring-outer"/>
@@ -50,13 +57,15 @@
       </svg>
       <div class="hero-om" aria-hidden="true">ॐ</div>
     </div>
+    <p class="eyebrow hero-eyebrow" data-i18n="hero_eyebrow">Parashari · KP · Jaimini</p>
     <h1 class="hero-title" data-i18n="hero_title">Your stars, computed precisely.</h1>
     <p class="hero-sub" data-i18n="hero_sub">Swiss Ephemeris astronomy with Lahiri ayanamsa — Parashari depth, KP timing, Jaimini insight. In English and Nepali.</p>
     <a class="btn btn-gold" href="#kundali-form" data-i18n="hero_cta">Create my Kundali</a>
+    <div class="hero-cue" aria-hidden="true"><span></span></div>
   </section>
 
   <!-- PANCHANG STRIP -->
-  <section id="panchang-strip" class="panchang-strip glass" aria-label="Today's Panchang">
+  <section id="panchang-strip" class="panchang-strip glass rv" aria-label="Today's Panchang">
     <h2 class="strip-title" data-i18n="panchang_title">Today's Panchang</h2>
     <div class="strip-grid" id="panchang-grid">
       <p class="muted" data-i18n="loading">Loading…</p>
@@ -65,8 +74,9 @@
 
   <!-- BIRTH FORM -->
   <section id="kundali-form" class="section">
-    <h2 class="section-title" data-i18n="form_title">Birth Details</h2>
-    <form id="birth-form" class="glass form-card" novalidate>
+    <p class="eyebrow rv" data-i18n="eb_kundali">Chapter I — The Birth Chart</p>
+    <h2 class="section-title rv" data-i18n="form_title">Birth Details</h2>
+    <form id="birth-form" class="glass form-card rv" novalidate>
       <div class="field">
         <label for="f-name" data-i18n="f_name">Name</label>
         <input id="f-name" name="name" type="text" autocomplete="name" placeholder="e.g. Aarav Sharma">
@@ -126,6 +136,7 @@
 
   <!-- RESULTS -->
   <section id="results" class="section" hidden>
+    <p class="eyebrow" data-i18n="eb_results">The Reading</p>
     <h2 class="section-title" id="results-title">Your Kundali</h2>
     <p class="results-meta" id="results-meta"></p>
     <div class="glance-strip" id="glance-strip" aria-label="Chart at a glance"></div>
@@ -284,6 +295,7 @@
 
   <!-- PREMIUM REPORT -->
   <section id="premium" class="section" hidden>
+    <p class="eyebrow" data-i18n="eb_premium">Chapter II — The Deep Reading</p>
     <h2 class="section-title" data-i18n="premium_title">Premium Life Report</h2>
     <p class="results-meta" data-i18n="premium_sub">The full multi-chapter reading — the depth the premium sites sell, generated from your computed chart.</p>
     <div class="lucky-strip" id="lucky-strip"></div>
@@ -359,9 +371,10 @@
 
   <!-- KP PRASHNA (HORARY) -->
   <section id="prashna" class="section">
-    <h2 class="section-title" data-i18n="prashna_title">KP Prashna — Horary (1–249)</h2>
+    <p class="eyebrow rv" data-i18n="eb_prashna">Chapter III — Horary</p>
+    <h2 class="section-title rv" data-i18n="prashna_title">KP Prashna — Horary (1–249)</h2>
     <p class="results-meta" data-i18n="prashna_sub">Hold your question in mind, pick a number between 1 and 249, and cast the chart of this moment.</p>
-    <form id="prashna-form" class="glass form-card" novalidate>
+    <form id="prashna-form" class="glass form-card rv" novalidate>
       <div class="field-row">
         <div class="field">
           <label for="p-number" data-i18n="p_number">Your number (1–249)</label>
@@ -410,8 +423,9 @@
 
   <!-- MATCHING -->
   <section id="matching" class="section">
-    <h2 class="section-title" data-i18n="match_title">Kundali Matching — Guna Milan</h2>
-    <form id="match-form" class="glass form-card" novalidate>
+    <p class="eyebrow rv" data-i18n="eb_matching">Chapter IV — Compatibility</p>
+    <h2 class="section-title rv" data-i18n="match_title">Kundali Matching — Guna Milan</h2>
+    <form id="match-form" class="glass form-card rv" novalidate>
       <div class="match-cols">
         <fieldset>
           <legend data-i18n="groom">Groom / Partner 1</legend>
@@ -457,11 +471,14 @@
     </div>
   </section>
 
-  <footer class="site-footer">
+  <footer class="site-footer rv">
+    <div class="zodiac-band" aria-hidden="true"><span>♈ ✦ ♉ ✦ ♊ ✦ ♋ ✦ ♌ ✦ ♍ ✦ ♎ ✦ ♏ ✦ ♐ ✦ ♑ ✦ ♒ ✦ ♓ ✦ </span><span>♈ ✦ ♉ ✦ ♊ ✦ ♋ ✦ ♌ ✦ ♍ ✦ ♎ ✦ ♏ ✦ ♐ ✦ ♑ ✦ ♒ ✦ ♓ ✦ </span></div>
     <p data-i18n="footer_text">Vedic Astro — Swiss Ephemeris · Lahiri Ayanamsa · Parashari, KP & Jaimini methods. For guidance and reflection.</p>
   </footer>
 </main>
 <script src="/static/coords.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js" defer></script>
+<script src="/static/scene3d.js" defer></script>
 <script src="/static/app.js" defer></script>
 </body>
 </html>
