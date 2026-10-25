@@ -143,6 +143,24 @@ const I18N = {
     sudarshana_hint:"The same chart read from Lagna, Moon and Sun. A planet in the same relative house in two or three rings has its results confirmed.",
     th_agreement:"Agreement",
     m_date:"Planned wedding date (optional — enables Dasha Sandhi check)",
+    argala_title:"Jaimini Argala — planetary intervention",
+    argala_hint:"Planets in the 2nd, 4th and 11th from a house support it; planets in the 12th, 10th and 3rd obstruct it. Ketu's intervention counts backwards.",
+    th_house:"House", th_argala:"Argala (support)", th_virodh:"Virodhargala (obstruction)", th_verdict:"Verdict",
+    th_balaadi:"Balaadi", th_jagratadi:"Jagratadi", th_status:"Status",
+    th_rising:"Rising (enters Moon−1)", th_peak:"Peak (enters Moon sign)", th_setting:"Setting (enters Moon+1)", th_end:"Ends",
+    nakshatra_deep_title:"Nakshatra Deep-Dive — Tara, Chandra Bala, Avasthas",
+    nakshatra_deep_hint:"Your Moon nakshatra's nine Taras, today's Tara Bala and Chandra Bala, and every planet's Avastha (maturity + wakefulness).",
+    ashto_title:"Ashtottari Dasha — the 108-year conditional system",
+    ashto_hint:"Eight lords, Ketu excluded. Traditionally applied when Rahu stands in a kendra/trikona from the Lagna lord and the day-night/paksha rule holds — both conditions are shown, and the sequence is computed regardless.",
+    sade_lifetime_title:"Lifetime Sade Sati — every period, exact dates",
+    sade_lifetime_hint:"Saturn's passage over the three signs around your Moon sign, across a full lifetime. Past, current and future periods are marked.",
+    gem_guide_title:"Gemstones & Rudraksha — the complete guide",
+    gem_guide_hint:"Every planet's stone, weight, finger, metal, weekday, mantra and Rudraksha — with this chart's cautions (a dusthana lord's stone is never advised).",
+    teva_title:"Teva — chart types", lk_dasha_title:"Lal Kitab Dasha — 35-year cycle",
+    porutham_title:"Dashakoota / Porutham — the South Indian 10-factor match",
+    u_moonsign:"Birth Moon sign (optional, for Chandra Bala)",
+    muhurta_personal_hint:"If you already generated a kundali above, its birth details are used automatically for the dasha-suitability check.",
+    election_score_word:"Election score",
   },
   ne: {
     nav_kundali:"कुण्डली", nav_premium:"प्रिमियम रिपोर्ट", nav_matching:"मेल मिलान", nav_panchang:"पञ्चाङ्ग",
@@ -266,6 +284,24 @@ const I18N = {
     sudarshana_hint:"उही कुण्डली लग्न, चन्द्र र सूर्यबाट पढिन्छ। दुई वा तीन घेरामा एउटै सापेक्ष भावमा रहेको ग्रहको फल पुष्टि हुन्छ।",
     th_agreement:"सहमति",
     m_date:"योजनाबद्ध विवाह मिति (ऐच्छिक — दशा सन्धि जाँच सक्षम गर्छ)",
+    argala_title:"जैमिनी अर्गला — ग्रह हस्तक्षेप",
+    argala_hint:"कुनै भावबाट दोस्रो, चौथो र एघारौँमा रहेका ग्रहले साथ दिन्छन्; बाह्रौँ, दशौँ र तेस्रोमा रहेकाले अवरोध गर्छन्। केतुको हस्तक्षेप उल्टो गनिन्छ।",
+    th_house:"भाव", th_argala:"अर्गला (साथ)", th_virodh:"विरोधर्गला (अवरोध)", th_verdict:"निष्कर्ष",
+    th_balaadi:"बालादि", th_jagratadi:"जाग्रतादि", th_status:"स्थिति",
+    th_rising:"उदय (चन्द्र−१ मा प्रवेश)", th_peak:"चरम (चन्द्र राशिमा प्रवेश)", th_setting:"अस्त (चन्द्र+१ मा प्रवेश)", th_end:"समाप्ति",
+    nakshatra_deep_title:"नक्षत्र गहन अध्ययन — तारा, चन्द्रबल, अवस्था",
+    nakshatra_deep_hint:"तपाईंको चन्द्र नक्षत्रका नौ तारा, आजको ताराबल र चन्द्रबल, र प्रत्येक ग्रहको अवस्था (परिपक्वता + जागरण)।",
+    ashto_title:"अष्टोत्तरी दशा — १०८-वर्षीय सशर्त प्रणाली",
+    ashto_hint:"आठ स्वामी, केतु बाहेक। परम्परागत रूपमा राहु लग्न स्वामीबाट केन्द्र/त्रिकोणमा हुँदा र दिन-रात/पक्ष नियम मिल्दा लागू हुन्छ — दुवै शर्त देखाइन्छ, र क्रम जेसुकै भए पनि गणना गरिन्छ।",
+    sade_lifetime_title:"आजीवन साढेसाती — हरेक अवधि, ठ्याक्कै मितिसहित",
+    sade_lifetime_hint:"तपाईंको चन्द्र राशिवरिपरि तीन राशिमा शनिको यात्रा, पूरै जीवनभर। विगत, चालु र भावी अवधि चिन्ह लगाइएका छन्।",
+    gem_guide_title:"रत्न र रुद्राक्ष — पूर्ण मार्गदर्शन",
+    gem_guide_hint:"प्रत्येक ग्रहको रत्न, तौल, औंला, धातु, बार, मन्त्र र रुद्राक्ष — यस कुण्डलीका सावधानीसहित (दुष्टस्थान स्वामीको रत्न कहिल्यै सल्लाह दिइँदैन)।",
+    teva_title:"टेवा — कुण्डलीका प्रकारहरू", lk_dasha_title:"लाल किताब दशा — ३५-वर्षीय चक्र",
+    porutham_title:"दशकूट / पोरुथम — दक्षिण भारतीय १०-तत्व मेल",
+    u_moonsign:"जन्म चन्द्र राशि (ऐच्छिक, चन्द्रबलका लागि)",
+    muhurta_personal_hint:"यदि तपाईंले माथि कुण्डली बनाइसक्नुभएको छ भने, दशा-उपयुक्तता जाँचका लागि त्यसकै जन्म विवरण स्वतः प्रयोग हुन्छ।",
+    election_score_word:"निर्वाचन अङ्क",
   }
 };
 
@@ -804,6 +840,7 @@ function renderBundle() {
   renderPremium(b);
   renderDeep(b);
   renderWorldclass(b);
+  renderGapLayer(b);
 }
 
 function renderDasha(b) {
@@ -972,6 +1009,68 @@ function renderLalKitab(b) {
     `<div class="yoga-item"><b>${bi(r.name)}</b> — ${r.detected === true ? t("detected") : (r.detected === null ? t("reference_only") : "—")}` +
     `<span>${t("remedy_word")}: ${bi(r.remedy)}</span></div>`).join("");
   document.getElementById("lalkitab-body").innerHTML = html;
+  const tevaEl = document.getElementById("lalkitab-teva");
+  if (tevaEl && lk.teva) {
+    tevaEl.innerHTML = `<h4 class="sub-title">${t("teva_title")}</h4>` +
+      (lk.teva.matched.length ? lk.teva.matched.map((m) =>
+        `<div class="yoga-item"><b>${LANG === "ne" ? m.type_ne : m.type}</b> — ${m.formation}<br><span>${bi(m.reading)} ${t("remedy_word")}: ${bi(m.remedy)}</span></div>`).join("")
+        : `<p class="hint">—</p>`) +
+      `<p class="hint">${bi(lk.teva.variance_note)}</p>`;
+  }
+  const lkDashaEl = document.getElementById("lalkitab-dasha");
+  if (lkDashaEl && b.lal_kitab_dasha) {
+    const ld = b.lal_kitab_dasha;
+    lkDashaEl.innerHTML = `<h4 class="sub-title">${t("lk_dasha_title")}</h4>` +
+      `<p>${ld.current ? `${planetName(ld.current.planet)} ${ld.current.start} – ${ld.current.end}` +
+        (ld.current.antardasha ? ` · ${planetName(ld.current.antardasha.planet)} ${t("antardasha_word") || "Antardasha"}` : "") : "—"}</p>` +
+      `<p class="hint">${bi(ld.method_note)}</p>`;
+  }
+}
+
+/* ---------------- Gap-closure layer: Argala, Nakshatra deep-dive, Ashtottari, lifetime Sade Sati --- */
+function renderGapLayer(b) {
+  if (b.argala) {
+    const rows = b.argala.by_house.map((h) =>
+      `<tr><td>${locNum(h.house)} — ${bi(h.theme)}</td>` +
+      `<td>${h.argala.map((a) => planetName(a.planet) + (a.ketu_reversed ? " (Ketu ↓)" : "") + (a.extended ? " *" : "")).join(", ") || "—"}</td>` +
+      `<td>${h.virodhargala.map((v) => planetName(v.planet) + (v.ketu_reversed ? " (Ketu ↓)" : "")).join(", ") || "—"}</td>` +
+      `<td>${h.verdict}</td></tr>`).join("");
+    document.querySelector("#argala-table tbody").innerHTML = rows;
+    document.getElementById("argala-summary").textContent =
+      `${b.argala.prevailing_count} / 12 ${LANG === "ne" ? "भावमा अर्गला प्रबल" : "houses with prevailing Argala"} · ` +
+      `${b.argala.obstructed_count} ${LANG === "ne" ? "अवरुद्ध" : "obstructed"}`;
+  }
+  const nd = b.nakshatra_deep;
+  if (nd) {
+    const nt = nd.nava_tara, tb = nd.tarabala_today, cb = nd.chandrabala_today;
+    document.getElementById("nakshatra-deep-body").innerHTML =
+      `<p><b>${LANG === "ne" ? "जन्म नक्षत्र" : "Birth nakshatra"}:</b> ${LANG === "ne" ? nt.natal_nakshatra_ne : nt.natal_nakshatra_en} · ` +
+      `<b>${LANG === "ne" ? "आजको ताराबल" : "Today's Tarabala"}:</b> ${tb.tara} ${LANG === "ne" ? tb.tara_ne : tb.tara_en} (${tb.verdict}) · ` +
+      `<b>${LANG === "ne" ? "आजको चन्द्रबल" : "Today's Chandra Bala"}:</b> ${cb.position} (${cb.verdict})</p>` +
+      `<p class="hint">${LANG === "ne" ? "सावधानीका तारा" : "Caution stars"}: ${nt.caution_stars.join(", ")}</p>`;
+    document.querySelector("#avastha-table tbody").innerHTML = nd.avasthas.planets.map((r) =>
+      `<tr><td><b>${planetName(r.planet)}</b></td><td>${signName(r.sign)}</td>` +
+      `<td>${r.balaadi} (${Math.round(r.balaadi_strength * 100)}%)</td><td>${r.jagratadi}</td></tr>`).join("");
+  }
+  if (b.ashtottari) {
+    const a = b.ashtottari, cur = a.current;
+    document.getElementById("ashto-current").textContent = cur
+      ? `${planetName(cur.mahadasha.lord)} ${cur.mahadasha.start} – ${cur.mahadasha.end}` +
+        (cur.antardasha ? ` / ${planetName(cur.antardasha.lord)}` : "")
+      : "—";
+    const ap = b.ashtottari_applicability;
+    document.getElementById("ashto-applicability").textContent = ap
+      ? `${LANG === "ne" ? "लागू हुन्छ" : "Applies"}: ${ap.applies ? "✓" : "✗"} · ` +
+        `${LANG === "ne" ? "राहु शर्त" : "Rahu condition"}: ${ap.rahu_condition ? "✓" : "✗"} · ` +
+        `${LANG === "ne" ? "दिन-रात/पक्ष शर्त" : "Day-night/paksha condition"}: ${ap.day_night_paksha_condition ? "✓" : "✗"}`
+      : "";
+    document.getElementById("ashto-timeline").innerHTML = a.mahadashas.map((m) =>
+      `<div class="tl-row"><span class="tl-lord">${planetName(m.lord)}</span> ${m.display_start || m.start} – ${m.end}</div>`).join("");
+  }
+  if (b.sade_sati_lifetime) {
+    document.querySelector("#sade-lifetime-table tbody").innerHTML = b.sade_sati_lifetime.periods.map((p) =>
+      `<tr><td><b>${p.status}</b></td><td>${p.start || "—"}</td><td>${p.peak_start || "—"}</td><td>${p.setting_start || "—"}</td><td>${p.end}</td></tr>`).join("");
+  }
 }
 /* ---------------- World-class layer: Chalit, Prastara, KP events, Sudarshana --- */
 function renderWorldclass(b) {
@@ -1092,7 +1191,23 @@ function renderPremium(b) {
   document.getElementById("varshphal-list").innerHTML = rep.varshphal.map((v) => `
     <div class="fc-row"><span class="yr">${v.year}</span> — ${LANG === "ne" ? v.varsha_lagna.sign_ne : v.varsha_lagna.sign_en}
     · ${t("year_lord")}: ${planetName(v.year_lord)} · ${t("muntha")}: ${v.muntha.house}${LANG === "ne" ? "" : " " + t("house_word")}
-    <p>${bi(v.reading)}</p></div>`).join("");
+    <p>${bi(v.reading)}</p>` +
+    (v.panchadhikari ? `<p><b>${LANG === "ne" ? "पञ्चाधिकारी वर्ष स्वामी" : "Panchadhikari Year Lord"}:</b> ${planetName(v.panchadhikari.year_lord)}` +
+      (v.panchadhikari.fallback_to_muntha ? ` (${LANG === "ne" ? "मुन्था पूर्वनिर्धारित" : "Muntha default"})` : "") +
+      ` · <b>Tajika:</b> ${v.tajika.favourable_count} ${LANG === "ne" ? "शुभ" : "favourable"} / ${v.tajika.unfavourable_count} ${LANG === "ne" ? "अशुभ" : "unfavourable"}` +
+      (v.tajika.patterns.length ? ` · ${v.tajika.patterns.map((pt) => LANG === "ne" ? pt.pattern_ne : pt.pattern).join(", ")}` : "") + `</p>` +
+      `<p>${Object.entries(v.sahams).map(([k, s]) => `${k}: ${signName(s.sign)} (${s.strength})`).join(" · ")}</p>` : "") +
+    `</div>`).join("");
+  const gemEl = document.getElementById("gem-guide-body");
+  if (gemEl && rep.gemstones) {
+    gemEl.innerHTML = rep.gemstones.planets.map((g) =>
+      `<div class="gem-item"><b>${planetName(g.planet)}</b> — ${bi(g.stone)} · ${g.weight_ratti} (${g.weight_carat_approx}) · ` +
+      `${bi(g.metal)} · ${bi(g.finger)} · ${bi(g.day)} · ${bi(g.rudraksha.name)} (${g.rudraksha.mukhi})<br>` +
+      `<span>${g.mantra_ne} · <i>${g.mantra_transliteration}</i></span>` +
+      (g.caution ? `<br><span class="warn">${bi(g.caution)}</span>` : "") +
+      (g.chart_role ? `<br><span>${g.chart_role}</span>` : "") + `</div>`).join("") +
+      `<p class="hint">${bi(rep.gemstones.conversion_note)}</p>`;
+  }
 
   const r = rep.remedies;
   let html = `<h4>${t("gemstones")}</h4><div class="gem-grid">` + r.gemstones.map((g) => `
@@ -1240,13 +1355,27 @@ function renderMatch() {
   const ext = document.getElementById("match-extended");
   if (ext) {
     const ps = m.papasamya, bm = m.bhava_milan;
-    let html = `<div class="pred-block"><h4>Papasamya</h4><p>${t("groom_moon")}: ${ps.groom_total} · ${t("bride_moon")}: ${ps.bride_total} · ${LANG === "ne" ? ps.verdict_ne : ps.verdict_en}</p></div>`;
-    html += `<div class="pred-block"><h4>Bhava Milan</h4><p>${bm.lines.map((l) => bi(l)).join("<br>")}<br><b>${LANG === "ne" ? bm.verdict_ne : bm.verdict_en}</b></p></div>`;
+    let html = `<div class="pred-block"><h4>Papasamya</h4><p>${t("groom_moon")}: ${ps.groom.total} · ${t("bride_moon")}: ${ps.bride.total} · ${ps.verdict}</p></div>`;
+    html += `<div class="pred-block"><h4>Bhava Milan</h4><p>${t("groom_moon")} vs ${t("bride_moon")}: ${bm.groom_moon_vs_bride_lagna} · ${bm.bride_moon_vs_groom_lagna}<br><b>${bm.verdict}</b></p></div>`;
     if (m.dasha_sandhi) {
-      html += `<div class="pred-block"><h4>Dasha Sandhi</h4><p>${m.dasha_sandhi.map((d) => bi(d)).join("<br>")}</p></div>`;
+      const dsLine = (d) => d.in_window && d.nearest
+        ? `${d.nearest.level} ${planetName(d.nearest.lord)} ${d.nearest.kind} ${d.nearest.date} (${d.nearest.days_away} ${LANG === "ne" ? "दिन टाढा" : "days away"})`
+        : (LANG === "ne" ? "सन्धि छैन" : "no Sandhi in window");
+      html += `<div class="pred-block"><h4>Dasha Sandhi</h4><p>${t("groom_moon")}: ${dsLine(m.dasha_sandhi.groom)}<br>${t("bride_moon")}: ${dsLine(m.dasha_sandhi.bride)}</p></div>`;
     }
     html += `<div class="pred-block"><h4>${LANG === "ne" ? "संयुक्त निष्कर्ष" : "Combined verdict"}</h4><p>${bi(m.combined_verdict)}</p></div>`;
     ext.innerHTML = html;
+  }
+  const porEl = document.getElementById("match-porutham");
+  if (porEl && m.porutham) {
+    const po = m.porutham;
+    porEl.innerHTML = `<h3>${t("porutham_title")}</h3>` +
+      `<div class="score-hero"><div class="score-number"><span>${po.total}</span><span class="score-max">/36</span></div>` +
+      `<p class="score-verdict">${LANG === "ne" ? po.verdict_ne : po.verdict_en}</p></div>` +
+      `<div class="table-scroll"><table class="data-table"><thead><tr><th>${LANG === "ne" ? "पोरुथम" : "Porutham"}</th><th>${t("th_score")}</th><th>${t("th_detail")}</th></tr></thead>` +
+      `<tbody>${po.breakdown.map((row) => `<tr><td><b>${LANG === "ne" ? row.porutham_ne : row.porutham}</b></td><td>${row.score} / ${row.max}</td><td>${bi(row.detail)}</td></tr>`).join("")}</tbody></table></div>` +
+      (po.rajju_dosha ? `<p class="hint">⚠ Rajju Dosha</p>` : "") +
+      (po.vedha_present ? `<p class="hint">⚠ Vedha present</p>` : "");
   }
 }
 
@@ -1319,6 +1448,13 @@ if (shareBtn) shareBtn.addEventListener("click", async () => {
       const o = document.createElement("option"); o.value = i; o.textContent = LANG === "ne" ? NAK_NE[i] : n; nakSel.appendChild(o);
     });
   }
+  const moonSel = document.getElementById("u-moonsign");
+  if (moonSel) {
+    const none = document.createElement("option"); none.value = ""; none.textContent = "—"; moonSel.appendChild(none);
+    SIGNS_EN.forEach((_, i) => {
+      const o = document.createElement("option"); o.value = i; o.textContent = signName(i); moonSel.appendChild(o);
+    });
+  }
 })();
 const horoscopeForm = document.getElementById("horoscope-form");
 if (horoscopeForm) horoscopeForm.addEventListener("submit", async (ev) => {
@@ -1365,12 +1501,22 @@ if (muhurtaForm) {
     else params.set("tz", Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kathmandu");
     const nak = document.getElementById("u-nakshatra").value;
     if (nak) params.set("birth_nakshatra", nak);
+    const ms = document.getElementById("u-moonsign").value;
+    if (ms) params.set("birth_moon_sign", ms);
+    // Personalised election: reuse the kundali birth details from this session.
+    const bp = STATE.birthPayload;
+    if (bp && bp.dob && bp.tob) {
+      params.set("birth_dob", bp.dob); params.set("birth_tob", bp.tob);
+      if (bp.place_id) params.set("birth_place_id", bp.place_id);
+      else { if (bp.lat != null) params.set("birth_lat", bp.lat); if (bp.lon != null) params.set("birth_lon", bp.lon); if (bp.tz) params.set("birth_tz", bp.tz); }
+    }
     try {
       const res = await fetch(`/api/muhurta?${params}`);
       if (!res.ok) throw new Error("bad");
       MUHURTA_DATA = await res.json();
-      document.getElementById("muhurta-best").innerHTML = MUHURTA_DATA.best.map((d) => `
-        <div class="pred-block"><h4>${d.date} — ${LANG === "ne" ? d.grade_ne : d.grade} (${LANG === "ne" ? "अङ्क" : "score"} ${d.score})</h4><p>${d.factors.map((f) => bi(f)).join(" · ")}</p></div>`).join("");
+      const bestList = MUHURTA_DATA.best_election || MUHURTA_DATA.best;
+      document.getElementById("muhurta-best").innerHTML = bestList.map((d) => `
+        <div class="pred-block"><h4>${d.date} — ${LANG === "ne" ? d.election_grade_ne : d.election_grade} (${t("election_score_word")} ${d.election_score})</h4><p>${d.election_factors.map((f) => bi(f)).join(" · ")}</p></div>`).join("");
       const daySel = document.getElementById("muhurta-day");
       daySel.innerHTML = MUHURTA_DATA.days.map((d) => `<option value="${d.date}">${d.date} (${LANG === "ne" ? d.grade_ne : d.grade})</option>`).join("");
       daySel.onchange = () => renderMuhurtaDay(daySel.value);
@@ -1393,7 +1539,12 @@ function renderMuhurtaDay(dateStr) {
     `<p><b>${LANG === "ne" ? "अभिजित" : "Abhijit"}:</b> ${hhmm(d.abhijit.start)}–${hhmm(d.abhijit.end)}${wedNote}</p>` +
     `<p><b>Choghadiya (day):</b> ${segs(d.choghadiya_day)}<br><b>Choghadiya (night):</b> ${segs(d.choghadiya_night)}</p>` +
     `<p><b>Hora:</b> ${d.hora.map((h) => `${planetName(h.lord)} ${hhmm(h.start)}`).join(" · ")}</p>` +
-    `<p class="hint">${d.factors.map((f) => `${bi(f)} (${f.points > 0 ? "+" : ""}${f.points})`).join(" · ")}</p>`;
+    `<p class="hint">${d.factors.map((f) => `${bi(f)} (${f.points > 0 ? "+" : ""}${f.points})`).join(" · ")}</p>` +
+    `<p><b>${t("election_score_word")}:</b> ${d.election_score} (${LANG === "ne" ? d.election_grade_ne : d.election_grade})</p>` +
+    `<p class="hint">${(d.election_factors || []).map((f) => `${bi(f)} (${f.points > 0 ? "+" : ""}${f.points})`).join(" · ")}</p>` +
+    (d.panchaka ? `<p><b>Panchaka:</b> ${d.panchaka.active ? (LANG === "ne" ? "सक्रिय" : "active") + (d.panchaka.type ? ` (${d.panchaka.type})` : "") : (LANG === "ne" ? "छैन" : "none")}</p>` : "") +
+    (d.lagna_strength ? `<p><b>${LANG === "ne" ? "निर्वाचित लग्न" : "Elected Lagna"}:</b> ${signName(d.lagna_strength.lagna_sign)} (${d.lagna_strength.verdict})</p>` : "") +
+    (d.dasha_suitability ? `<p><b>Dasha:</b> ${planetName(d.dasha_suitability.mahadasha_lord)} (${d.dasha_suitability.verdict})</p>` : "");
 }
 
 /* Month calendar */

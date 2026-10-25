@@ -224,16 +224,45 @@ def muhurta(
     lon: float | None = None,
     tz: str | None = None,
     birth_nakshatra: int | None = None,
+    birth_moon_sign: int | None = None,
+    birth_dob: str | None = None,
+    birth_tob: str | None = None,
+    birth_place_id: str | None = None,
+    birth_lat: float | None = None,
+    birth_lon: float | None = None,
+    birth_tz: str | None = None,
 ):
+    """Muhurta finder; optional birth_* params enable the personalised
+    election (Chandra Bala needs birth_moon_sign; dasha suitability
+    needs the full birth chart)."""
+    from datetime import datetime as _dt
+    from datetime import time as _time
+
+    from astro import ephemeris as _eph
+    from astro import dasha as _dasha
     from astro import muhurta as muhurta_module
 
     _validate_coords_tz(lat, lon, tz)
+    _validate_coords_tz(birth_lat, birth_lon, birth_tz)
     try:
         place = engine.resolve_place({"place_id": place_id, "lat": lat, "lon": lon, "tz": tz})
         d_from = date.fromisoformat(date_from) if date_from else date.today()
         d_to = date.fromisoformat(date_to) if date_to else d_from
-        result = muhurta_module.muhurta_range(d_from, d_to, place["lat"], place["lon"],
-                                              place["tz"], activity, birth_nakshatra)
+        dasha_tree = natal_planets = natal_lagna = None
+        if birth_dob and birth_tob:
+            bplace = engine.resolve_place({"place_id": birth_place_id, "lat": birth_lat,
+                                           "lon": birth_lon, "tz": birth_tz})
+            bdt = _eph.make_local_datetime(date.fromisoformat(birth_dob),
+                                           _time.fromisoformat(birth_tob), bplace["tz"])
+            bjd = _eph.to_julian_day(bdt)
+            natal_planets = _eph.planet_longitudes(bjd)
+            natal_lagna = int(_eph.ascendant(bjd, bplace["lat"], bplace["lon"], b"W") // 30.0)
+            dasha_tree = _dasha.vimshottari_tree(bdt, natal_planets["Moon"]["longitude"])
+            if birth_moon_sign is None:
+                birth_moon_sign = natal_planets["Moon"]["sign"]
+        result = muhurta_module.muhurta_range(
+            d_from, d_to, place["lat"], place["lon"], place["tz"], activity,
+            birth_nakshatra, birth_moon_sign, dasha_tree, natal_planets, natal_lagna)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     result["place"] = place

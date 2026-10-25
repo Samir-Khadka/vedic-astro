@@ -344,6 +344,33 @@ def build_html(bundle: dict, lang: str = "en") -> str:
     if tb.get("current"):
         body.append(f"<p>{T('Tribhagi Dasha now', 'हालको त्रिभागी दशा')}: {_esc(tb['current']['lord'])} · "
                     f"{_esc(tb['current']['start'])} → {_esc(tb['current']['end'])}</p>")
+    # Ashtottari dasha (108-year conditional system, Ketu excluded).
+    ash = bundle.get("ashtottari") or {}
+    if ash.get("current"):
+        body.append(f"<h3>{T('Ashtottari Dasha — 108-year cycle', 'अष्टोत्तरी दशा — १०८-वर्षीय चक्र')}</h3>")
+        ac = ash["current"]
+        body.append(f"<p>{T('Current', 'हाल')}: {_esc(ac['mahadasha']['lord'])} {T('Mahadasha', 'महादशा')} "
+                    f"({_esc(ac['mahadasha']['start'])} → {_esc(ac['mahadasha']['end'])})"
+                    f"{(' · ' + _esc(ac['antardasha']['lord']) + ' ' + T('Antardasha', 'अन्तर्दशा')) if ac.get('antardasha') else ''}</p>")
+        ap = bundle.get("ashtottari_applicability") or {}
+        if ap:
+            body.append(f"<p>{T('Applies traditionally', 'परम्परागत रूपमा लागू हुन्छ')}: "
+                        f"{T('yes', 'हो') if ap.get('applies') else T('no', 'होइन')} · "
+                        f"{T('Rahu condition', 'राहु शर्त')}: {T('met', 'पूरा') if ap.get('rahu_condition') else T('not met', 'पूरा छैन')} · "
+                        f"{T('Day-night/paksha condition', 'दिन-रात/पक्ष शर्त')}: "
+                        f"{T('met', 'पूरा') if ap.get('day_night_paksha_condition') else T('not met', 'पूरा छैन')}</p>")
+        body.append("<table><tr><th>" + T("Lord", "स्वामी") + "</th><th>" + T("From", "देखि") + "</th><th>"
+                    + T("To", "सम्म") + "</th><th>" + T("Years", "वर्ष") + "</th></tr>")
+        for m in ash["mahadashas"]:
+            body.append(f"<tr><td>{_esc(m['lord'])}</td><td>{_esc(m.get('display_start') or m['start'])}</td>"
+                        f"<td>{_esc(m['end'])}</td><td>{m['years']}</td></tr>")
+        body.append("</table>")
+    # Vimshottari depth: Sookshma + Prana of the running period.
+    cur_full = bundle["dasha"].get("current") or {}
+    if cur_full.get("sookshma"):
+        sk, pr = cur_full["sookshma"], cur_full.get("prana")
+        body.append(f"<p>{T('Sookshma', 'सूक्ष्म')}: {_esc(sk['lord'])} ({_esc(sk['start'])} → {_esc(sk['end'])})"
+                    f"{(' · ' + T('Prana', 'प्राण') + ': ' + _esc(pr['lord']) + ' (' + _esc(pr['start']) + ' → ' + _esc(pr['end']) + ')') if pr else ''}</p>")
 
     # --------------------------------------------------------------- divisional
     h2("vargas", "Divisional Charts — the Vargas Speak", "वर्ग कुण्डलीहरू — वर्गहरूको विश्लेषण")
@@ -373,6 +400,45 @@ def build_html(bundle: dict, lang: str = "en") -> str:
         title_pair = CHAPTER_TITLES.get(key, (key.title(), key))
         body.append(f"<h3>{_esc(title_pair[1] if ne else title_pair[0])}</h3>")
         body.append(paras(facts))
+
+    # ------------------------------------------------- argala + nakshatra deep-dive
+    arg = bundle.get("argala") or {}
+    if arg.get("by_house"):
+        h2("argala", "Jaimini Argala — Planetary Intervention", "जैमिनी अर्गला — ग्रह हस्तक्षेप")
+        body.append("<table><tr><th>" + T("House", "भाव") + "</th><th>" + T("Argala", "अर्गला") + "</th><th>"
+                    + T("Virodhargala", "विरोधर्गला") + "</th><th>" + T("Verdict", "निष्कर्ष") + "</th></tr>")
+        for row in arg["by_house"]:
+            body.append(f"<tr><td>{row['house']}</td>"
+                        f"<td>{_esc(', '.join(a['planet'] for a in row['argala']) or '—')}</td>"
+                        f"<td>{_esc(', '.join(v['planet'] for v in row['virodhargala']) or '—')}</td>"
+                        f"<td>{_esc(row['verdict'])}</td></tr>")
+        body.append("</table>")
+        body.append(f"<p>{pick(arg['method_note'])}</p>")
+    nd = bundle.get("nakshatra_deep") or {}
+    if nd:
+        h2("nakshatra", "Nakshatra Deep-Dive — Tara, Chandra Bala, Avasthas",
+           "नक्षत्र गहन अध्ययन — तारा, चन्द्रबल, अवस्था")
+        nt = nd.get("nava_tara") or {}
+        if nt:
+            body.append(f"<p>{T('Birth nakshatra', 'जन्म नक्षत्र')}: "
+                        f"{_esc(nt.get('natal_nakshatra_ne') if ne else nt.get('natal_nakshatra_en', ''))} · "
+                        f"{T('Caution stars', 'सावधानीका तारा')}: {_esc(', '.join(nt.get('caution_stars', [])))}</p>")
+        tb = nd.get("tarabala_today") or {}
+        cb = nd.get("chandrabala_today") or {}
+        if tb:
+            body.append(f"<p>{T('Today\'s Tarabala', 'आजको ताराबल')}: {tb['tara']} "
+                        f"{_esc(tb['tara_ne'] if ne else tb['tara_en'])} ({_esc(tb['verdict'])})</p>")
+        if cb:
+            body.append(f"<p>{T('Today\'s Chandra Bala', 'आजको चन्द्रबल')}: {cb['position']} ({_esc(cb['verdict'])})</p>")
+        avs = (nd.get("avasthas") or {}).get("planets", [])
+        if avs:
+            body.append("<table><tr><th>" + T("Planet", "ग्रह") + "</th><th>" + T("Sign", "राशि") + "</th><th>"
+                        + T("Balaadi", "बालादि") + "</th><th>" + T("Jagratadi", "जाग्रतादि") + "</th></tr>")
+            for r in avs:
+                body.append(f"<tr><td>{_esc(r['planet'])}</td><td>{_esc(r['sign_ne'] if ne else r['sign_en'])}</td>"
+                            f"<td>{_esc(r['balaadi'])} ({int(r['balaadi_strength'] * 100)}%)</td>"
+                            f"<td>{_esc(r['jagratadi'])}</td></tr>")
+            body.append("</table>")
 
     h2("remedies", "Doshas & Remedies", "दोष र उपायहरू")
     doshas = bundle.get("doshas") or {}
@@ -409,6 +475,22 @@ def build_html(bundle: dict, lang: str = "en") -> str:
         body.append(f"<h3>{pick(dr['dosha'])}</h3>")
         for item in dr["items"]:
             body.append(f"<p>• {pick(item)}</p>")
+    # Full gemstone + Rudraksha guide (all nine planets).
+    gem = report.get("gemstones", {})
+    if gem.get("planets"):
+        body.append(f"<h3>{T('Gemstone & Rudraksha Guide', 'रत्न र रुद्राक्ष मार्गदर्शन')}</h3>")
+        body.append("<table><tr><th>" + T("Planet", "ग्रह") + "</th><th>" + T("Stone", "रत्न") + "</th><th>"
+                    + T("Weight", "तौल") + "</th><th>" + T("Metal / Finger / Day", "धातु / औंला / बार")
+                    + "</th><th>" + T("Rudraksha", "रुद्राक्ष") + "</th></tr>")
+        for g in gem["planets"]:
+            body.append(f"<tr><td>{_esc(g['planet'])}</td><td>{pick(g['stone'])}</td>"
+                        f"<td>{_esc(g['weight_ratti'])} ({_esc(g['weight_carat_approx'])})</td>"
+                        f"<td>{pick(g['metal'])} / {pick(g['finger'])} / {pick(g['day'])}</td>"
+                        f"<td>{pick(g['rudraksha']['name'])}</td></tr>")
+        body.append("</table>")
+        for g in gem["planets"]:
+            if g.get("caution"):
+                body.append(f"<p><strong>{_esc(g['planet'])}:</strong> {pick(g['caution'])}</p>")
 
     # ---------------------------------------------------------------- lal kitab
     lk = bundle.get("lal_kitab", {})
@@ -423,6 +505,19 @@ def build_html(bundle: dict, lang: str = "en") -> str:
         for r in lk.get("rin", []):
             if r["detected"] is True:
                 body.append(f"<p><strong>{pick(r['name'])}:</strong> {pick(r['remedy'])}</p>")
+        teva = lk.get("teva") or {}
+        for m in teva.get("matched", []):
+            body.append(f"<p><strong>{_esc(m['type_ne'] if ne else m['type'])}:</strong> "
+                        f"{_esc(m['formation'])} — {pick(m['reading'])} {pick(m['remedy'])}</p>")
+        if teva.get("variance_note"):
+            body.append(f"<p class='small'>{pick(teva['variance_note'])}</p>")
+        lkd = bundle.get("lal_kitab_dasha") or {}
+        if lkd.get("current"):
+            c = lkd["current"]
+            body.append(f"<h3>{T('Lal Kitab Dasha — 35-year cycle', 'लाल किताब दशा — ३५-वर्षीय चक्र')}</h3>")
+            body.append(f"<p>{T('Current', 'हाल')}: {_esc(c['planet'])} ({_esc(c['start'])} → {_esc(c['end'])})"
+                        f"{(' · ' + _esc(c['antardasha']['planet']) + ' ' + T('Antardasha', 'अन्तर्दशा')) if c.get('antardasha') else ''}</p>")
+            body.append(f"<p class='small'>{pick(lkd['method_note'])}</p>")
 
     # ------------------------------------------------- transits & timing synthesis
     h2("transits", "Transits, Sade Sati & Timing Synthesis", "गोचर, साढेसाती र समय संश्लेषण")
@@ -435,6 +530,17 @@ def build_html(bundle: dict, lang: str = "en") -> str:
     if tp.get("sade_sati_detail"):
         body.append(f"<h3>{T('Sade Sati — exact span', 'साढेसाती — यथार्थ अवधि')}</h3>")
         body.append(f"<p>{pick(tp['sade_sati_detail'])}</p>")
+    sade_lt = bundle.get("sade_sati_lifetime") or {}
+    if sade_lt.get("periods"):
+        body.append(f"<h3>{T('Lifetime Sade Sati', 'आजीवन साढेसाती')}</h3>")
+        body.append("<table><tr><th>" + T("Status", "स्थिति") + "</th><th>" + T("Rising", "उदय")
+                    + "</th><th>" + T("Peak", "चरम") + "</th><th>" + T("Setting", "अस्त")
+                    + "</th><th>" + T("Ends", "समाप्ति") + "</th></tr>")
+        for p in sade_lt["periods"]:
+            body.append(f"<tr><td>{_esc(p['status'])}</td><td>{_esc(p['start'] or '—')}</td>"
+                        f"<td>{_esc(p['peak_start'] or '—')}</td><td>{_esc(p['setting_start'] or '—')}</td>"
+                        f"<td>{_esc(p['end'])}</td></tr>")
+        body.append("</table>")
     ingress = (bundle.get("transits_detail") or {}).get("ingress", [])
     if ingress:
         body.append(f"<h3>{T('Next Ingresses', 'आगामी प्रवेशहरू')}</h3><table><tr><th>{T('Planet', 'ग्रह')}</th>"
@@ -459,6 +565,19 @@ def build_html(bundle: dict, lang: str = "en") -> str:
             f"{_esc(v['varsha_lagna']['sign_ne'] if ne else v['varsha_lagna']['sign_en'])}, "
             f"Muntha {v['muntha']['house']}, {T('year lord', 'वर्ष स्वामी')} {_esc(v['year_lord'])}. {pick(v['reading'])}</p>"
         )
+        if v.get("panchadhikari"):
+            pc = v["panchadhikari"]
+            tj = v.get("tajika") or {}
+            body.append(
+                f"<p>{T('Panchadhikari Year Lord', 'पञ्चाधिकारी वर्ष स्वामी')}: {_esc(pc['year_lord'])} · "
+                f"{T('Tajika yogas', 'ताजिक योगहरू')}: {tj.get('favourable_count', 0)} "
+                f"{T('favourable', 'शुभ')} / {tj.get('unfavourable_count', 0)} {T('unfavourable', 'अशुभ')} · "
+                + "; ".join(f"{k}: {_esc(s['sign_ne'] if ne else s['sign_en'])} ({_esc(s['strength'])})"
+                            for k, s in (v.get("sahams") or {}).items())
+                + "</p>"
+            )
+            for pr in tj.get("pairs", []):
+                body.append(f"<p>• {_esc(pr['yoga'])}: {', '.join(pr['planets'])} — {pick(pr['reading'])}</p>")
     ya = report.get("year_ahead", [])
     if ya:
         body.append(f"<h3>{T('Year Ahead — by Moon Sign', 'वर्ष अगाडि — चन्द्र राशिअनुसार')}</h3>")

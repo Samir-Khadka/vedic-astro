@@ -292,3 +292,222 @@ Complete the Rin set from 3 to 9 using the same detection pattern already in the
 - Prices (Brihat ₹996/₹3,999; Prokerala tiers; Parashara's Light ₹5,900–₹25,960; AstroYogi ~$0.65/min) are point-in-time snapshots from public pages on 2026-10-25 and will drift.
 - The Sudarshana correction (§3.4) and the Varshphal/gemstone/Sade Sati corrections (§0) were verified against our own code, not against competitors.
 - Nothing in this file is copied from a competitor: feature descriptions are paraphrases, method paragraphs (§4) are reconstructions from classical rules as described in the cited public method pages, and code must be written fresh — in particular, do not lift PyJHora (AGPL-family) or Maitreya (GPL) code into this repo without a licence review.
+
+## 8. Gap-closure addendum (2026-10-25) — all remaining gaps built
+
+Samir's instruction for this round: build every remaining gap **except live
+pandit consultation** ("will add pandit later on", 2026-10-25 14:28 NPT).
+Every item below is computed from the real chart, bilingual EN/नेपाली,
+on-page + premium PDF where it belongs, with goldens/invariants in
+`tests/test_worldclass2.py` (27 tests). Baseline at closure: 102 pytest +
+17 node before this round; see §8.10 for the final totals.
+
+### 8.1 Varshphal Tajika layer — CLOSED (§3.6, §4.6 a/c/d)
+
+`astro/tajika.py`: Tajika yogas from the annual (solar-return) chart —
+Ithasala vs Isharpha by 1-day linear extrapolation of signed speeds
+(applying vs separating, retrograde-safe), Nakta (translation of light:
+no mutual aspect, a faster planet aspects both), Yamaya (collection of
+light: both apply to one common slower planet), Manau (Ithasala spoiled by
+Mars/Saturn within orb of the faster planet), Kambula/Gairi-Kambula as a
+flagged simplified Moon reading, Ikbala/Induvara chart patterns. Tajika
+aspects are the five classical angles (0/60/90/120/180) within a documented
+8° orb simplification (classical Deeptamsa varies by planet). Sahams by the
+direct formula (no +30° variant): Punya day Moon−Sun+Lagna / night
+Sun−Moon+Lagna, Vivaha Venus−Saturn+Lagna, Yasas Jupiter−Punya+Lagna,
+Mahatmya Punya−Mars+Lagna, each with lord, house, dignity and strength.
+Panchadhikari election (§4.6a): the five officers (natal-Lagna lord,
+Muntha lord, Varsha-Lagna lord, Dina-Ratri lord = lord of the Sun's sign by
+day / Moon's sign by night, Dorothean triplicity lord), qualifying only by
+a Tajika aspect to the Varsha Lagna degree, scored by a simplified Pancha
+Vargeeya Bala (dignity + house points, documented approximation — the full
+five-fold strength needs divisional charts), classical fallback to the
+Muntha lord when no officer aspects. All three layers render per year in
+the premium Varshphal block and the PDF forecast section. **Remainder
+inside §4.6: Mudda dasha (§4.6e), the year-internal month-timing dasha —
+not built in this round** (the task item named Tajika yogas + Sahams +
+year-lord integration only). Recorded here, not dropped, not silently
+added.
+
+### 8.2 Jaimini Argala — CLOSED (§3.7, §4.7)
+
+`astro/argala.py`: per-house Argala (2nd/4th/11th, extended 5th) and
+Virodhargala (12th/10th/3rd, extended 9th against 5th), Ketu reversal
+(Ketu in 12th/10th/3rd supports, in 2nd/4th/11th obstructs, 9th extends),
+3+ malefics in the 3rd as a malefic Argala of its own, verdict "argala
+prevails" iff supporters outnumber obstructers. Per-house and per-planet
+tables on-page and in the PDF. Goldens hand-checked incl. the Ketu
+reversal cases.
+
+### 8.3 More dasha systems — CLOSED (§3.14, §4.12)
+
+`astro/dasha.py`: **Ashtottari** — 108-year cycle, Ketu excluded
+(Mercury included; an early research table claiming the reverse was
+checked against two further sources and rejected), Ardra-anchored blocks
+(Sun 4 / Moon 3 / Mars 4 / Mercury 3 / Saturn 4 / Jupiter 3 / Rahu 4 /
+Venus 3 nakshatras, Abhijit-aware: the intercalary division belongs to
+Saturn's block and changes only the balance fraction), 8 MDs + 8 ADs
+each, both classical applicability conditions reported separately
+(Rahu in kendra/trikona from the Lagna lord and not in the Lagna; day
+birth in Krishna paksha OR night birth in Shukla paksha) — computed
+regardless, as advisory, since traditions differ on necessity.
+**Vimshottari depth**: the current period now resolves to Sookshma
+(9 sub-periods of the running Pratyantardasha) and Prana (9 of the
+running Sookshma) via a generalised subdivider (Vimshottari behaviour
+unchanged). Sample chart: Ashtottari current Jupiter MD, Vimshottari
+current Venus MD / Mercury AD / Moon PD / Mercury Sookshma / Saturn Prana.
+
+### 8.4 Nakshatra deep-dive — CLOSED (§3.14, §4.13)
+
+`astro/nakshatra.py`: **Nava Tara** — all 27 nakshatras counted from the
+natal Moon nakshatra with Tara names and the 9 caution stars (Vipat,
+Pratyak, Naidhana across 3 cycles). **Tarabala** with cycle and strength
+note (2nd-cycle evil halved, 3rd negligible, but Vipat/Naidhana still
+flagged). **Chandrabala** — transit Moon sign counted from Janma Rashi:
+favourable {1,3,6,7,10,11}, neutral {2,5,9} (the 9th-position split is
+documented: one tradition mildly unfavourable, the classical Muhurta
+text favourable; neutral used), avoid {4,8,12}, 8th = Ashtama Chandra.
+**Avasthas** per BPHS ch. 45: Balaadi by 6° parts per sign (odd signs
+Bala→Mrita outward, even signs reversed; strengths Bala 1/4, Kumara 1/2,
+Yuva full, Vriddha minimal, Mrita none) + Jagratadi (own/exalted =
+Jagrat, friendly/neutral = Swapna, enemy/debilitated = Sushupti);
+Rahu/Ketu Jagratadi shown as Swapna and flagged indeterminate (no
+classical dignity table). Scheme documented in the module, not a verdict.
+
+### 8.5 Lal Kitab completion — CLOSED (§3.14, §4.14, with one correction)
+
+`astro/lalkitab.py`: all 8 detectable Rin now detected (Pitri, Swa,
+Matri pre-existing + **Stree** Sun/Moon/Rahu in 2/7, **Bhratri**
+Mercury/Venus in 1/8, **Kanya** Mercury in 3/6, **Zulm** Sun/Moon/Mars in
+10/12, **Ajanma** Sun/Venus/Mars in 12), each with a `confidence` field;
+**Kudrati Rin stays reference-only** — no formation rule for it was
+verified in the sources found, so it is listed with its remedy but never
+presented as detected (honesty rule from the task brief). Two
+pre-existing associated labels were corrected while adding detection
+(Bhratri: Mercury/Venus, not Mars; Zulm: Sun/Moon/Mars, not Saturn).
+**Teva types**: Andha (mutual enemy planets together in the 10th khana,
+or the 10th khana entirely vacant), Adha Andha (Sun in 4th + Saturn in
+7th), Dharmi (OR-reading: Jupiter+Saturn together, or Saturn in 11th,
+or Rahu/Ketu in 4th / with the Moon — the stricter AND-variant from a
+second source is documented in the `variance_note`, not silently
+picked), Nabaligh (kendra khanas vacant or holding only Mercury, Saturn,
+Rahu or Ketu). **CORRECTION to §3.14/§4.14: the Lal Kitab dasha cycle is
+35 years, not 36** — the published source found (IndiaDivine "LK Grammar:
+35 year Dasha Chakra", citing Arun Sanhita 1952 ed. p.10) gives Jupiter 6,
+Sun 2, Moon 1, Venus 3, Mars 6, Mercury 2, Saturn 6, Rahu 6, Ketu 3 = 35,
+with three equal antardashas per Mahadasha (generalised from the single
+published Jupiter example: prev/self/next order, flagged low-confidence).
+The same source stresses the book gives NO start-point rule and scholars
+propose conflicting alternatives — **no start point was invented**: the
+first cycle is anchored at birth with Jupiter (first planet of the
+published sequence) and every LK-dasha date is marked indicative.
+Sample chart: current Rahu MD 2024-05-13→2030-05-14.
+
+### 8.6 Dashakoota / Porutham full tables — CLOSED (§3.11, §4.11d)
+
+`astro/porutham.py`: the South Indian 10-Porutham system as a second
+matchmaking system alongside Ashtakoota, with its own verdict — Dina 3,
+Gana 4, Mahendra 2, Sthree Deergha 2, Yoni 4, Rasi 7, Rasyadhipati 5,
+Vasya 2, Rajju 5, Vedha 2 (36 points; ≥28 Excellent, ≥18 Acceptable).
+Tables as verified from multiple agreeing sources: Gana triads, Yoni
+animals + 5-tier scoring (same 4, friend 3, neutral 2, mild enemy 1,
+bitter enemy 0; serpent–rat counted mild, with the bitter-variant
+documented), Mahendra counts {4,7,10,13,16,19,22,25}, Sthree Deergha
+>13 (variants >15 / >9 documented, not adopted), Rasi 6/8/12 fail,
+Rasyadhipati mirroring Graha Maitri scoring, Vasya control table,
+Rajju five groups (consensus groups; the getzodian Ardra/Punarvasu
+variant noted, not used), 13 Vedha pairs (Chitra neither gives nor
+receives). Direction conventions documented: Dina counts the groom's
+star from the bride's; Mahendra/Sthree Deergha count the bride's star
+from the groom's; Gana scored without direction. Rajju Dosha is a
+deal-breaker flag even when the total passes; Vedha flagged. Two pairs
+hand-recomputed in tests (14/36 with Rajju Dosha + Vedha; 23/36 clean).
+A drive-by fix landed with this item: `renderMatch`'s extended block
+referenced stale engine fields and rendered "undefined" — fixed to the
+actual engine fields.
+
+### 8.7 Lifetime Sade Sati list — CLOSED (§3.13)
+
+`astro/transits.py: sade_sati_lifetime`: every Sade Sati period across
+100 years from birth, reusing the existing bisected-ingress machinery —
+maximal runs inside {Moon−1, Moon, Moon+1}, retrograde dips under 400 days
+merged, first entries into Moon−1 (rising) / Moon (peak) / Moon+1
+(setting) + final exit, past/current/future marked,
+`already_running_at_birth` flagged. Sample chart (Moon Scorpio):
+3 periods, first 2011-11-15 → 2020-01-24 (matches the known sidereal
+Saturn ingresses Libra Nov 2011 / Scorpio Nov 2014 / Sagittarius Jan 2017
+/ Capricorn Jan 2020). Rendered in the existing transit section, not a
+second Sade Sati page (per §3.13).
+
+### 8.8 Standalone gemstone/Rudraksha section — CLOSED (§3.12)
+
+`astro/report.py: gemstone_guide`: all 9 planets with stone, weight in
+ratti + ≈carat (1 ratti ≈ 0.91 carat jeweller's conversion), finger,
+metal, day, beej mantra, deity, colour, number, Rudraksha mukhi, wearing
+guidance, chart roles (life/lucky/fortune), weak-by-Shadbala flags, the
+dusthana-lord caution reused from the remedies logic, and a trial-period
+note. Guidance-only, no shop link, and the existing safety rule is kept:
+never recommend strengthening a 6/8/12 lord by gemstone. On-page premium
+card + PDF remedies section, EN + NE.
+
+### 8.9 Full personalised election (Muhurta v2) — CLOSED (§3.1, §4.1 extension)
+
+`astro/muhurta.py`: the finder now layers, on top of the existing
+Choghadiya/Rahu Kaal/Abhijit/Hora/activity scoring, four personalising
+checks combined into one **election score with the reasoning shown**:
+Chandra Bala (+2/0/−2 from the user's Janma Rashi), Panchaka check
+(active set + classical remainder-rule type, used to *type* the day's
+Panchaka — traditionally a death/funeral-timing rule, labelled as such;
+−2, or −3 for a house activity), Lagna strength at the elected moment
+(Lagna lord dignity, benefics/malefics in Lagna, Moon's house from
+Lagna; +2/0/−2), and dasha-period suitability (running Vimshottari MD:
+benefic or Lagna lord +1, debilitated or dusthana −1, else 0). The
+elected moment is the first good Choghadiya window start, else the
+Abhijit midpoint. `GET /api/muhurta` accepts `birth_moon_sign` and/or
+full birth data (dob+tob+place resolve the natal chart in-session);
+`best_election` ranks days by election score while `best` keeps the
+original day-score ranking (an existing test pins that ordering).
+This is computation, not the deferred pandit consultation: the UI still
+says the election is classical guidance, not a pandit's judgement.
+
+### 8.10 Honestly deferred — NOT built, NOT dropped
+
+- **Live pandit consultation** (human judgement: conflicting-rule
+  judgement, remedial prescription for a specific life situation,
+  conversation). Deferred by Samir to a later phase ("will add pandit
+  later on", 2026-10-25 14:28 NPT). Recorded here as **planned later**,
+  not dropped. §5's first two bullets still stand.
+- **Palmistry / photo-based inputs** (face reading, Tarot-as-a-service,
+  Vastu visits, pooja booking, remedy shops). Assessed honestly: a
+  photo-based palm reading cannot be done reliably without a human —
+  palm-line detection from a phone photo is error-prone, and any
+  code-generated "reading" from it would be fabrication, not astrology.
+  This is the one remaining human-judgement item alongside pandit
+  consultation, for the reason in §5's third bullet. Out of scope by
+  design, not a technical gap to close with a randomiser.
+- **Mudda dasha** (§4.6e) — see §8.1. A real classical sub-system,
+  deferred because the task item named only Tajika yogas + Sahams +
+  year-lord integration; it is the only computation item left open.
+- P2s still open from §6 step 8 (not in this round's scope): Upagrahas +
+  special Lagnas, Ishta Devta, Sarvatobhadra/Kalachakra/Panchapakshi/
+  Tithi Pravesha, favourable-periods page, baby-name list.
+
+### 8.11 Build notes (honest)
+
+- A real bug was found and fixed during this round: two PDF lines used
+  `\"...\"` inside a double-quoted f-string expression, which this
+  Python 3.12.3 build rejects at import ("unexpected character after
+  line continuation character"). Fixed to single-quoted strings; the
+  new PDF tests cover both languages' new sections.
+- Method decisions that must not be silently changed: Tajika 8° orb;
+  Saham direct formula; Panchadhikari simplified Bala + Muntha
+  fallback; LK dasha 35 years, birth-anchored, indicative dates;
+  Ashtottari Ardra anchor, Ketu excluded, Abhijit-aware; Porutham
+  36-point weighting + stated direction conventions; Chandra Bala
+  neutral set {2,5,9} with the 9th-split note; Panchaka remainder rule
+  used for typing only; Avastha schemes per BPHS ch. 45 as documented
+  in `astro/nakshatra.py`.
+- Final totals for this round (full-suite run after the PDF fix):
+  **130 pytest passed** (103 pre-existing + 27 new
+  `tests/test_worldclass2.py`) **+ 17 node passed**; `node --check`
+  clean on app.js. Full run: 188.79s, zero failures.

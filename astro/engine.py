@@ -5,6 +5,7 @@ from datetime import date, datetime, time, timezone
 from zoneinfo import ZoneInfo
 
 from . import (
+    argala as argala_module,
     ashtakavarga as av_module,
     bala as bala_module,
     chalit as chalit_module,
@@ -18,6 +19,7 @@ from . import (
     kp as kp_module,
     kp_events as kp_events_module,
     lalkitab as lk_module,
+    nakshatra as nakshatra_module,
     naming as naming_module,
     numerology as numerology_module,
     panchang as panchang_module,
@@ -70,7 +72,19 @@ def _serialize_dasha(tree: dict, birth_dt: datetime) -> dict:
         for ad in md["antardashas"]:
             entry = _serialize_period(ad)
             if "pratyantardashas" in ad:
-                entry["pratyantardashas"] = [_serialize_period(x) for x in ad["pratyantardashas"]]
+                pd_entries = []
+                for pd in ad["pratyantardashas"]:
+                    pd_entry = _serialize_period(pd)
+                    if "sookshma_dashas" in pd:
+                        sk_entries = []
+                        for sk in pd["sookshma_dashas"]:
+                            sk_entry = _serialize_period(sk)
+                            if "prana_dashas" in sk:
+                                sk_entry["prana_dashas"] = [_serialize_period(x) for x in sk["prana_dashas"]]
+                            sk_entries.append(sk_entry)
+                        pd_entry["sookshma_dashas"] = sk_entries
+                    pd_entries.append(pd_entry)
+                entry["pratyantardashas"] = pd_entries
             ads.append(entry)
         m = _serialize_period(md)
         m["antardashas"] = ads
@@ -85,8 +99,31 @@ def _serialize_dasha(tree: dict, birth_dt: datetime) -> dict:
             "mahadasha": _serialize_period(cur["mahadasha"]),
             "antardasha": _serialize_period(cur.get("antardasha")),
             "pratyantardasha": _serialize_period(cur.get("pratyantardasha")),
+            "sookshma": _serialize_period(cur.get("sookshma")),
+            "prana": _serialize_period(cur.get("prana")),
         }
     return {"mahadashas": mds, "current": current, "balance_years": round(tree["balance_years"], 3)}
+
+
+def _serialize_ashtottari(tree: dict, birth_dt: datetime) -> dict:
+    mds = []
+    for md in tree["mahadashas"]:
+        m = _serialize_period(md)
+        m["antardashas"] = [_serialize_period(a) for a in md["antardashas"]]
+        if md["start"] < birth_dt:
+            m["display_start"] = birth_dt.date().isoformat()
+        mds.append(m)
+    cur = tree.get("current")
+    current = None
+    if cur:
+        current = {
+            "mahadasha": _serialize_period(cur["mahadasha"]),
+            "antardasha": _serialize_period(cur.get("antardasha")),
+        }
+    return {"mahadashas": mds, "current": current,
+            "balance_years": round(tree["balance_years"], 3),
+            "birth_division": tree.get("birth_division"),
+            "cycle_years": 108}
 
 
 def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
@@ -183,6 +220,24 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
     prastara = prastara_module.prastara(planets, lagna_sign)
     kp_events = kp_events_module.kp_event_analysis(kp, dasha_tree, transit_signs, lagna_sign)
     sudar = sudarshana_module.sudarshana(planets, lagna_sign)
+
+    # Gap-closure layer: Argala, Nakshatra deep-dive, Ashtottari,
+    # lifetime Sade Sati, Lal Kitab dasha.
+    argala = argala_module.argala_full(planets, lagna_sign)
+    natal_moon_nak = planets["Moon"]["nakshatra"]
+    natal_moon_sign = planets["Moon"]["sign"]
+    nakshatra_deep = {
+        "nava_tara": nakshatra_module.nava_tara(natal_moon_nak),
+        "tarabala_today": nakshatra_module.tara_of(natal_moon_nak, now_planets["Moon"]["nakshatra"]),
+        "chandrabala_today": nakshatra_module.chandrabala(natal_moon_sign, transit_signs["Moon"]),
+        "avasthas": nakshatra_module.avasthas_for_chart(planets),
+    }
+    ashto_tree = dasha_module.ashtottari_tree(birth_dt, planets["Moon"]["longitude"], now)
+    is_day_birth = bool(rise and set_ and rise <= birth_dt <= set_)
+    ashto_applies = dasha_module.ashtottari_applicability(
+        planets, lagna_sign, is_day_birth, birth_panchang["paksha"])
+    sade_lifetime = transits_module.sade_sati_lifetime(natal_moon_sign, jd, jd_now)
+    lk_dasha = lk_module.lal_kitab_dasha(birth_dt, now)
 
     planet_rows = []
     for name in ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"]:
@@ -309,6 +364,12 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         "prastara": prastara,
         "kp_events": kp_events,
         "sudarshana": sudar,
+        "argala": argala,
+        "nakshatra_deep": nakshatra_deep,
+        "ashtottari": _serialize_ashtottari(ashto_tree, birth_dt),
+        "ashtottari_applicability": ashto_applies,
+        "sade_sati_lifetime": sade_lifetime,
+        "lal_kitab_dasha": lk_dasha,
         "yogini": {
             "periods": [
                 {"name": p["name"], "planet": p["planet"],
@@ -430,6 +491,7 @@ def _dasha_sandhi(person: dict, marriage_day: date) -> dict:
 
 def compute_match(payload_a: dict, payload_b: dict, marriage_date: str | None = None) -> dict:
     from . import matching as matching_module
+    from . import porutham as porutham_module
 
     def person_of(payload: dict) -> dict:
         place = resolve_place(payload)
@@ -478,6 +540,8 @@ def compute_match(payload_a: dict, payload_b: dict, marriage_date: str | None = 
         "groom": pap_g, "bride": pap_b, "difference": pap_diff, "verdict": pap_verdict,
     }
     result["bhava_milan"] = _bhava_milan(groom, bride)
+    # Second system: South Indian Dashakoota / Porutham (10 factors).
+    result["porutham"] = porutham_module.porutham(groom, bride)
     sandhi = None
     if marriage_date:
         mday = date.fromisoformat(marriage_date)

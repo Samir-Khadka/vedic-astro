@@ -501,15 +501,32 @@ def varshphal(ctx: dict, years_ahead: int = 3) -> list[dict]:
         year_lord = SIGN_LORDS[v_lagna_sign]
         yl_house = house_of(ret_planets[year_lord]["sign"], v_lagna_sign)
         md, ad = _period_at(ctx["dasha_tree"], guess_local)
+        # Tajika layer for this annual chart: yogas, Sahams, Panchadhikari.
+        from zoneinfo import ZoneInfo as _ZI
+
+        from . import tajika as _tajika
+
+        ret_local = ephemeris.jd_to_utc_datetime(jd_ret).astimezone(_ZI(place["tz"]))
+        rise, set_ = ephemeris.sunrise_sunset(ret_local.date(), place["lat"], place["lon"], place["tz"])
+        is_day = bool(rise and set_ and rise <= ret_local <= set_)
+        tajika = _tajika.tajika_yogas(ret_planets, v_lagna_sign)
+        sahams = _tajika.saham_points(ret_planets, v_lagna_lon, v_lagna_sign, is_day)
+        panch = _tajika.panchadhikari(lagna_sign, muntha_sign, v_lagna_sign,
+                                      v_lagna_lon, ret_planets, is_day)
         out.append({
             "year": year,
             "age": age,
+            "solar_return": ret_local.isoformat(),
+            "is_day_return": is_day,
             "varsha_lagna": {"sign": v_lagna_sign, "sign_en": SIGNS_EN[v_lagna_sign], "sign_ne": SIGNS_NE[v_lagna_sign]},
             "muntha": {
                 "sign": muntha_sign, "sign_en": SIGNS_EN[muntha_sign], "sign_ne": SIGNS_NE[muntha_sign],
                 "house": muntha_house,
             },
             "year_lord": year_lord,
+            "tajika": tajika,
+            "sahams": sahams,
+            "panchadhikari": panch,
             "reading": _bi(
                 f"Annual Lagna {SIGNS_EN[v_lagna_sign]}; year lord {year_lord} is placed in the {HOUSE_NAMES_EN[yl_house-1]} house "
                 f"of the annual chart. Muntha is in the {HOUSE_NAMES_EN[muntha_house-1]} house ({HOUSE_THEMES_EN[muntha_house]}), "
@@ -523,12 +540,85 @@ def varshphal(ctx: dict, years_ahead: int = 3) -> list[dict]:
     return out
 
 
+def gemstone_guide(ctx: dict) -> dict:
+    """Standalone per-planet gemstone + Rudraksha deep-dive.
+
+    Every planet gets its classical stone, weight (ratti, with the
+    approximate jeweller's conversion 1 ratti = 0.91 carat), finger,
+    metal, weekday, beej mantra, deity, colour, number and Rudraksha
+    mukhi, plus wearing guidance. Chart-specific flags reuse the
+    remedies logic: the dusthana-lord caution (a dusthana lord's
+    stone is never advised — mantra and charity instead), the life /
+    lucky / fortune stones, and the two weakest Shadbala planets.
+    A stone is never prescribed blindly: the guidance names a trial
+    period under guidance for any stone that is not a chart lord's.
+    """
+    from .names import PLANET_NE as _PNE
+
+    planets, lagna_sign = ctx["planets"], ctx["lagna_sign"]
+    lords = house_lords(lagna_sign)
+    moon_lord = SIGN_LORDS[planets["Moon"]["sign"]]
+    roles = {lords[1]: "life", moon_lord: "lucky", lords[9]: "fortune"}
+    weak_set = set()
+    sb = ctx.get("shadbala") or {}
+    if sb.get("planets"):
+        ranked = sorted(sb["planets"].items(), key=lambda kv: kv[1]["rank"], reverse=True)
+        weak_set = {p for p, _row in ranked[:2]}
+    entries = []
+    for planet in ("Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"):
+        s_en, s_ne, m_en, m_ne, f_en, f_ne, d_en, d_ne, w = GEMSTONES[planet]
+        mukhi, r_en, r_ne = RUDRAKSHA[planet]
+        mantra_ne, mantra_tr = BEEJ_MANTRA[planet]
+        ratti = float(w.split()[0])
+        ruled = [hh for hh, lp in lords.items() if lp == planet]
+        dusthana = [hh for hh in ruled if hh in (6, 8, 12)]
+        caution = None
+        if dusthana:
+            caution = _bi(
+                f"{planet} rules dusthana house(s) {', '.join(str(x) for x in dusthana)} in this chart — "
+                f"its gemstone is NOT advised; strengthen it by mantra and charity instead.",
+                f"{_PNE[planet]} ले यस कुण्डलीमा दुष्टस्थान भाव {', '.join(str(x) for x in dusthana)} को शासन गर्छ — "
+                f"यसको रत्न सल्लाह दिइँदैन; यसलाई मन्त्र र दानले बलियो बनाउनुहोस्।",
+            )
+        entries.append({
+            "planet": planet, "planet_ne": _PNE[planet],
+            "stone": _bi(s_en, s_ne), "metal": _bi(m_en, m_ne),
+            "finger": _bi(f_en, f_ne), "day": _bi(d_en, d_ne),
+            "weight_ratti": w, "weight_carat_approx": f"~{ratti * 0.91:.1f} carat",
+            "mantra_ne": mantra_ne, "mantra_transliteration": mantra_tr,
+            "deity": _bi(*PLANET_DEITY[planet]),
+            "colour": _bi(*PLANET_COLOUR[planet]),
+            "number": PLANET_NUMBER[planet],
+            "rudraksha": {"mukhi": mukhi, "name": _bi(r_en, r_ne)},
+            "wearing": _bi(
+                f"Energise with the beej mantra on a {d_en}, then wear as a ring on the {f_en.lower()} "
+                f"or as a pendant; Rudraksha is worn as a mala or pendant after the same energising. "
+                f"If this is not a chart lord's stone, wear on trial under guidance first.",
+                f"{d_ne} बीज मन्त्रले अभिमन्त्रित गरी {f_ne} मा औंठीका रूपमा वा लकेटका रूपमा लगाउनुहोस्; "
+                f"रुद्राक्ष पनि त्यसैगरी अभिमन्त्रित गरी माला वा लकेटका रूपमा लगाइन्छ। "
+                f"यो कुण्डली-स्वामीको रत्न होइन भने पहिले मार्गदर्शनमा परीक्षण गरी लगाउनुहोस्।",
+            ),
+            "chart_role": roles.get(planet),
+            "weak_by_shadbala": planet in weak_set,
+            "rules_houses": ruled,
+            "caution": caution,
+        })
+    return {
+        "planets": entries,
+        "conversion_note": _bi(
+            "Weights are classical ratti; 1 ratti ≈ 0.91 carat is the approximate jeweller's conversion.",
+            "तौल शास्त्रीय रत्तीमा छ; १ रत्ती ≈ ०.९१ क्यारेट अनुमानित सुनारको रूपान्तरण हो।",
+        ),
+    }
+
+
 def generate_premium_report(ctx: dict) -> dict:
     return {
         "chapters": chapters(ctx),
         "favourable_periods": forecast(ctx, years=10),
         "varshphal": varshphal(ctx, years_ahead=3),
         "remedies": remedies(ctx),
+        "gemstones": gemstone_guide(ctx),
         "lucky": lucky_attributes(ctx),
         "year_ahead": year_ahead(ctx),
     }

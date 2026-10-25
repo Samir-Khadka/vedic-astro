@@ -215,3 +215,71 @@ def double_transit(jd_now: float) -> dict:
         "jupiter_sign": signs_now["Jupiter"]["sign"],
         "joint_signs": joint,
     }
+
+
+def sade_sati_lifetime(moon_sign: int, jd_birth: float, jd_now: float,
+                        years: int = 100) -> dict:
+    """Every Sade Sati period across the native's life, with exact
+    ingress dates. Saturn's sign is walked from birth over `years`
+    years; maximal runs inside {moon-1, moon, moon+1} are periods,
+    with short retrograde dips out of the set (< 400 days) merged
+    into the surrounding period — patros print the span from first
+    entry to final exit. Boundaries inside a period are the FIRST
+    entries into moon-1 (rising), the Moon sign (peak) and moon+1
+    (setting); the period end is the final exit from the set.
+    """
+    in_set = {(moon_sign - 1) % 12, moon_sign, (moon_sign + 1) % 12}
+    jd_end = jd_birth + years * 365.25
+    # Walk ingresses with their JDs.
+    events: list[tuple[float, int]] = []  # (jd, to_sign)
+    cursor = jd_birth
+    while cursor < jd_end:
+        njd = ingress_jd("Saturn", cursor)
+        if njd > jd_end:
+            break
+        events.append((njd, _sign_at("Saturn", njd + 0.01)))
+        cursor = njd + 1.0
+    # Raw in-set intervals between consecutive events.
+    intervals: list[tuple[float, float]] = []
+    cur_sign = _sign_at("Saturn", jd_birth)
+    cur_start = jd_birth
+    for jd, to_sign in events:
+        if cur_sign in in_set and to_sign not in in_set:
+            intervals.append((cur_start, jd))
+        elif cur_sign not in in_set and to_sign in in_set:
+            cur_start = jd
+        cur_sign = to_sign
+    if cur_sign in in_set:
+        intervals.append((cur_start, jd_end))
+    # Merge intervals separated by < 400 days (retrograde dips).
+    merged: list[list[float]] = []
+    for s, e in intervals:
+        if merged and s - merged[-1][1] < 400.0:
+            merged[-1][1] = e
+        else:
+            merged.append([s, e])
+    periods = []
+    for s, e in merged:
+        # First entries into moon-1 / moon / moon+1 within [s, e].
+        bounds = {}
+        for target, key in (((moon_sign - 1) % 12, "start"),
+                            (moon_sign, "peak_start"),
+                            ((moon_sign + 1) % 12, "setting_start")):
+            if s == jd_birth and _sign_at("Saturn", jd_birth) == target:
+                bounds[key] = _jd_to_date(jd_birth)
+                continue
+            hit = next((jd for jd, ts in events if s <= jd <= e and ts == target), None)
+            bounds[key] = _jd_to_date(hit) if hit is not None else None
+        if e >= jd_now >= s:
+            status = "current"
+        elif e < jd_now:
+            status = "past"
+        else:
+            status = "future"
+        periods.append({
+            **bounds,
+            "end": _jd_to_date(e),
+            "status": status,
+            "already_running_at_birth": s == jd_birth,
+        })
+    return {"moon_sign": moon_sign, "periods": periods, "count": len(periods)}

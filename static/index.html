@@ -312,6 +312,8 @@
       <p class="hint" data-i18n="lalkitab_hint">In Lal Kitab, khana 1 is Aries for everyone; a planet's house is its sign. A planet in its pakka ghar (permanent house) is always awake (jagta).</p>
       <div id="lalkitab-chart" class="lk-grid"></div>
       <div id="lalkitab-body"></div>
+      <div id="lalkitab-teva"></div>
+      <div id="lalkitab-dasha"></div>
     </div>
 
     <div class="glass card wide">
@@ -356,6 +358,49 @@
         </table>
       </div>
       <p class="hint" id="sudarshana-confirmed"></p>
+    </div>
+
+    <div class="glass card wide">
+      <h3 data-i18n="argala_title">Jaimini Argala — planetary intervention</h3>
+      <p class="hint" data-i18n="argala_hint">Planets in the 2nd, 4th and 11th from a house support it; planets in the 12th, 10th and 3rd obstruct it. Ketu's intervention counts backwards.</p>
+      <div class="table-scroll">
+        <table class="data-table" id="argala-table">
+          <thead><tr><th data-i18n="th_house">House</th><th data-i18n="th_argala">Argala (support)</th><th data-i18n="th_virodh">Virodhargala (obstruction)</th><th data-i18n="th_verdict">Verdict</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="hint" id="argala-summary"></p>
+    </div>
+
+    <div class="glass card wide">
+      <h3 data-i18n="nakshatra_deep_title">Nakshatra Deep-Dive — Tara, Chandra Bala, Avasthas</h3>
+      <p class="hint" data-i18n="nakshatra_deep_hint">Your Moon nakshatra's nine Taras, today's Tara Bala and Chandra Bala, and every planet's Avastha (maturity + wakefulness).</p>
+      <div id="nakshatra-deep-body"></div>
+      <div class="table-scroll">
+        <table class="data-table" id="avastha-table">
+          <thead><tr><th data-i18n="th_planet">Planet</th><th data-i18n="th_sign">Sign</th><th data-i18n="th_balaadi">Balaadi</th><th data-i18n="th_jagratadi">Jagratadi</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="glass card wide">
+      <h3 data-i18n="ashto_title">Ashtottari Dasha — the 108-year conditional system</h3>
+      <p class="hint" data-i18n="ashto_hint">Eight lords, Ketu excluded. Traditionally applied when Rahu stands in a kendra/trikona from the Lagna lord and the day-night/paksha rule holds — both conditions are shown, and the sequence is computed regardless.</p>
+      <p class="current-dasha" id="ashto-current"></p>
+      <p class="hint" id="ashto-applicability"></p>
+      <div id="ashto-timeline" class="timeline"></div>
+    </div>
+
+    <div class="glass card wide">
+      <h3 data-i18n="sade_lifetime_title">Lifetime Sade Sati — every period, exact dates</h3>
+      <p class="hint" data-i18n="sade_lifetime_hint">Saturn's passage over the three signs around your Moon sign, across a full lifetime. Past, current and future periods are marked.</p>
+      <div class="table-scroll">
+        <table class="data-table" id="sade-lifetime-table">
+          <thead><tr><th data-i18n="th_status">Status</th><th data-i18n="th_rising">Rising (enters Moon−1)</th><th data-i18n="th_peak">Peak (enters Moon sign)</th><th data-i18n="th_setting">Setting (enters Moon+1)</th><th data-i18n="th_end">Ends</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </section>
 
@@ -430,6 +475,11 @@
       <h3 data-i18n="remedies_title">Remedies</h3>
       <div id="remedies-body"></div>
     </div>
+    <div class="glass card wide">
+      <h3 data-i18n="gem_guide_title">Gemstones & Rudraksha — the complete guide</h3>
+      <p class="hint" data-i18n="gem_guide_hint">Every planet's stone, weight, finger, metal, weekday, mantra and Rudraksha — with this chart's cautions (a dusthana lord's stone is never advised).</p>
+      <div id="gem-guide-body"></div>
+    </div>
     <div class="pdf-row">
       <button type="button" class="btn btn-gold" id="pdf-btn" data-i18n="pdf_btn">Download Premium Report (PDF)</button>
     </div>
@@ -502,6 +552,11 @@
         <label for="u-nakshatra" data-i18n="u_nakshatra">Birth nakshatra (optional, for Tara Bala)</label>
         <select id="u-nakshatra"></select>
       </div>
+      <div class="field">
+        <label for="u-moonsign" data-i18n="u_moonsign">Birth Moon sign (optional, for Chandra Bala)</label>
+        <select id="u-moonsign"></select>
+      </div>
+      <p class="hint" data-i18n="muhurta_personal_hint">If you already generated a kundali above, its birth details are used automatically for the dasha-suitability check.</p>
       <p class="form-error" id="muhurta-error" role="alert" hidden></p>
       <button type="submit" class="btn btn-gold btn-wide" data-i18n="muhurta_submit">Find best days</button>
     </form>
@@ -617,6 +672,7 @@
       </div>
       <p class="hint" id="manglik-note"></p>
       <div id="match-extended"></div>
+      <div id="match-porutham"></div>
     </div>
   </section>
 

@@ -11,12 +11,35 @@
   (sleeping) — its results stay confined to its own khana.
 * Sleeping houses: the published house-by-house conditions (a khana
   sleeps when it is empty and its linked khanas are also empty).
-* Rin (debts): the formation rules with unambiguous published sources
-  are implemented for Pitri, Swa and Matri Rin; all nine classical Rin
-  are returned with their traditional collective remedies (Times of
-  India / Lal Kitab remedy literature), the remaining six marked as
-  reference-only because their formation rules are stated inconsistently
-  across published sources.
+* Rin (debts): formation rules are implemented for eight of the nine
+  classical Rin from the best-attested published rules (multiple
+  sources agreeing): Pitri, Swa, Matri, Stree, Bhratri, Kanya, Zulm
+  and Ajanma. Kudrati Rin has no formation rule in the sources
+  found and stays reference-only, flagged as such — a guess is never
+  presented as certain. A tenth variant, Daiviya Rin (Moon or Mars
+  in the 6th khana), appears in some lists and is noted in the docs
+  but not added to the canonical nine.
+* Teva types: Andha (10th khana vacant, or mutual-enemy planets
+  together in it), Adha Andha / Rataundhi (Sun in 4th + Saturn in
+  7th), Dharmi (Jupiter + Saturn together in any khana, or Saturn
+  in 11th, or Rahu/Ketu in 4th, or Rahu/Ketu conjunct the Moon —
+  one published reading; a stricter reading requires the Saturn
+  condition AND the Rahu/Ketu condition together, and the variance
+  is documented), Nabaligh (kendra khanas vacant or holding only
+  Mercury, Saturn, Rahu or Ketu — the child's chart, dormant
+  until age 12).
+* Lal Kitab dasha: the 35-year cycle from the published Lal Kitab
+  dasha literature (Arun Sanhita 1952 ed., p. 10, as cited in the
+  Lal Kitab grammar notes): Jupiter 6, Sun 2, Moon 1, Venus 3,
+  Mars 6, Mercury 2, Saturn 6, Rahu 6, Ketu 3 = 35 years, repeating.
+  Each Mahadasha holds three equal Antardashas; the Antar order
+  (previous, self, next in the cycle) is generalised from the
+  single published example (Jupiter MD: Ketu, Jupiter, Sun) and
+  flagged low-confidence. The cycle's START point is disputed in
+  the literature (the book itself gives none; scholars propose
+  conflicting rules) — this implementation anchors the first cycle
+  at birth with Jupiter, the first planet of the published
+  sequence, and marks all LK dasha dates indicative.
 * A short bilingual indication for every planet in its khana, written in
   the Lal Kitab manner (planet nature x khana theme + a classical note
   for the famous placements).
@@ -52,7 +75,7 @@ _RIN_ALL = [
     ("Matri Rin", "मातृ ऋण", "Moon / the mother",
      "Collect an equal weight of silver from each family member and immerse it in flowing river water.",
      "प्रत्येक परिवारका सदस्यबाट बराबर तौलको चाँदी सङ्कलन गरी बग्ने नदीको पानीमा बगाउनुहोस्।"),
-    ("Bhratri Rin", "भ्रातृ ऋण", "Mars / brothers",
+    ("Bhratri Rin", "भ्रातृ ऋण", "Mercury/Venus / brothers & relatives",
      "Collect equal contributions from relatives and donate medicines or funds to a charitable hospital.",
      "नातेदारबाट बराबर योगदान सङ्कलन गरी परोपकारी अस्पतालमा औषधि वा रकम दान गर्नुहोस्।"),
     ("Stree Rin", "स्त्री ऋण", "Venus / women",
@@ -61,7 +84,7 @@ _RIN_ALL = [
     ("Kanya Rin", "कन्या ऋण", "Mercury / daughters & sisters",
      "Burn yellow cowries to ash and immerse the ash in flowing water the same day.",
      "पहेंला कौडा जलाएर खरानी बनाई त्यही दिन बग्ने पानीमा बगाउनुहोस्।"),
-    ("Zulm Rin", "जुल्म ऋण", "Saturn / cruelty to the helpless",
+    ("Zulm Rin", "जुल्म ऋण", "Sun/Moon/Mars / cruelty to the helpless",
      "Feed 100 labourers, or feed fish in a pond, on a single day with family contributions.",
      "परिवारको योगदानबाट एकै दिन १०० जना मजदुरलाई खाना खुवाउनुहोस्, वा पोखरीमा माछालाई खुवाउनुहोस्।"),
     ("Ajanma Rin", "अजन्म ऋण", "Rahu / the unborn",
@@ -74,14 +97,31 @@ _RIN_ALL = [
 
 
 def _rin_detected(name: str, khana_of: dict[str, int]) -> bool | None:
-    """Formation rules with clear published sources; None = reference only."""
+    """Formation rules with clear published sources; None = reference only.
+
+    Stree / Bhratri / Kanya / Zulm / Ajanma rules are the
+    best-attested published forms (two independent remedy sources
+    agreeing); where sources disagree on the associated planet
+    (Zulm's remedy is sometimes tied to Saturn), the formation
+    rule — not the remedy association — is what is implemented.
+    """
     if name == "Pitri Rin":
         return any(khana_of[p] in (2, 5, 9, 12) for p in ("Rahu", "Venus", "Mercury"))
     if name == "Swa Rin":
         return any(khana_of[p] == 5 for p in ("Venus", "Rahu", "Ketu", "Saturn"))
     if name == "Matri Rin":
         return khana_of["Ketu"] == 4
-    return None
+    if name == "Stree Rin":
+        return any(khana_of[p] in (2, 7) for p in ("Sun", "Moon", "Rahu"))
+    if name == "Bhratri Rin":
+        return any(khana_of[p] in (1, 8) for p in ("Mercury", "Venus"))
+    if name == "Kanya Rin":
+        return khana_of["Mercury"] in (3, 6)
+    if name == "Zulm Rin":
+        return any(khana_of[p] in (10, 12) for p in ("Sun", "Moon", "Mars"))
+    if name == "Ajanma Rin":
+        return any(khana_of[p] == 12 for p in ("Sun", "Venus", "Mars"))
+    return None  # Kudrati Rin: no formation rule verified in sources found
 
 
 # Famous placements with a specific classical flavour (planet, khana).
@@ -171,6 +211,7 @@ def lal_kitab(planets: dict) -> dict:
             "name": {"en": name_en, "ne": name_ne},
             "associated": planet_label,
             "detected": detected,  # True/False, or None = shown for reference
+            "confidence": "attested" if detected is not None else "reference",
             "remedy": {"en": rem_en, "ne": rem_ne},
         })
 
@@ -179,4 +220,188 @@ def lal_kitab(planets: dict) -> dict:
         "planets": planet_rows,
         "sleeping_houses": sleeping_houses,
         "rin": rin,
+        "teva": teva_types(khana_of),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Teva (chart) types
+# ---------------------------------------------------------------------------
+# Mutual-enemy pairs among the visible planets (both directions enemy
+# in the classical natural-relationship table; the Moon has no
+# enemies, so Moon pairs never count here).
+_MUTUAL_ENEMIES = {
+    frozenset(p) for p in [("Sun", "Saturn"), ("Sun", "Venus")]
+}
+_KENDRA_KHANAS = (1, 4, 7, 10)
+
+_TEVA_REMEDIES = {
+    "Andha": ("Feed 10 blind persons.",
+              "१० जना दृष्टिविहीन व्यक्तिलाई खाना खुवाउनुहोस्।"),
+    "Adha Andha": ("Let milk or river water flow in brass vessels; avoid alcohol and late-night ventures.",
+                   "पीतलको भाँडामा दूध वा नदीको पानी बगाउनुहोस्; मदिरा र राति अबेरका कामबाट जोगिनुहोस्।"),
+    "Dharmi": ("No remedy is prescribed for a Dharmi Teva — the chart is considered protected by dharma.",
+               "धार्मिक टेवाका लागि कुनै उपाय तोकिएको छैन — कुण्डली धर्मद्वारा सुरक्षित मानिन्छ।"),
+    "Nabaligh": ("The chart is dormant until age 12; the khanas are said to activate year by year after that.",
+                 "कुण्डली १२ वर्षको उमेरसम्म निष्क्रिय रहन्छ; त्यसपछि खानाहरू वर्षैपिच्छे सक्रिय हुन्छन् भनिन्छ।"),
+}
+
+
+def teva_types(khana_of: dict[str, int]) -> dict:
+    """Which Teva types this chart matches, with the formation met."""
+    occupants: dict[int, list[str]] = {k: [] for k in range(1, 13)}
+    for name, k in khana_of.items():
+        occupants[k].append(name)
+    matched = []
+
+    # Andha: 10th khana vacant, or mutual enemies together in it,
+    # or a node together with Sun/Moon in it.
+    tenth = occupants[10]
+    andha_reason = None
+    if not tenth:
+        andha_reason = "the 10th khana is entirely vacant"
+    else:
+        for i in range(len(tenth)):
+            for j in range(i + 1, len(tenth)):
+                pair = frozenset((tenth[i], tenth[j]))
+                if pair in _MUTUAL_ENEMIES or (
+                        ("Rahu" in pair or "Ketu" in pair)
+                        and ("Sun" in pair or "Moon" in pair)):
+                    andha_reason = f"{tenth[i]} and {tenth[j]} sit together in the 10th khana"
+                    break
+            if andha_reason:
+                break
+    if andha_reason:
+        matched.append({"type": "Andha", "type_ne": "अन्धा टेवा",
+                        "formation": andha_reason,
+                        "reading": {"en": "Blind Teva — career instability is the classical reading.",
+                                    "ne": "अन्धा टेवा — पेशामा अस्थिरता शास्त्रीय पठन हो।"}})
+    # Adha Andha (half-blind / Rataundhi): Sun in 4th + Saturn in 7th.
+    if khana_of["Sun"] == 4 and khana_of["Saturn"] == 7:
+        matched.append({"type": "Adha Andha", "type_ne": "अर्ध-अन्धा टेवा",
+                        "formation": "Sun in the 4th khana and Saturn in the 7th khana",
+                        "reading": {"en": "Half-blind Teva — mental and domestic unrest in the classical reading.",
+                                    "ne": "अर्ध-अन्धा टेवा — मानसिक र घरेलु अशान्ति शास्त्रीय पठन हो।"}})
+    # Dharmi: Jupiter+Saturn together anywhere, or Saturn in 11th, or
+    # Rahu/Ketu in 4th, or Rahu/Ketu conjunct the Moon (OR-reading).
+    dharmi_reason = None
+    for k, occ in occupants.items():
+        if "Jupiter" in occ and "Saturn" in occ:
+            dharmi_reason = f"Jupiter and Saturn together in khana {k}"
+            break
+    if dharmi_reason is None and khana_of["Saturn"] == 11:
+        dharmi_reason = "Saturn in the 11th khana"
+    if dharmi_reason is None and khana_of["Rahu"] == 4:
+        dharmi_reason = "Rahu in the 4th khana"
+    if dharmi_reason is None and khana_of["Ketu"] == 4:
+        dharmi_reason = "Ketu in the 4th khana"
+    if dharmi_reason is None and khana_of["Rahu"] == khana_of["Moon"]:
+        dharmi_reason = "Rahu conjunct the Moon"
+    if dharmi_reason is None and khana_of["Ketu"] == khana_of["Moon"]:
+        dharmi_reason = "Ketu conjunct the Moon"
+    if dharmi_reason:
+        matched.append({"type": "Dharmi", "type_ne": "धार्मिक टेवा",
+                        "formation": dharmi_reason,
+                        "reading": {"en": "Dharmi Teva — the chart is considered protected; its native is traditionally said to prosper by righteous conduct.",
+                                    "ne": "धार्मिक टेवा — कुण्डली सुरक्षित मानिन्छ; जातकले धर्मपूर्ण आचरणले उन्नति गर्ने परम्परागत भनाइ छ।"}})
+    # Nabaligh: kendras vacant or holding only Mercury, Saturn, Rahu, Ketu.
+    dormant_ok = True
+    for k in _KENDRA_KHANAS:
+        if any(p not in ("Mercury", "Saturn", "Rahu", "Ketu") for p in occupants[k]):
+            dormant_ok = False
+            break
+    if dormant_ok:
+        matched.append({"type": "Nabaligh", "type_ne": "नाबालिग टेवा",
+                        "formation": "kendra khanas (1, 4, 7, 10) are vacant or hold only Mercury, Saturn, Rahu or Ketu",
+                        "reading": {"en": "Minor's Teva — the child's destiny is dormant until age 12.",
+                                    "ne": "नाबालिग टेवा — बच्चाको भाग्य १२ वर्षको उमेरसम्म निष्क्रिय रहन्छ।"}})
+    for m in matched:
+        rem_en, rem_ne = _TEVA_REMEDIES[m["type"]]
+        m["remedy"] = {"en": rem_en, "ne": rem_ne}
+    return {
+        "matched": matched,
+        "variance_note": {
+            "en": ("Dharmi Teva sources vary: one reading lists the Saturn and Rahu/Ketu "
+                   "conditions as alternatives (used here); a stricter verse reading "
+                   "requires both a Saturn condition AND a Rahu/Ketu condition together."),
+            "ne": ("धार्मिक टेवाका स्रोतहरू फरक छन्: एउटा पठनले शनि र राहु/केतु शर्तहरूलाई विकल्पका रूपमा लिन्छ (यहाँ प्रयोग गरिएको); "
+                   "कडा श्लोक-पठनले शनि शर्त र राहु/केतु शर्त दुवै सँगै चाहिन्छ।"),
+        },
+    }
+
+
+# ---------------------------------------------------------------------------
+# Lal Kitab 35-year dasha cycle (see module notes on the start rule).
+# ---------------------------------------------------------------------------
+LK_DASHA_SEQUENCE = [
+    ("Jupiter", 6), ("Sun", 2), ("Moon", 1), ("Venus", 3), ("Mars", 6),
+    ("Mercury", 2), ("Saturn", 6), ("Rahu", 6), ("Ketu", 3),
+]
+LK_DASHA_CYCLE_YEARS = 35
+
+
+def lal_kitab_dasha(birth_dt, now=None, cycles: int = 3) -> dict:
+    """The repeating 35-year Lal Kitab dasha, anchored at birth with
+    Jupiter (the first planet of the published sequence). Each MD
+    holds three equal Antardashas in (previous, self, next) cycle
+    order — generalised from the single published Jupiter example,
+    so the Antar order is low-confidence and the whole cycle's
+    dates are indicative while the start rule is disputed."""
+    from datetime import datetime, timedelta
+
+    YEAR_DAYS = 365.25
+    at = now or datetime.now(birth_dt.tzinfo)
+    periods = []
+    cursor = birth_dt
+    n = len(LK_DASHA_SEQUENCE)
+    for k in range(cycles * n):
+        planet, years = LK_DASHA_SEQUENCE[k % n]
+        end = cursor + timedelta(days=years * YEAR_DAYS)
+        antars = []
+        prev_p = LK_DASHA_SEQUENCE[(k - 1) % n][0]
+        next_p = LK_DASHA_SEQUENCE[(k + 1) % n][0]
+        sub = cursor
+        for ap in (prev_p, planet, next_p):
+            sub_end = sub + timedelta(days=years * YEAR_DAYS / 3.0)
+            antars.append({"planet": ap, "start": sub, "end": sub_end,
+                           "years": round(years / 3.0, 3)})
+            sub = sub_end
+        periods.append({"planet": planet, "start": cursor, "end": end,
+                        "years": float(years), "antardashas": antars})
+        cursor = end
+    current = next((p for p in periods if p["start"] <= at < p["end"]), None)
+    current_antar = None
+    if current is not None:
+        current_antar = next(
+            (a for a in current["antardashas"] if a["start"] <= at < a["end"]), None)
+
+    def _ser(p):
+        return {"planet": p["planet"], "start": p["start"].date().isoformat(),
+                "end": p["end"].date().isoformat(), "years": p["years"]}
+
+    return {
+        "cycle_years": LK_DASHA_CYCLE_YEARS,
+        "sequence": [{"planet": p, "years": y} for p, y in LK_DASHA_SEQUENCE],
+        "periods": [{**_ser(p), "antardashas": [
+            {"planet": a["planet"], "start": a["start"].date().isoformat(),
+             "end": a["end"].date().isoformat(), "years": a["years"]}
+            for a in p["antardashas"]]} for p in periods],
+        "current": (
+            {**_ser(current),
+             "antardasha": ({"planet": current_antar["planet"],
+                             "start": current_antar["start"].date().isoformat(),
+                             "end": current_antar["end"].date().isoformat()}
+                            if current_antar else None)}
+            if current else None),
+        "confidence": "low",
+        "method_note": {
+            "en": ("35-year cycle verified from the published Lal Kitab dasha literature; "
+                   "the start rule is disputed (the book gives none), so this implementation "
+                   "anchors the first cycle at birth with Jupiter and all dates are indicative. "
+                   "Antar order (previous, self, next) is generalised from the single published "
+                   "Jupiter example."),
+            "ne": ("३५-वर्षीय चक्र प्रकाशित लाल किताब दशा साहित्यबाट प्रमाणित छ; "
+                   "सुरुको नियम विवादित छ (पुस्तकले कुनै दिँदैन), त्यसैले यो कार्यान्वयनले पहिलो चक्र जन्ममा बृहस्पतिबाट सुरु गर्छ र सबै मितिहरू सूचक मात्र हुन्। "
+                   "अन्तर क्रम (अघिल्लो, आफू, पछिल्लो) एकल प्रकाशित बृहस्पति उदाहरणबाट सामान्यीकरण गरिएको हो।"),
+        },
     }
