@@ -73,6 +73,12 @@ const I18N = {
     err_place:"Please pick a birth place from the list, or enter latitude, longitude and timezone.",
     err_fields:"Please fill in date and time of birth.",
     err_server:"Something went wrong while computing. Please check the details and try again.",
+    err_input:"The server could not use these details — please check the date, time and place, then try again.",
+    err_timeout:"The server is taking too long to answer (it may be waking up after idling). Please try again in a moment.",
+    err_waking:"The server is waking up — retrying…",
+    waking:"Waking up the server…",
+    section_failed:"This section could not be shown",
+    err_incomplete:"The chart data came back incomplete, so the chart itself could not be drawn. Please try again.",
     chart_caption_d1:"Rashi chart (D1) — Nepali janma-patri style", chart_caption_d9:"Navamsa chart (D9)", chart_caption_d10:"Dashamsa chart (D10)",
     glance_lagna:"Lagna (Ascendant)", glance_moon:"Moon sign", glance_sun:"Sun sign", glance_lagna_lord:"Lagna lord", pada_word:"Pada",
     sarva:"Sarvashtakavarga",
@@ -214,6 +220,12 @@ const I18N = {
     err_place:"कृपया सूचीबाट जन्म स्थान छान्नुहोस्, वा अक्षांश, देशान्तर र समय क्षेत्र भर्नुहोस्।",
     err_fields:"कृपया जन्म मिति र समय भर्नुहोस्।",
     err_server:"गणना गर्दा समस्या भयो। विवरण जाँचेर फेरि प्रयास गर्नुहोस्।",
+    err_input:"सर्भरले यी विवरण प्रयोग गर्न सकेन — मिति, समय र स्थान जाँचेर फेरि प्रयास गर्नुहोस्।",
+    err_timeout:"सर्भरबाट जवाफ आउन धेरै समय लाग्यो (सर्भर अलि बेर निष्क्रिय बसेर उठ्दै हुन सक्छ)। केही क्षणमा फेरि प्रयास गर्नुहोस्।",
+    err_waking:"सर्भर उठ्दैछ — फेरि प्रयास गर्दैछ…",
+    waking:"सर्भर जगाउँदै…",
+    section_failed:"यो खण्ड देखाउन सकिएन",
+    err_incomplete:"कुण्डली डाटा अपूर्ण आयो, त्यसैले चार्ट कोर्न सकिएन। फेरि प्रयास गर्नुहोस्।",
     chart_caption_d1:"राशि कुण्डली (D1) — नेपाली जन्मपत्री शैली", chart_caption_d9:"नवांश कुण्डली (D9)", chart_caption_d10:"दशमांश कुण्डली (D10)",
     glance_lagna:"लग्न", glance_moon:"चन्द्र राशि", glance_sun:"सूर्य राशि", glance_lagna_lord:"लग्न स्वामी", pada_word:"पद",
     sarva:"सर्वाष्टकवर्ग",
@@ -580,6 +592,42 @@ function scheduleTzLookup() {
 });
 
 /* ---------------- Birth form ---------------- */
+/* Typed fetch for /api/kundali. Render's free tier sleeps when idle and
+   can take ~90s to wake, so the budget is 120s and a wake-up failure
+   (timeout, network drop, 5xx, or a non-JSON error page from a deploy)
+   is retried once automatically instead of failing the user. A 4xx is
+   the user's input and is never retried. */
+async function fetchKundaliOnce(payload, timeoutMs) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    const res = await fetch("/api/kundali", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload), signal: ctl.signal,
+    });
+    if (!res.ok) {
+      const e = new Error("http"); e.status = res.status; throw e;
+    }
+    try { return await res.json(); }
+    catch (e) { throw new Error("badjson"); }
+  } finally { clearTimeout(timer); }
+}
+function isRetryableKundaliError(e) {
+  // Name-based (not just instanceof) so the check also holds across realms;
+  // fetch network failures reject with a TypeError in browsers.
+  return !!e && (e.name === "AbortError" || e.name === "TypeError" || e instanceof TypeError ||
+    e.message === "badjson" || (e.status && e.status >= 500));
+}
+async function fetchKundaliWithRetry(payload, onRetry) {
+  try {
+    return await fetchKundaliOnce(payload, 120000);
+  } catch (e) {
+    if (!isRetryableKundaliError(e)) throw e;
+    if (onRetry) onRetry();
+    return fetchKundaliOnce(payload, 120000);
+  }
+}
+
 document.getElementById("birth-form").addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const errEl = document.getElementById("form-error");
@@ -606,25 +654,31 @@ document.getElementById("birth-form").addEventListener("submit", async (ev) => {
   const btn = document.getElementById("submit-btn");
   btn.disabled = true; btn.textContent = t("generating");
   try {
-    const res = await fetch("/api/kundali", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+    const bundle = await fetchKundaliWithRetry(payload, () => {
+      btn.textContent = t("waking");
+      errEl.textContent = t("err_waking"); errEl.hidden = false;
     });
-    if (!res.ok) throw new Error("bad");
-    STATE.bundle = await res.json();
+    errEl.hidden = true;
+    STATE.bundle = bundle;
     STATE.birthPayload = payload;
     STATE.varga = "D1";
     saveCurrentChart();
     document.querySelectorAll(".mini-btn[data-varga]").forEach((b) =>
       b.classList.toggle("is-active", b.dataset.varga === "D1"));
-    renderBundle();
+    /* Unhide BEFORE rendering: a partial render (with per-section notes)
+       is still a chart, and must not be hidden behind a generic error. */
     document.getElementById("results").hidden = false;
     document.getElementById("premium").hidden = false;
+    const coreOk = renderBundle();
+    if (!coreOk) { errEl.textContent = t("err_incomplete"); errEl.hidden = false; }
     revealSection(document.getElementById("results"));
     revealSection(document.getElementById("premium"));
     document.getElementById("results").scrollIntoView({ behavior: "smooth" });
   } catch (e) {
-    errEl.textContent = t("err_server"); errEl.hidden = false;
+    if (e.status === 400 || e.status === 422) errEl.textContent = t("err_input");
+    else if (e.name === "AbortError" || e instanceof TypeError) errEl.textContent = t("err_timeout");
+    else errEl.textContent = t("err_server");
+    errEl.hidden = false;
   } finally {
     btn.disabled = false; btn.textContent = t("submit");
   }
@@ -752,6 +806,7 @@ function bundleChartOpts() {
 }
 
 function drawChart(chartMap) {
+  if (!chartMap) return; // missing varga data: the section note covers it
   const wrap = document.getElementById("chart-svg-wrap");
   const opts = bundleChartOpts();
   wrap.innerHTML = STATE.chartStyle === "south" ? southSVG(chartMap, opts) : diamondSVG(chartMap, opts);
@@ -786,9 +841,37 @@ function stateText(row) {
   return bits.length ? bits.join(", ") : t("neutral");
 }
 
-function renderBundle() {
-  const b = STATE.bundle;
-  if (!b) return;
+/* One failing section must never kill the whole chart (previously a single
+   throwing renderer surfaced as the generic "something went wrong" error and
+   hid even the sections that had rendered). Each section runs isolated; a
+   failure leaves a small named note instead of the chart. */
+const SECTION_TITLES = {
+  chart: "chart_title", karakas: "karakas_title", dasha: "dasha_title", kp: "kp_title", doshas: "dosha_title",
+  av: "av_title", predictions: "pred_title", strength: "strength_title",
+  transits: "transit_title", numerology: "numerology_title", lalkitab: "lalkitab_title",
+  premium: "premium_title", deep: "deep_planets_title",
+  worldclass: "Worldclass · Chalit · Prastara · KP events · Sudarshana",
+  gap: "Gap · Argala · Nakshatra · Ashtottari · Sade Sati",
+};
+function noteSection(name) {
+  try {
+    const notes = document.getElementById("section-notes");
+    if (!notes) return;
+    notes.hidden = false;
+    const div = document.createElement("div");
+    div.className = "section-note";
+    const title = SECTION_TITLES[name];
+    const label = title && I18N.en[title] ? t(title) : (title || name);
+    div.textContent = `${t("section_failed")} — ${label}`;
+    notes.appendChild(div);
+  } catch (e) { /* notes are best-effort */ }
+}
+function renderSection(name, fn, b) {
+  try { fn(b); return true; }
+  catch (e) { noteSection(name); return false; }
+}
+
+function renderCore(b) {
   const moon = b.planets.find((p) => p.planet === "Moon");
   document.getElementById("results-title").textContent =
     (b.name ? `${t("results_for")} ${b.name}` : t("results_for")) ;
@@ -823,24 +906,35 @@ function renderBundle() {
       <td>${stateText(p)}</td>
     </tr>`).join("");
 
+}
+
+function renderKarakas(b) {
   const karakas = Object.entries(b.karakas)
     .map(([k, v]) => `<b>${k}</b>: ${planetName(v)}`).join(" · ");
   document.getElementById("karaka-box").innerHTML =
     `<span>${t("karakas_title")}</span><br>${karakas}`;
+}
 
-  renderDasha(b);
-  renderKP(b);
-  renderDoshasYogas(b);
-  renderAV(b);
-  renderPredictions(b);
-  renderStrength(b);
-  renderTransits(b);
-  renderNumerology(b);
-  renderLalKitab(b);
-  renderPremium(b);
-  renderDeep(b);
-  renderWorldclass(b);
-  renderGapLayer(b);
+/* Returns true when the core chart itself rendered. Section failures are
+   isolated and noted; only a core failure means "no chart at all". */
+function renderBundle() {
+  const b = STATE.bundle;
+  if (!b) return false;
+  const notes = document.getElementById("section-notes");
+  if (notes) { notes.hidden = true; notes.innerHTML = ""; }
+  let coreOk = false;
+  const sections = [
+    ["chart", renderCore], ["karakas", renderKarakas], ["dasha", renderDasha], ["kp", renderKP],
+    ["doshas", renderDoshasYogas], ["av", renderAV], ["predictions", renderPredictions],
+    ["strength", renderStrength], ["transits", renderTransits],
+    ["numerology", renderNumerology], ["lalkitab", renderLalKitab],
+    ["premium", renderPremium], ["deep", renderDeep],
+    ["worldclass", renderWorldclass], ["gap", renderGapLayer],
+  ];
+  for (const [name, fn] of sections) {
+    if (renderSection(name, fn, b) && name === "chart") coreOk = true;
+  }
+  return coreOk;
 }
 
 function renderDasha(b) {
@@ -1399,14 +1493,18 @@ function renderSavedList() {
     localStorage.setItem(SAVED_KEY, JSON.stringify(next)); renderSavedList();
   }));
 }
+/* Saving must never kill a generation: storage can fail (private mode,
+   quota) and a bug here once hid every chart behind the generic error. */
 function saveCurrentChart() {
-  const p = STATE.birthPayload;
-  if (!p || typeof dedupeCharts !== "function") return;
-  const entry = { name: p.name || "", dob: p.dob, tob: p.tob,
-    place_name: STATE.bundle && STATE.bundle.birth ? STATE.bundle.birth.place.name : (p.place_name || ""),
-    payload: p };
-  localStorage.setItem(SAVED_KEY, JSON.stringify(dedupeCharts([...loadSavedCharts(), entry])));
-  renderSavedList();
+  try {
+    const p = STATE.birthPayload;
+    if (!p || typeof dedupeCharts !== "function") return;
+    const entry = { name: p.name || "", dob: p.dob, tob: p.tob,
+      place_name: STATE.bundle && STATE.bundle.birth ? STATE.bundle.birth.place.name : (p.place_name || ""),
+      payload: p };
+    localStorage.setItem(SAVED_KEY, JSON.stringify(dedupeCharts(loadSavedCharts(), entry)));
+    renderSavedList();
+  } catch (e) { /* saved charts are a convenience, not the chart itself */ }
 }
 function loadSavedChart(entry) {
   const p = entry.payload;

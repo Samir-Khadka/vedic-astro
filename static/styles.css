@@ -146,6 +146,10 @@ main { max-width: 1120px; margin: 0 auto; padding: 0 20px 64px; }
   display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;
 }
 .results-meta { color: var(--ink-dim); margin-top: -8px; }
+/* Per-section failure notes: small, warm, unmistakable — never a wall of red. */
+#section-notes { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px; }
+#section-notes[hidden] { display: none; }
+.section-note { font-size: 13px; color: #7a5b12; background: #fdf3d7; border: 1px solid #e8c87a; border-radius: 999px; padding: 4px 12px; }
 
 /* Chart at a glance strip */
 .glance-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }

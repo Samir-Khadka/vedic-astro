@@ -52,8 +52,11 @@ function parseShareParams(search) {
 }
 
 function chartKey(payload) {
-  const place = payload.place_id || `${payload.lat},${payload.lon}`;
-  return `${payload.dob}|${payload.tob}|${place}`;
+  // Saved-chart entries are wrappers ({..., payload}) while share links
+  // and tests pass plain payloads — unwrap so both key the same chart.
+  const p = (payload && payload.payload) || payload || {};
+  const place = p.place_id || `${p.lat},${p.lon}`;
+  return `${p.dob}|${p.tob}|${place}`;
 }
 
 function dedupeCharts(saved, payload, max) {
