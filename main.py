@@ -82,6 +82,7 @@ def _validate_coords_tz(lat: float | None, lon: float | None, tz: str | None) ->
 class MatchInput(BaseModel):
     groom: BirthInput
     bride: BirthInput
+    marriage_date: str | None = None  # YYYY-MM-DD, optional: enables Dasha Sandhi check
 
 
 class PrashnaInput(BaseModel):
@@ -148,7 +149,8 @@ def kundali(body: BirthInput):
 @app.post("/api/match")
 def match(body: MatchInput):
     try:
-        return engine.compute_match(_payload(body.groom), _payload(body.bride))
+        return engine.compute_match(_payload(body.groom), _payload(body.bride),
+                                   marriage_date=body.marriage_date)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -208,6 +210,70 @@ def panchang(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     result = panchang_module.daily_panchang(day, place["lat"], place["lon"], place["tz"])
+    result["place"] = place
+    return result
+
+
+@app.get("/api/muhurta")
+def muhurta(
+    date_from: str = Query(default=None),
+    date_to: str = Query(default=None),
+    activity: str = "marriage",
+    place_id: str | None = None,
+    lat: float | None = None,
+    lon: float | None = None,
+    tz: str | None = None,
+    birth_nakshatra: int | None = None,
+):
+    from astro import muhurta as muhurta_module
+
+    _validate_coords_tz(lat, lon, tz)
+    try:
+        place = engine.resolve_place({"place_id": place_id, "lat": lat, "lon": lon, "tz": tz})
+        d_from = date.fromisoformat(date_from) if date_from else date.today()
+        d_to = date.fromisoformat(date_to) if date_to else d_from
+        result = muhurta_module.muhurta_range(d_from, d_to, place["lat"], place["lon"],
+                                              place["tz"], activity, birth_nakshatra)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    result["place"] = place
+    return result
+
+
+@app.get("/api/horoscope")
+def horoscope(
+    sign: int = Query(ge=0, le=11),
+    span: str = "daily",
+    date_str: str = Query(default=None, alias="date"),
+    tz: str = "Asia/Kathmandu",
+):
+    from astro import horoscope as horoscope_module
+
+    try:
+        day = date.fromisoformat(date_str) if date_str else date.today()
+        ZoneInfo(tz)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    try:
+        return horoscope_module.horoscope(sign, span, day, tz)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/api/panchang-month")
+def panchang_month(
+    year: int, month: int = Query(ge=1, le=12),
+    place_id: str | None = None,
+    lat: float | None = None,
+    lon: float | None = None,
+    tz: str | None = None,
+):
+    _validate_coords_tz(lat, lon, tz)
+    try:
+        place = engine.resolve_place({"place_id": place_id, "lat": lat, "lon": lon, "tz": tz})
+        result = panchang_module.month_panchang(year, month, place["lat"], place["lon"], place["tz"])
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     result["place"] = place
     return result
 

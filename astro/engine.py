@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 from . import (
     ashtakavarga as av_module,
     bala as bala_module,
+    chalit as chalit_module,
     chara as chara_module,
     charts as charts_module,
     dasha as dasha_module,
@@ -15,12 +16,15 @@ from . import (
     interpret as interpret_module,
     jaimini as jaimini_module,
     kp as kp_module,
+    kp_events as kp_events_module,
     lalkitab as lk_module,
     naming as naming_module,
     numerology as numerology_module,
     panchang as panchang_module,
     places as places_module,
+    prastara as prastara_module,
     predictions as predictions_module,
+    sudarshana as sudarshana_module,
     transits as transits_module,
     yogas as yogas_module,
 )
@@ -173,6 +177,13 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
     deep_report = interpret_module.build_deep_report(deep_ctx)
     dasha_phala = deep_report["dasha_deep_dive"]
 
+    # World-class layer: Bhava Chalit, Prastara, KP event verdicts,
+    # Sudarshana Chakra — all computed from this chart's facts.
+    chalit = chalit_module.bhava_chalit(planets, cusps, lagna_sign)
+    prastara = prastara_module.prastara(planets, lagna_sign)
+    kp_events = kp_events_module.kp_event_analysis(kp, dasha_tree, transit_signs, lagna_sign)
+    sudar = sudarshana_module.sudarshana(planets, lagna_sign)
+
     planet_rows = []
     for name in ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"]:
         p = planets[name]
@@ -294,6 +305,10 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
             ],
         },
         "deep_report": deep_report,
+        "bhava_chalit": chalit,
+        "prastara": prastara,
+        "kp_events": kp_events,
+        "sudarshana": sudar,
         "yogini": {
             "periods": [
                 {"name": p["name"], "planet": p["planet"],
@@ -327,10 +342,96 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
     return bundle
 
 
-def compute_match(payload_a: dict, payload_b: dict) -> dict:
+_MALEFICS = ("Sun", "Mars", "Saturn", "Rahu", "Ketu")
+_PAPASAMYA_HOUSES = {1, 2, 4, 7, 8, 12}
+
+
+def _papasamya(planets: dict, lagna_sign: int) -> dict:
+    """Simplified Papasamya dosha count (documented simplification).
+
+    Malefics in houses 1/2/4/7/8/12 counted from three references —
+    Lagna, Moon and Venus — summed. Classical Papasamya also weighs
+    the specific malefic and house; this count is the widely used
+    first-pass balance check: partners with similar totals are
+    considered balanced.
+    """
+    from .charts import house_of
+
+    refs = {"lagna": lagna_sign, "moon": planets["Moon"]["sign"], "venus": planets["Venus"]["sign"]}
+    per_ref = {}
+    for ref_name, ref_sign in refs.items():
+        per_ref[ref_name] = sum(
+            1 for m in _MALEFICS if house_of(planets[m]["sign"], ref_sign) in _PAPASAMYA_HOUSES
+        )
+    return {"per_reference": per_ref, "total": sum(per_ref.values())}
+
+
+def _bhava_milan(groom: dict, bride: dict) -> dict:
+    """Simplified Lagna–Moon harmony (documented simplification).
+
+    Each partner's Moon sign measured from the other's Lagna: distances
+    1/5/7/9 are harmonious, 6/8/12 challenging, the rest neutral.
+    """
+    from .charts import house_of
+
+    def harmony(moon_sign: int, other_lagna: int) -> str:
+        d = house_of(moon_sign, other_lagna)
+        if d in (1, 5, 7, 9):
+            return "harmonious"
+        if d in (6, 8, 12):
+            return "challenging"
+        return "neutral"
+
+    g_to_b = harmony(groom["moon_sign"], bride["lagna_sign"])
+    b_to_g = harmony(bride["moon_sign"], groom["lagna_sign"])
+    score = {"harmonious": 2, "neutral": 1, "challenging": 0}
+    total = score[g_to_b] + score[b_to_g]
+    verdict = "Harmonious" if total >= 3 else "Mixed" if total >= 2 else "Challenging"
+    return {"groom_moon_vs_bride_lagna": g_to_b, "bride_moon_vs_groom_lagna": b_to_g,
+            "verdict": verdict}
+
+
+def _dasha_sandhi(person: dict, marriage_day: date) -> dict:
+    """Dasha-change proximity to a planned marriage date.
+
+    Classical Dasha Sandhi: a Mahadasha or Antardasha change within
+    about 6 months of the wedding is considered inauspicious and
+    traditionally asks for remedies or a shifted date. Returns the
+    nearest boundary in the window, if any.
+    """
+    from datetime import datetime, timedelta
+    from zoneinfo import ZoneInfo
+
+    from . import dasha as dasha_module
+
+    moment = datetime.combine(marriage_day, time(12, 0), tzinfo=ZoneInfo(person["tz"]))
+    tree = dasha_module.vimshottari_tree(person["birth_dt"], person["moon_lon"], moment)
+    window = timedelta(days=180)
+    hits = []
+    for md in tree["mahadashas"]:
+        for label, start, end, lord in (
+            ("Mahadasha", md["start"], md["end"], md["lord"]),
+        ):
+            for boundary, kind in ((start, "starts"), (end, "ends")):
+                if abs((boundary - moment).days) <= 180 and boundary.date() != marriage_day:
+                    hits.append({"level": label, "lord": lord, "kind": kind,
+                                 "date": boundary.date().isoformat(),
+                                 "days_away": (boundary.date() - marriage_day).days})
+        for ad in md["antardashas"]:
+            for boundary, kind in ((ad["start"], "starts"), (ad["end"], "ends")):
+                if abs((boundary - moment).days) <= 180 and boundary.date() != marriage_day:
+                    hits.append({"level": "Antardasha", "lord": ad["lord"], "kind": kind,
+                                 "date": boundary.date().isoformat(),
+                                 "days_away": (boundary.date() - marriage_day).days})
+    hits.sort(key=lambda h: abs(h["days_away"]))
+    return {"in_window": bool(hits), "nearest": hits[0] if hits else None,
+            "all_in_window": hits[:4]}
+
+
+def compute_match(payload_a: dict, payload_b: dict, marriage_date: str | None = None) -> dict:
     from . import matching as matching_module
 
-    def moon_of(payload: dict) -> dict:
+    def person_of(payload: dict) -> dict:
         place = resolve_place(payload)
         dob = date.fromisoformat(payload["dob"])
         tob = time.fromisoformat(payload["tob"])
@@ -341,12 +442,13 @@ def compute_match(payload_a: dict, payload_b: dict) -> dict:
         lagna_sign = int(ephemeris.ascendant(jd, place["lat"], place["lon"], b"W") // 30.0)
         return {
             "moon_sign": moon["sign"], "moon_nakshatra": moon["nakshatra"],
-            "lagna_sign": lagna_sign,
+            "lagna_sign": lagna_sign, "planets": planets,
+            "birth_dt": dt, "moon_lon": moon["longitude"], "tz": place["tz"],
             "manglik": doshas_module.manglik(planets, lagna_sign),
         }
 
-    groom = moon_of(payload_a)
-    bride = moon_of(payload_b)
+    groom = person_of(payload_a)
+    bride = person_of(payload_b)
     result = matching_module.guna_milan(groom, bride)
     result["groom"] = {
         "moon_sign_en": SIGNS_EN[groom["moon_sign"]], "moon_sign_ne": SIGNS_NE[groom["moon_sign"]],
@@ -366,4 +468,42 @@ def compute_match(payload_a: dict, payload_b: dict) -> dict:
     else:
         note_en, note_ne = "Neither partner is Manglik.", "दुवै जना माङ्गलिक छैनन्।"
     result["manglik_note"] = {"en": note_en, "ne": note_ne}
+
+    # Beyond Guna: Papasamya balance, Lagna–Moon harmony, Dasha Sandhi.
+    pap_g = _papasamya(groom["planets"], groom["lagna_sign"])
+    pap_b = _papasamya(bride["planets"], bride["lagna_sign"])
+    pap_diff = abs(pap_g["total"] - pap_b["total"])
+    pap_verdict = "Balanced" if pap_diff <= 3 else "Uneven"
+    result["papasamya"] = {
+        "groom": pap_g, "bride": pap_b, "difference": pap_diff, "verdict": pap_verdict,
+    }
+    result["bhava_milan"] = _bhava_milan(groom, bride)
+    sandhi = None
+    if marriage_date:
+        mday = date.fromisoformat(marriage_date)
+        sandhi = {"groom": _dasha_sandhi(groom, mday),
+                  "bride": _dasha_sandhi(bride, mday)}
+    result["dasha_sandhi"] = sandhi
+    guna = result.get("total", 0)
+    flags = []
+    if pap_verdict != "Balanced":
+        flags.append("Papasamya is uneven — the dosha load differs between partners.")
+    if result["bhava_milan"]["verdict"] == "Challenging":
+        flags.append("Lagna–Moon harmony is challenging — understanding needs conscious effort.")
+    if sandhi and (sandhi["groom"]["in_window"] or sandhi["bride"]["in_window"]):
+        flags.append("A dasha change falls near the planned date (Dasha Sandhi) — traditionally remedies or a shifted date are advised.")
+    if guna >= 18 and not flags:
+        combined_en = "Strong overall match: Guna Milan is above 18 and the extended checks raise no flag."
+        combined_ne = "समग्रमा बलियो मेल: गुण मिलन १८ भन्दा माथि छ र विस्तारित जाँचमा कुनै चेतावनी छैन।"
+    elif flags:
+        combined_en = "Workable match with notes: " + " ".join(flags)
+        combined_ne = "टिप्पणीसहितको सम्भव मेल: " + " ".join(
+            {"Papasamya is uneven — the dosha load differs between partners.": "पापसाम्य असन्तुलित छ — दुवैको दोष भार फरक छ।",
+             "Lagna–Moon harmony is challenging — understanding needs conscious effort.": "लग्न–चन्द्र सामञ्जस्य चुनौतीपूर्ण छ — बुझाइका लागि सचेत प्रयास चाहिन्छ।",
+             "A dasha change falls near the planned date (Dasha Sandhi) — traditionally remedies or a shifted date are advised.": "योजनाबद्ध मितिनजिकै दशा परिवर्तन पर्छ (दशा सन्धि) — परम्परागत रूपमा उपाय वा मिति सार्न सुझाव दिइन्छ।"}.get(f, f)
+            for f in flags)
+    else:
+        combined_en = "Modest match: Guna Milan is below 18 — weigh the extended checks and family counsel."
+        combined_ne = "सामान्य मेल: गुण मिलन १८ भन्दा कम छ — विस्तारित जाँच र पारिवारिक सल्लाहलाई तौलिनुहोस्।"
+    result["combined_verdict"] = {"en": combined_en, "ne": combined_ne}
     return result

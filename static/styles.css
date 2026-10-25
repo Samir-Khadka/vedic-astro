@@ -579,3 +579,16 @@ html[lang="ne"] .strip-item .k, html[lang="ne"] .lucky-item .k { letter-spacing:
   .rv-armed, .rv-pending { opacity: 1; transform: none; }
   .tilt-on { transform: none; }
 }
+
+/* ---- World-class layer: calendar, saved charts, Sudarshana ---- */
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 14px; }
+.cal-cell { background: rgba(255,255,255,.65); border: 1px solid rgba(124,58,237,.18); border-radius: 10px; padding: 8px 6px; font-size: 13px; line-height: 1.45; }
+.cal-cell b { color: var(--violet); }
+.cal-marker { display: inline-block; background: rgba(201,162,39,.22); color: #7a5b00; border-radius: 20px; padding: 0 6px; margin: 2px 2px 0 0; font-size: 11px; }
+.saved-row { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(124,58,237,.12); }
+.saved-row span { flex: 1; }
+.sud-svg { width: 100%; max-width: 420px; display: block; margin: 12px auto; }
+.sud-glyph { font-size: 15px; fill: var(--ink); }
+.sud-label { font-size: 10px; fill: var(--violet); }
+.sub-title { margin-top: 22px; }
+@media (max-width: 880px) { .cal-grid { grid-template-columns: repeat(4, 1fr); } }

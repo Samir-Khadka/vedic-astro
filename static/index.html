@@ -38,6 +38,8 @@
     <a href="#prashna" data-i18n="nav_prashna">KP Prashna</a>
     <a href="#matching" data-i18n="nav_matching">Matching</a>
     <a href="#panchang-strip" data-i18n="nav_panchang">Panchang</a>
+    <a href="#horoscope" data-i18n="nav_horoscope">Horoscope</a>
+    <a href="#muhurta" data-i18n="nav_muhurta">Muhurta</a>
   </nav>
   <div class="lang-toggle" role="group" aria-label="Language">
     <button type="button" id="lang-en" class="lang-btn is-active">EN</button>
@@ -70,6 +72,20 @@
     <div class="strip-grid" id="panchang-grid">
       <p class="muted" data-i18n="loading">Loading…</p>
     </div>
+    <details class="month-cal" id="month-cal">
+      <summary data-i18n="month_cal_title">Month Calendar</summary>
+      <div class="cal-controls">
+        <select id="cal-year" aria-label="Year"></select>
+        <select id="cal-month" aria-label="Month"></select>
+        <div class="place-wrap">
+          <input id="c-place" type="text" autocomplete="off" placeholder="Kathmandu">
+          <div class="place-suggest" id="c-place-suggest" role="listbox" hidden></div>
+        </div>
+        <button type="button" class="mini-btn" id="cal-load" data-i18n="cal_load">Show month</button>
+      </div>
+      <p class="hint" data-i18n="cal_hint">Markers are astronomical only (Ekadashi, Purnima, Amavasya, Sankranti) — regional festival dates are not guessed.</p>
+      <div id="cal-grid" class="cal-grid"></div>
+    </details>
   </section>
 
   <!-- BIRTH FORM -->
@@ -132,6 +148,11 @@
       <p class="form-error" id="form-error" role="alert" hidden></p>
       <button type="submit" class="btn btn-gold btn-wide" id="submit-btn" data-i18n="submit">Generate Kundali</button>
     </form>
+    <div class="glass card wide" id="saved-panel">
+      <h3 data-i18n="saved_title">Saved Charts</h3>
+      <p class="hint" data-i18n="saved_hint">Stored only in this browser — no account needed. A share link opens the same chart on any device.</p>
+      <div id="saved-list"></div>
+    </div>
   </section>
 
   <!-- RESULTS -->
@@ -139,6 +160,7 @@
     <p class="eyebrow" data-i18n="eb_results">The Reading</p>
     <h2 class="section-title" id="results-title">Your Kundali</h2>
     <p class="results-meta" id="results-meta"></p>
+    <p><button type="button" class="mini-btn" id="share-btn" data-i18n="share_btn">Copy share link</button></p>
     <div class="glance-strip" id="glance-strip" aria-label="Chart at a glance"></div>
 
     <div class="results-grid">
@@ -291,6 +313,50 @@
       <div id="lalkitab-chart" class="lk-grid"></div>
       <div id="lalkitab-body"></div>
     </div>
+
+    <div class="glass card wide">
+      <h3 data-i18n="chalit_title">Bhava Chalit — houses by actual cusps</h3>
+      <p class="hint" data-i18n="chalit_hint">Sripathi method: each house is centred on its Placidus cusp. Planets marked "shifted" sit in a different Chalit house than their Rashi house.</p>
+      <div class="table-scroll">
+        <table class="data-table" id="chalit-table">
+          <thead><tr><th data-i18n="th_planet">Planet</th><th data-i18n="th_sign">Sign</th><th data-i18n="th_rashi_house">Rashi house</th><th data-i18n="th_chalit_house">Chalit house</th><th data-i18n="th_shifted">Shifted?</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="glass card wide">
+      <h3 data-i18n="prastara_title">Prastara Ashtakavarga — the bindu grids</h3>
+      <p class="hint" data-i18n="prastara_hint">Each grid shows which contributor donates a bindu in each sign. Reduced totals apply Trikona then Ekadhipatya Shodhana (BPHS).</p>
+      <label for="prastara-planet" data-i18n="prastara_pick">Planet grid</label>
+      <select id="prastara-planet"></select>
+      <div class="table-scroll">
+        <table class="data-table" id="prastara-table">
+          <thead><tr id="prastara-head"></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="hint" id="prastara-totals"></p>
+    </div>
+
+    <div class="glass card wide">
+      <h3 data-i18n="kp_events_title">KP Event Analysis — promise, dasha, transit</h3>
+      <p class="hint" data-i18n="kp_events_hint">Cuspal sub lord promise, checked against the running dasha and current Jupiter/Saturn transits. Guidance, not a guarantee.</p>
+      <div id="kp-events-body" class="pred-grid"></div>
+    </div>
+
+    <div class="glass card wide">
+      <h3 data-i18n="sudarshana_title">Sudarshana Chakra — three rings, one chart</h3>
+      <p class="hint" data-i18n="sudarshana_hint">The same chart read from Lagna, Moon and Sun. A planet in the same relative house in two or three rings has its results confirmed.</p>
+      <div id="sudarshana-svg"></div>
+      <div class="table-scroll">
+        <table class="data-table" id="sudarshana-table">
+          <thead><tr><th data-i18n="th_planet">Planet</th><th data-i18n="th_sign">Sign</th><th>Lagna</th><th>Moon</th><th>Sun</th><th data-i18n="th_agreement">Agreement</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="hint" id="sudarshana-confirmed"></p>
+    </div>
   </section>
 
   <!-- PREMIUM REPORT -->
@@ -370,6 +436,84 @@
   </section>
 
   <!-- KP PRASHNA (HORARY) -->
+  <!-- HOROSCOPE -->
+  <section id="horoscope" class="section">
+    <p class="eyebrow rv" data-i18n="eb_horoscope">Chapter V — Rashi Phal</p>
+    <h2 class="section-title rv" data-i18n="horoscope_title">Moon-Sign Horoscope</h2>
+    <p class="hint" data-i18n="horoscope_hint">Computed from today's real transits counted from your Moon sign — never a generic column.</p>
+    <form id="horoscope-form" class="glass form-card rv" novalidate>
+      <div class="field">
+        <label for="h-sign" data-i18n="h_sign">Moon sign</label>
+        <select id="h-sign"></select>
+      </div>
+      <div class="field">
+        <label for="h-span" data-i18n="h_span">Span</label>
+        <select id="h-span">
+          <option value="daily" data-i18n="h_daily">Daily</option>
+          <option value="weekly" data-i18n="h_weekly">Weekly</option>
+          <option value="monthly" data-i18n="h_monthly">Monthly</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-gold" data-i18n="horoscope_submit">Show horoscope</button>
+    </form>
+    <div id="horoscope-result" class="glass card wide" hidden>
+      <h3 id="horoscope-head"></h3>
+      <p class="results-meta" id="horoscope-summary"></p>
+      <div id="horoscope-areas" class="pred-grid"></div>
+      <div id="horoscope-extra"></div>
+    </div>
+  </section>
+
+  <!-- MUHURTA -->
+  <section id="muhurta" class="section">
+    <p class="eyebrow rv" data-i18n="eb_muhurta">Chapter VI — Auspicious Timing</p>
+    <h2 class="section-title rv" data-i18n="muhurta_title">Muhurta Finder</h2>
+    <p class="hint" data-i18n="muhurta_hint">Classical guidance: tithi class, Moon-nakshatra suitability, Rahu Kaal, Choghadiya and Hora. A full election also weighs Chandra Bala, Panchaka and the Lagna — see the method note in the report.</p>
+    <form id="muhurta-form" class="glass form-card rv" novalidate>
+      <div class="field">
+        <label for="u-from" data-i18n="u_from">From</label>
+        <input id="u-from" type="date" required>
+      </div>
+      <div class="field">
+        <label for="u-to" data-i18n="u_to">To (max 31 days)</label>
+        <input id="u-to" type="date" required>
+      </div>
+      <div class="field">
+        <label for="u-activity" data-i18n="u_activity">Activity</label>
+        <select id="u-activity">
+          <option value="marriage" data-i18n="act_marriage">Marriage</option>
+          <option value="travel" data-i18n="act_travel">Travel</option>
+          <option value="business" data-i18n="act_business">Business / trade</option>
+          <option value="house" data-i18n="act_house">House construction</option>
+          <option value="education" data-i18n="act_education">Education</option>
+          <option value="job" data-i18n="act_job">Starting a job</option>
+          <option value="vehicle" data-i18n="act_vehicle">Buying a vehicle</option>
+          <option value="naming" data-i18n="act_naming">Naming ceremony</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="u-place" data-i18n="f_place">Place</label>
+        <div class="place-wrap">
+          <input id="u-place" type="text" autocomplete="off" placeholder="Kathmandu">
+          <div class="place-suggest" id="u-place-suggest" role="listbox" hidden></div>
+        </div>
+      </div>
+      <div class="field">
+        <label for="u-nakshatra" data-i18n="u_nakshatra">Birth nakshatra (optional, for Tara Bala)</label>
+        <select id="u-nakshatra"></select>
+      </div>
+      <p class="form-error" id="muhurta-error" role="alert" hidden></p>
+      <button type="submit" class="btn btn-gold btn-wide" data-i18n="muhurta_submit">Find best days</button>
+    </form>
+    <div id="muhurta-result" class="glass card wide" hidden>
+      <h3 data-i18n="muhurta_best">Best days</h3>
+      <div id="muhurta-best" class="pred-grid"></div>
+      <h3 class="sub-title" data-i18n="muhurta_detail">Day detail</h3>
+      <select id="muhurta-day"></select>
+      <div id="muhurta-day-detail"></div>
+    </div>
+  </section>
+
   <section id="prashna" class="section">
     <p class="eyebrow rv" data-i18n="eb_prashna">Chapter III — Horary</p>
     <h2 class="section-title rv" data-i18n="prashna_title">KP Prashna — Horary (1–249)</h2>
@@ -452,6 +596,10 @@
             </div></div>
         </fieldset>
       </div>
+      <div class="field">
+        <label for="m-date" data-i18n="m_date">Planned wedding date (optional — enables Dasha Sandhi check)</label>
+        <input id="m-date" type="date">
+      </div>
       <p class="form-error" id="match-error" role="alert" hidden></p>
       <button type="submit" class="btn btn-gold btn-wide" data-i18n="match_submit">Match Kundalis</button>
     </form>
@@ -468,6 +616,7 @@
         </table>
       </div>
       <p class="hint" id="manglik-note"></p>
+      <div id="match-extended"></div>
     </div>
   </section>
 
@@ -477,6 +626,7 @@
   </footer>
 </main>
 <script src="/static/coords.js" defer></script>
+<script src="/static/share.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js" defer></script>
 <script src="/static/scene3d.js" defer></script>
 <script src="/static/app.js" defer></script>

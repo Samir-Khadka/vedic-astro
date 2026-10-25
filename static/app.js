@@ -112,6 +112,37 @@ const I18N = {
     chara_current:"Current Chara period", direction_word:"Direction",
     weak_support_title:"Weak-Planet Support (by Shadbala)",
     house_word_cap:"House",
+    nav_horoscope:"Horoscope", nav_muhurta:"Muhurta",
+    eb_horoscope:"Chapter V — Rashi Phal", eb_muhurta:"Chapter VI — Auspicious Timing",
+    horoscope_title:"Moon-Sign Horoscope",
+    horoscope_hint:"Computed from today's real transits counted from your Moon sign — never a generic column.",
+    h_sign:"Moon sign", h_span:"Span", h_daily:"Daily", h_weekly:"Weekly", h_monthly:"Monthly",
+    horoscope_submit:"Show horoscope",
+    muhurta_title:"Muhurta Finder",
+    muhurta_hint:"Classical guidance: tithi class, Moon-nakshatra suitability, Rahu Kaal, Choghadiya and Hora. A full election also weighs Chandra Bala, Panchaka and the Lagna.",
+    u_from:"From", u_to:"To (max 31 days)", u_activity:"Activity",
+    u_nakshatra:"Birth nakshatra (optional, for Tara Bala)",
+    muhurta_submit:"Find best days", muhurta_best:"Best days", muhurta_detail:"Day detail",
+    act_marriage:"Marriage", act_travel:"Travel", act_business:"Business / trade", act_house:"House construction",
+    act_education:"Education", act_job:"Starting a job", act_vehicle:"Buying a vehicle", act_naming:"Naming ceremony",
+    month_cal_title:"Month Calendar", cal_load:"Show month",
+    cal_hint:"Markers are astronomical only (Ekadashi, Purnima, Amavasya, Sankranti) — regional festival dates are not guessed.",
+    saved_title:"Saved Charts",
+    saved_hint:"Stored only in this browser — no account needed. A share link opens the same chart on any device.",
+    share_btn:"Copy share link", share_copied:"Link copied!", saved_empty:"No saved charts yet.",
+    saved_load:"Open", saved_delete:"Remove",
+    chalit_title:"Bhava Chalit — houses by actual cusps",
+    chalit_hint:"Sripathi method: each house is centred on its Placidus cusp. Planets marked shifted sit in a different Chalit house than their Rashi house.",
+    th_rashi_house:"Rashi house", th_chalit_house:"Chalit house", th_shifted:"Shifted?",
+    prastara_title:"Prastara Ashtakavarga — the bindu grids",
+    prastara_hint:"Each grid shows which contributor donates a bindu in each sign. Reduced totals apply Trikona then Ekadhipatya Shodhana (BPHS).",
+    prastara_pick:"Planet grid",
+    kp_events_title:"KP Event Analysis — promise, dasha, transit",
+    kp_events_hint:"Cuspal sub lord promise, checked against the running dasha and current Jupiter/Saturn transits. Guidance, not a guarantee.",
+    sudarshana_title:"Sudarshana Chakra — three rings, one chart",
+    sudarshana_hint:"The same chart read from Lagna, Moon and Sun. A planet in the same relative house in two or three rings has its results confirmed.",
+    th_agreement:"Agreement",
+    m_date:"Planned wedding date (optional — enables Dasha Sandhi check)",
   },
   ne: {
     nav_kundali:"कुण्डली", nav_premium:"प्रिमियम रिपोर्ट", nav_matching:"मेल मिलान", nav_panchang:"पञ्चाङ्ग",
@@ -204,6 +235,37 @@ const I18N = {
     chara_current:"हालको चर अवधि", direction_word:"दिशा",
     weak_support_title:"कमजोर ग्रहको साथ (षड्बलअनुसार)",
     house_word_cap:"भाव",
+    nav_horoscope:"राशिफल", nav_muhurta:"मुहूर्त",
+    eb_horoscope:"अध्याय ५ — राशिफल", eb_muhurta:"अध्याय ६ — शुभ मुहूर्त",
+    horoscope_title:"चन्द्र राशिफल",
+    horoscope_hint:"आजको वास्तविक गोचरलाई तपाईंको चन्द्र राशिबाट गनेर तयार — कहिल्यै सामान्य स्तम्भ होइन।",
+    h_sign:"चन्द्र राशि", h_span:"अवधि", h_daily:"दैनिक", h_weekly:"साप्ताहिक", h_monthly:"मासिक",
+    horoscope_submit:"राशिफल देखाउनुहोस्",
+    muhurta_title:"मुहूर्त खोजकर्ता",
+    muhurta_hint:"शास्त्रीय मार्गदर्शन: तिथि वर्ग, चन्द्र नक्षत्र उपयुक्तता, राहुकाल, चौघडिया र होरा। पूर्ण मुहूर्तमा चन्द्रबल, पञ्चक र लग्न पनि हेरिन्छ।",
+    u_from:"देखि", u_to:"सम्म (अधिकतम ३१ दिन)", u_activity:"काम",
+    u_nakshatra:"जन्म नक्षत्र (ऐच्छिक, ताराबलका लागि)",
+    muhurta_submit:"उत्तम दिन खोज्नुहोस्", muhurta_best:"उत्तम दिनहरू", muhurta_detail:"दिनको विवरण",
+    act_marriage:"विवाह", act_travel:"यात्रा", act_business:"व्यापार", act_house:"गृह निर्माण",
+    act_education:"शिक्षा", act_job:"नोकरी सुरु", act_vehicle:"वाहन खरिद", act_naming:"नामकरण",
+    month_cal_title:"महिनाको पात्रो", cal_load:"महिना देखाउनुहोस्",
+    cal_hint:"चिन्हहरू खगोलीय मात्र हुन् (एकादशी, पूर्णिमा, औंसी, सङ्क्रान्ति) — क्षेत्रीय पर्व मितिहरू अनुमान गरिँदैनन्।",
+    saved_title:"सुरक्षित कुण्डलीहरू",
+    saved_hint:"यही ब्राउजरमा मात्र राखिन्छ — कुनै खाता चाहिँदैन। साझा लिङ्कले कुनै पनि यन्त्रमा उही कुण्डली खोल्छ।",
+    share_btn:"साझा लिङ्क कपी गर्नुहोस्", share_copied:"लिङ्क कपी भयो!", saved_empty:"अहिलेसम्म कुनै सुरक्षित कुण्डली छैन।",
+    saved_load:"खोल्नुहोस्", saved_delete:"हटाउनुहोस्",
+    chalit_title:"भाव चलित — वास्तविक भावसीमाबाट घरहरू",
+    chalit_hint:"श्रीपति विधि: प्रत्येक भाव आफ्नो प्लेसिडस कस्पमा केन्द्रित हुन्छ। 'सरेको' चिन्ह लागेका ग्रह राशि घरभन्दा फरक चलित घरमा छन्।",
+    th_rashi_house:"राशि भाव", th_chalit_house:"चलित भाव", th_shifted:"सरेको?",
+    prastara_title:"प्रस्तार अष्टकवर्ग — बिन्दु तालिकाहरू",
+    prastara_hint:"प्रत्येक तालिकाले कुन योगदानकर्ताले कुन राशिमा बिन्दु दिन्छ भन्ने देखाउँछ। घटाइएको जम्मामा त्रिकोण अनि एकाधिपत्य शोधन (BPHS) लागू हुन्छ।",
+    prastara_pick:"ग्रहको तालिका",
+    kp_events_title:"KP घटना विश्लेषण — प्रतिज्ञा, दशा, गोचर",
+    kp_events_hint:"कस्पल उपस्वामीको प्रतिज्ञा, चालु दशा र वर्तमान बृहस्पति/शनि गोचरसँग जाँचिएको। मार्गदर्शन हो, ग्यारेन्टी होइन।",
+    sudarshana_title:"सुदर्शन चक्र — तीन घेरा, एउटै कुण्डली",
+    sudarshana_hint:"उही कुण्डली लग्न, चन्द्र र सूर्यबाट पढिन्छ। दुई वा तीन घेरामा एउटै सापेक्ष भावमा रहेको ग्रहको फल पुष्टि हुन्छ।",
+    th_agreement:"सहमति",
+    m_date:"योजनाबद्ध विवाह मिति (ऐच्छिक — दशा सन्धि जाँच सक्षम गर्छ)",
   }
 };
 
@@ -396,7 +458,7 @@ async function searchPlaces(inputEl) {
   box.hidden = box.childElementCount === 0;
 }
 
-["f-place", "m1-place", "m2-place", "p-place"].forEach((id) => {
+["f-place", "m1-place", "m2-place", "p-place", "u-place", "c-place"].forEach((id) => {
   const el = document.getElementById(id);
   if (!el) return;
   el.addEventListener("input", () => {
@@ -410,7 +472,7 @@ async function searchPlaces(inputEl) {
   el.addEventListener("blur", () => setTimeout(() => closeSuggest(el), 150));
 });
 document.addEventListener("click", (ev) => {
-  ["f-place", "m1-place", "m2-place", "p-place"].forEach((id) => {
+  ["f-place", "m1-place", "m2-place", "p-place", "u-place", "c-place"].forEach((id) => {
     const el = document.getElementById(id);
     if (el && !el.closest(".place-wrap").contains(ev.target)) closeSuggest(el);
   });
@@ -516,6 +578,7 @@ document.getElementById("birth-form").addEventListener("submit", async (ev) => {
     STATE.bundle = await res.json();
     STATE.birthPayload = payload;
     STATE.varga = "D1";
+    saveCurrentChart();
     document.querySelectorAll(".mini-btn[data-varga]").forEach((b) =>
       b.classList.toggle("is-active", b.dataset.varga === "D1"));
     renderBundle();
@@ -740,6 +803,7 @@ function renderBundle() {
   renderLalKitab(b);
   renderPremium(b);
   renderDeep(b);
+  renderWorldclass(b);
 }
 
 function renderDasha(b) {
@@ -909,6 +973,100 @@ function renderLalKitab(b) {
     `<span>${t("remedy_word")}: ${bi(r.remedy)}</span></div>`).join("");
   document.getElementById("lalkitab-body").innerHTML = html;
 }
+/* ---------------- World-class layer: Chalit, Prastara, KP events, Sudarshana --- */
+function renderWorldclass(b) {
+  /* Bhava Chalit */
+  const ch = b.bhava_chalit;
+  if (ch) {
+    document.querySelector("#chalit-table tbody").innerHTML = b.planets.map((p) => {
+      const row = ch.houses[p.planet];
+      return `<tr><td><b>${LANG === "ne" ? p.name_ne : p.planet}</b></td><td>${signName(p.sign)}</td>` +
+        `<td>${locNum(row.rashi_house)}</td><td>${locNum(row.chalit_house)}</td>` +
+        `<td>${row.shifted ? t("yes") : t("no")}</td></tr>`;
+    }).join("");
+  }
+  /* Prastara */
+  const pr = b.prastara;
+  if (pr) {
+    const sel = document.getElementById("prastara-planet");
+    if (!sel.options.length) {
+      PLANET_ORDER.forEach((p) => {
+        const o = document.createElement("option");
+        o.value = p; o.textContent = planetName(p); sel.appendChild(o);
+      });
+      sel.addEventListener("change", () => renderPrastaraGrid(b));
+    }
+    renderPrastaraGrid(b);
+  }
+  /* KP events */
+  const ev = b.kp_events;
+  if (ev) {
+    document.getElementById("kp-events-body").innerHTML = Object.values(ev).map((e) => `
+      <div class="pred-block"><h4>${LANG === "ne" ? e.event_ne : e.event_en} — ${LANG === "ne" ? e.verdict_ne : e.verdict}</h4>
+      <p>${bi(e.summary)}</p></div>`).join("");
+  }
+  /* Sudarshana */
+  const sd = b.sudarshana;
+  if (sd) {
+    document.querySelector("#sudarshana-table tbody").innerHTML = Object.entries(sd.planets).map(([p, r]) => `
+      <tr><td><b>${planetName(p)}</b></td><td>${signName(r.sign)}</td>` +
+      `<td>${locNum(r.lagna_house)}</td><td>${locNum(r.moon_house)}</td><td>${locNum(r.sun_house)}</td>` +
+      `<td>${r.agreement}</td></tr>`).join("");
+    document.getElementById("sudarshana-confirmed").textContent = sd.confirmed.length
+      ? sd.confirmed.map((c) => `${planetName(c.planet)}: ${t("house_word")} ${locNum(c.house)} (${c.level})`).join(" · ")
+      : "—";
+    document.getElementById("sudarshana-svg").innerHTML = sudarshanaSvg(sd);
+  }
+}
+
+function renderPrastaraGrid(b) {
+  const planet = document.getElementById("prastara-planet").value || "Sun";
+  const entry = b.prastara[planet];
+  if (!entry) return;
+  const head = document.getElementById("prastara-head");
+  head.innerHTML = `<th>${t("th_planet")}</th>` + SIGNS_EN.map((_, i) => `<th>${signName(i).slice(0, 4)}</th>`).join("");
+  let rows = Object.entries(entry.grid).map(([c, row]) => {
+    const label = c === "Lagna" ? t("lagna_word") : planetName(c);
+    return `<tr><td><b>${label}</b></td>${row.map((v) => `<td class="${v ? "hot" : ""}">${v}</td>`).join("")}</tr>`;
+  }).join("");
+  rows += `<tr><td><b>BAV</b></td>${entry.bav.map((v) => `<td><b>${v}</b></td>`).join("")}</tr>`;
+  rows += `<tr><td><b>${LANG === "ne" ? "घटाइएको" : "Reduced"}</b></td>${entry.reduced.map((v) => `<td><b>${v}</b></td>`).join("")}</tr>`;
+  document.querySelector("#prastara-table tbody").innerHTML = rows;
+  document.getElementById("prastara-totals").textContent =
+    `${planetName(planet)}: BAV ${entry.bav.reduce((a, x) => a + x, 0)} → ${LANG === "ne" ? "घटाइएको" : "reduced"} ${entry.reduced_total}`;
+}
+
+const PLANET_GLYPHS = { Sun: "☉", Moon: "☽", Mars: "♂", Mercury: "☿", Jupiter: "♃", Venus: "♀", Saturn: "♄", Rahu: "Rā", Ketu: "Ke" };
+function sudarshanaSvg(sd) {
+  const C = 150, rings = [
+    { r0: 138, r1: 104, key: "lagna_house", label: "Lagna" },
+    { r0: 102, r1: 68, key: "moon_house", label: "Moon" },
+    { r0: 66, r1: 32, key: "sun_house", label: "Sun" },
+  ];
+  let s = `<svg viewBox="0 0 300 300" class="sud-svg" role="img" aria-label="Sudarshana Chakra">`;
+  for (const ring of rings) {
+    s += `<circle cx="${C}" cy="${C}" r="${ring.r0}" fill="none" stroke="var(--gold)" stroke-opacity="0.55"/>` +
+      `<circle cx="${C}" cy="${C}" r="${ring.r1}" fill="none" stroke="var(--gold)" stroke-opacity="0.35"/>`;
+    for (let h = 1; h <= 12; h++) {
+      const a = ((h - 1) * 30 - 90) * Math.PI / 180;
+      const x1 = C + ring.r1 * Math.cos(a), y1 = C + ring.r1 * Math.sin(a);
+      const x2 = C + ring.r0 * Math.cos(a), y2 = C + ring.r0 * Math.sin(a);
+      s += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="var(--gold)" stroke-opacity="0.3"/>`;
+    }
+    const la = (-90 + 15) * Math.PI / 180;
+    s += `<text x="${(C + (ring.r0 + 2) * Math.cos(la)).toFixed(1)}" y="${(C + (ring.r0 + 2) * Math.sin(la)).toFixed(1)}" class="sud-label" text-anchor="middle">${ring.label} 1</text>`;
+  }
+  for (const [p, r] of Object.entries(sd.planets)) {
+    for (const ring of rings) {
+      const h = r[ring.key];
+      const a = ((h - 1) * 30 - 75) * Math.PI / 180;
+      const rm = (ring.r0 + ring.r1) / 2;
+      s += `<text x="${(C + rm * Math.cos(a)).toFixed(1)}" y="${(C + rm * Math.sin(a)).toFixed(1)}" class="sud-glyph" text-anchor="middle" dominant-baseline="middle">${PLANET_GLYPHS[p] || p}</text>`;
+    }
+  }
+  return s + "</svg>";
+}
+
 function renderPremium(b) {
   const rep = b.report;
   const lucky = rep.lucky;
@@ -1079,7 +1237,221 @@ function renderMatch() {
     <tr><td><b>${t("kootas")[row.koota] || row.koota}</b></td>
     <td>${row.score} / ${row.max}</td><td>${bi(row.detail)}</td></tr>`).join("");
   document.getElementById("manglik-note").textContent = bi(m.manglik_note);
+  const ext = document.getElementById("match-extended");
+  if (ext) {
+    const ps = m.papasamya, bm = m.bhava_milan;
+    let html = `<div class="pred-block"><h4>Papasamya</h4><p>${t("groom_moon")}: ${ps.groom_total} · ${t("bride_moon")}: ${ps.bride_total} · ${LANG === "ne" ? ps.verdict_ne : ps.verdict_en}</p></div>`;
+    html += `<div class="pred-block"><h4>Bhava Milan</h4><p>${bm.lines.map((l) => bi(l)).join("<br>")}<br><b>${LANG === "ne" ? bm.verdict_ne : bm.verdict_en}</b></p></div>`;
+    if (m.dasha_sandhi) {
+      html += `<div class="pred-block"><h4>Dasha Sandhi</h4><p>${m.dasha_sandhi.map((d) => bi(d)).join("<br>")}</p></div>`;
+    }
+    html += `<div class="pred-block"><h4>${LANG === "ne" ? "संयुक्त निष्कर्ष" : "Combined verdict"}</h4><p>${bi(m.combined_verdict)}</p></div>`;
+    ext.innerHTML = html;
+  }
 }
+
+/* ---------------- World-class tools: saved charts, share, horoscope, muhurta, month calendar --- */
+const SAVED_KEY = "vedic-astro-charts";
+function loadSavedCharts() {
+  try { return JSON.parse(localStorage.getItem(SAVED_KEY) || "[]"); } catch { return []; }
+}
+function renderSavedList() {
+  const list = document.getElementById("saved-list");
+  if (!list) return;
+  const charts = loadSavedCharts();
+  list.innerHTML = charts.length ? charts.map((c, i) => `
+    <div class="saved-row"><span>${c.name ? `${c.name} — ` : ""}${c.dob} ${c.tob} · ${c.place_name || ""}</span>
+    <button type="button" class="mini-btn" data-load="${i}">${t("saved_load")}</button>
+    <button type="button" class="mini-btn" data-del="${i}">${t("saved_delete")}</button></div>`).join("")
+    : `<p class="hint">${t("saved_empty")}</p>`;
+  list.querySelectorAll("[data-load]").forEach((b) => b.addEventListener("click", () => loadSavedChart(charts[+b.dataset.load])));
+  list.querySelectorAll("[data-del]").forEach((b) => b.addEventListener("click", () => {
+    const next = loadSavedCharts().filter((_, j) => j !== +b.dataset.del);
+    localStorage.setItem(SAVED_KEY, JSON.stringify(next)); renderSavedList();
+  }));
+}
+function saveCurrentChart() {
+  const p = STATE.birthPayload;
+  if (!p || typeof dedupeCharts !== "function") return;
+  const entry = { name: p.name || "", dob: p.dob, tob: p.tob,
+    place_name: STATE.bundle && STATE.bundle.birth ? STATE.bundle.birth.place.name : (p.place_name || ""),
+    payload: p };
+  localStorage.setItem(SAVED_KEY, JSON.stringify(dedupeCharts([...loadSavedCharts(), entry])));
+  renderSavedList();
+}
+function loadSavedChart(entry) {
+  const p = entry.payload;
+  document.getElementById("f-name").value = p.name || "";
+  document.getElementById("f-dob").value = p.dob || "";
+  document.getElementById("f-tob").value = p.tob || "";
+  if (p.place_id) {
+    PLACE_SELECTED["f-place"] = { place_id: p.place_id };
+    document.getElementById("f-place").value = entry.place_name || "";
+  } else {
+    document.getElementById("f-place").value = "";
+    document.getElementById("f-lat").value = p.lat != null ? String(p.lat) : "";
+    document.getElementById("f-lon").value = p.lon != null ? String(p.lon) : "";
+    document.getElementById("f-tz").value = p.tz || "";
+  }
+  document.getElementById("birth-form").requestSubmit();
+}
+const shareBtn = document.getElementById("share-btn");
+if (shareBtn) shareBtn.addEventListener("click", async () => {
+  const p = STATE.birthPayload;
+  if (!p || typeof buildShareUrl !== "function") return;
+  try {
+    await navigator.clipboard.writeText(buildShareUrl(window.location.origin, p));
+    shareBtn.textContent = t("share_copied");
+    setTimeout(() => { shareBtn.textContent = t("share_btn"); }, 2500);
+  } catch { /* clipboard unavailable — user can copy from the address bar */ }
+});
+
+/* Horoscope */
+(function initHoroscope() {
+  const signSel = document.getElementById("h-sign");
+  const nakSel = document.getElementById("u-nakshatra");
+  if (signSel) SIGNS_EN.forEach((_, i) => {
+    const o = document.createElement("option"); o.value = i; o.textContent = signName(i); signSel.appendChild(o);
+  });
+  if (nakSel) {
+    const none = document.createElement("option"); none.value = ""; none.textContent = "—"; nakSel.appendChild(none);
+    NAK_EN.forEach((n, i) => {
+      const o = document.createElement("option"); o.value = i; o.textContent = LANG === "ne" ? NAK_NE[i] : n; nakSel.appendChild(o);
+    });
+  }
+})();
+const horoscopeForm = document.getElementById("horoscope-form");
+if (horoscopeForm) horoscopeForm.addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const sign = +document.getElementById("h-sign").value;
+  const span = document.getElementById("h-span").value;
+  try {
+    const res = await fetch(`/api/horoscope?sign=${sign}&span=${span}&tz=${encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kathmandu")}`);
+    if (!res.ok) throw new Error("bad");
+    const h = await res.json();
+    document.getElementById("horoscope-head").textContent = `${signName(h.moon_sign)} — ${h.span} · ${h.start}${h.end !== h.start ? " → " + h.end : ""}`;
+    document.getElementById("horoscope-summary").textContent = bi(h.summary);
+    document.getElementById("horoscope-areas").innerHTML = Object.entries(h.areas).map(([area, a]) => `
+      <div class="pred-block"><h4>${area} — ${LANG === "ne" ? a.rating_ne : a.rating}</h4><p>${bi(a.text)}</p></div>`).join("");
+    let extra = "";
+    if (h.moon_journey && h.moon_journey.length) extra += `<p class="hint">${LANG === "ne" ? "चन्द्रमाको यात्रा" : "Moon's journey"}: ${h.moon_journey.map((j) => `${j.date}: ${LANG === "ne" ? j.sign_ne : j.sign_en}`).join(" · ")}</p>`;
+    if (h.ingresses && h.ingresses.length) extra += `<p class="hint">${h.ingresses.map((g) => `${planetName(g.planet)} → ${LANG === "ne" ? g.to_sign_ne : g.to_sign_en} (${g.date})`).join(" · ")}</p>`;
+    document.getElementById("horoscope-extra").innerHTML = extra;
+    document.getElementById("horoscope-result").hidden = false;
+    revealSection(document.getElementById("horoscope-result"));
+  } catch { /* leave the form; the API error surface is the section itself */ }
+});
+
+/* Muhurta */
+let MUHURTA_DATA = null;
+const muhurtaForm = document.getElementById("muhurta-form");
+if (muhurtaForm) {
+  const today = new Date();
+  const iso = (d) => d.toISOString().slice(0, 10);
+  document.getElementById("u-from").value = iso(today);
+  const plus7 = new Date(today); plus7.setDate(plus7.getDate() + 7);
+  document.getElementById("u-to").value = iso(plus7);
+  muhurtaForm.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const errEl = document.getElementById("muhurta-error"); errEl.hidden = true;
+    const place = resolvePlace("u-place");
+    const params = new URLSearchParams({
+      date_from: document.getElementById("u-from").value,
+      date_to: document.getElementById("u-to").value,
+      activity: document.getElementById("u-activity").value,
+    });
+    if (place && place.place_id) params.set("place_id", place.place_id);
+    else if (place && place.lat != null) { params.set("lat", place.lat); params.set("lon", place.lon); if (place.tz) params.set("tz", place.tz); }
+    else params.set("tz", Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kathmandu");
+    const nak = document.getElementById("u-nakshatra").value;
+    if (nak) params.set("birth_nakshatra", nak);
+    try {
+      const res = await fetch(`/api/muhurta?${params}`);
+      if (!res.ok) throw new Error("bad");
+      MUHURTA_DATA = await res.json();
+      document.getElementById("muhurta-best").innerHTML = MUHURTA_DATA.best.map((d) => `
+        <div class="pred-block"><h4>${d.date} — ${LANG === "ne" ? d.grade_ne : d.grade} (${LANG === "ne" ? "अङ्क" : "score"} ${d.score})</h4><p>${d.factors.map((f) => bi(f)).join(" · ")}</p></div>`).join("");
+      const daySel = document.getElementById("muhurta-day");
+      daySel.innerHTML = MUHURTA_DATA.days.map((d) => `<option value="${d.date}">${d.date} (${LANG === "ne" ? d.grade_ne : d.grade})</option>`).join("");
+      daySel.onchange = () => renderMuhurtaDay(daySel.value);
+      renderMuhurtaDay(daySel.value);
+      document.getElementById("muhurta-result").hidden = false;
+      revealSection(document.getElementById("muhurta-result"));
+    } catch { errEl.textContent = t("err_server"); errEl.hidden = false; }
+  });
+}
+const hhmm = (s) => (s ? String(s).slice(11, 16) : "");
+function renderMuhurtaDay(dateStr) {
+  const d = MUHURTA_DATA && MUHURTA_DATA.days.find((x) => x.date === dateStr);
+  const el = document.getElementById("muhurta-day-detail");
+  if (!d || !el) return;
+  const segs = (list) => list.map((c) => `${c.lord} ${hhmm(c.start)}–${hhmm(c.end)}`).join(" · ") || "—";
+  const wedNote = d.abhijit.wednesday_note
+    ? (LANG === "ne" ? " — बुधबार अभिजित् मुहूर्त परम्परागत रूपमा बेवास्ता गरिन्छ" : " — Abhijit is traditionally avoided on Wednesdays") : "";
+  el.innerHTML = `<p><b>${LANG === "ne" ? "चन्द्र नक्षत्र" : "Moon nakshatra"}:</b> ${LANG === "ne" ? d.nakshatra_ne : d.nakshatra_en} · <b>${LANG === "ne" ? "तिथि वर्ग" : "Tithi class"}:</b> ${d.tithi_class} · <b>${LANG === "ne" ? "अङ्क" : "Score"}:</b> ${d.score}</p>` +
+    `<p><b>${LANG === "ne" ? "राहुकाल" : "Rahu Kaal"}:</b> ${hhmm(d.rahu_kaal.start)}–${hhmm(d.rahu_kaal.end)}</p>` +
+    `<p><b>${LANG === "ne" ? "अभिजित" : "Abhijit"}:</b> ${hhmm(d.abhijit.start)}–${hhmm(d.abhijit.end)}${wedNote}</p>` +
+    `<p><b>Choghadiya (day):</b> ${segs(d.choghadiya_day)}<br><b>Choghadiya (night):</b> ${segs(d.choghadiya_night)}</p>` +
+    `<p><b>Hora:</b> ${d.hora.map((h) => `${planetName(h.lord)} ${hhmm(h.start)}`).join(" · ")}</p>` +
+    `<p class="hint">${d.factors.map((f) => `${bi(f)} (${f.points > 0 ? "+" : ""}${f.points})`).join(" · ")}</p>`;
+}
+
+/* Month calendar */
+(function initCalendar() {
+  const ySel = document.getElementById("cal-year"), mSel = document.getElementById("cal-month");
+  if (!ySel || !mSel) return;
+  const now = new Date();
+  for (let y = now.getFullYear() - 1; y <= now.getFullYear() + 1; y++) {
+    const o = document.createElement("option"); o.value = y; o.textContent = y; ySel.appendChild(o);
+  }
+  ySel.value = now.getFullYear();
+  SIGNS_EN.forEach((_, i) => {}); // months are not signs; names below
+  const MONTH_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const MONTH_NE = ["जनवरी","फेब्रुअरी","मार्च","अप्रिल","मे","जुन","जुलाई","अगस्ट","सेप्टेम्बर","अक्टोबर","नोभेम्बर","डिसेम्बर"];
+  MONTH_EN.forEach((m, i) => {
+    const o = document.createElement("option"); o.value = i + 1; o.textContent = LANG === "ne" ? MONTH_NE[i] : m; mSel.appendChild(o);
+  });
+  mSel.value = now.getMonth() + 1;
+})();
+const calBtn = document.getElementById("cal-load");
+if (calBtn) calBtn.addEventListener("click", async () => {
+  const place = resolvePlace("c-place");
+  const params = new URLSearchParams({
+    year: document.getElementById("cal-year").value,
+    month: document.getElementById("cal-month").value,
+  });
+  if (place && place.place_id) params.set("place_id", place.place_id);
+  else if (place && place.lat != null) { params.set("lat", place.lat); params.set("lon", place.lon); if (place.tz) params.set("tz", place.tz); }
+  else params.set("tz", Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kathmandu");
+  try {
+    const res = await fetch(`/api/panchang-month?${params}`);
+    if (!res.ok) throw new Error("bad");
+    const cal = await res.json();
+    document.getElementById("cal-grid").innerHTML = cal.days.map((d) => `
+      <div class="cal-cell"><b>${d.date.slice(-2)}</b> ${(LANG === "ne" ? TITHI_NE[d.tithi_index] : TITHI_EN[d.tithi_index])} · ${(LANG === "ne" ? NAK_NE[d.nakshatra_index] : NAK_EN[d.nakshatra_index])}
+      ${d.markers.map((m) => `<span class="cal-marker">${m}</span>`).join(" ")}</div>`).join("");
+  } catch { /* keep previous grid */ }
+});
+
+/* Share-link autoload + saved list on start */
+(function initShare() {
+  renderSavedList();
+  if (typeof parseShareParams !== "function") return;
+  const params = parseShareParams(window.location.search);
+  if (!params) return;
+  document.getElementById("f-name").value = params.name || "";
+  document.getElementById("f-dob").value = params.dob || "";
+  document.getElementById("f-tob").value = params.tob || "";
+  if (params.place_id) {
+    PLACE_SELECTED["f-place"] = { place_id: params.place_id };
+    document.getElementById("f-place").value = params.place_name || "";
+  } else if (params.lat != null) {
+    document.getElementById("f-lat").value = String(params.lat);
+    document.getElementById("f-lon").value = String(params.lon);
+    document.getElementById("f-tz").value = params.tz || "";
+  }
+  document.getElementById("birth-form").requestSubmit();
+})();
 
 /* ---------------- KP Prashna (Horary) ---------------- */
 document.getElementById("prashna-form").addEventListener("submit", async (ev) => {

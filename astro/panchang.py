@@ -56,3 +56,43 @@ def daily_panchang(day: date, lat: float, lon: float, tz_name: str) -> dict:
     p["sunrise"] = rise.isoformat() if rise else None
     p["sunset"] = set_.isoformat() if set_ else None
     return p
+
+
+def month_panchang(year: int, month: int, lat: float, lon: float, tz_name: str) -> dict:
+    """Panchang for every day of a calendar month, with markers.
+
+    Markers are computed, not looked up: Ekadashi (tithi 11/26),
+    Purnima (15), Amavasya (30), and Sankranti (the Sun's sign
+    changes vs the previous day). Festival dates that depend on
+    regional calendars (Dashain, Tihar, etc.) are NOT guessed here —
+    only these astronomical markers are shown.
+    """
+    from datetime import timedelta
+
+    from .ephemeris import sun_moon_longitudes, to_julian_day
+
+    first = date(year, month, 1)
+    nxt = (first + timedelta(days=32)).replace(day=1)
+    days = []
+    prev_sun_sign = None
+    d = first
+    while d < nxt:
+        p = daily_panchang(d, lat, lon, tz_name)
+        sun, _moon = sun_moon_longitudes(to_julian_day(
+            datetime.combine(d, time(12, 0), tzinfo=ZoneInfo(tz_name))))
+        sun_sign = int(sun // 30.0)
+        markers = []
+        if p["tithi_index"] in (10, 25):
+            markers.append("Ekadashi")
+        if p["tithi_index"] == 14:
+            markers.append("Purnima")
+        if p["tithi_index"] == 29:
+            markers.append("Amavasya")
+        if prev_sun_sign is not None and sun_sign != prev_sun_sign:
+            markers.append("Sankranti")
+        p["sun_sign"] = sun_sign
+        p["markers"] = markers
+        days.append(p)
+        prev_sun_sign = sun_sign
+        d += timedelta(days=1)
+    return {"year": year, "month": month, "days": days}

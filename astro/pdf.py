@@ -234,6 +234,48 @@ def build_html(bundle: dict, lang: str = "en") -> str:
         body.append("</table>")
         body.append(paras(deep.get("ashtakavarga_reading")))
 
+    # ------------------------------------------------------------ world-class layer
+    chalit = bundle.get("bhava_chalit") or {}
+    if chalit.get("houses"):
+        h2("chalit", "Bhava Chalit — Houses by Actual Cusps", "भाव चलित — वास्तविक भावसीमाबाट घरहरू")
+        body.append(f"<p>{T('Sripathi method: each house is centred on its Placidus cusp. Planets marked shifted sit in a different Chalit house than their Rashi house.', 'श्रीपति विधि: प्रत्येक भाव आफ्नो प्लेसिडस कस्पमा केन्द्रित हुन्छ। सरेको चिन्ह लागेका ग्रह राशि घरभन्दा फरक चलित घरमा छन्।')}</p>")
+        body.append("<table><tr><th>" + T("Planet", "ग्रह") + "</th><th>" + T("Sign", "राशि") + "</th><th>" + T("Rashi house", "राशि भाव") + "</th><th>" + T("Chalit house", "चलित भाव") + "</th><th>" + T("Shifted?", "सरेको?") + "</th></tr>")
+        for p in bundle["planets"]:
+            row = chalit["houses"].get(p["planet"]) or {}
+            body.append(f"<tr><td>{_esc(p['planet'])}</td><td>{_esc(p['sign_ne'] if ne else p['sign_en'])}</td>"
+                        f"<td>{row.get('rashi_house', '')}</td><td>{row.get('chalit_house', '')}</td>"
+                        f"<td>{T('Yes', 'हो') if row.get('shifted') else T('No', 'होइन')}</td></tr>")
+        body.append("</table>")
+    prastara = bundle.get("prastara") or {}
+    if prastara:
+        h2("prastara", "Prastara Ashtakavarga — Reduced Totals", "प्रस्तार अष्टकवर्ग — घटाइएको जम्मा")
+        body.append(f"<p>{T('Reduced totals after Trikona then Ekadhipatya Shodhana (BPHS). The full 8×12 grids are on the website.', 'त्रिकोण अनि एकाधिपत्य शोधन (BPHS) पछिको घटाइएको जम्मा। पूरा ८×१२ तालिकाहरू वेबसाइटमा छन्।')}</p>")
+        body.append("<table><tr><th>" + T("Planet", "ग्रह") + "</th><th>" + T("Reduced total", "घटाइएको जम्मा") + "</th></tr>")
+        for pname in PLANET_ORDER[:7]:
+            entry = prastara.get(pname) or {}
+            body.append(f"<tr><td>{_esc(pname)}</td><td>{entry.get('reduced_total', '')}</td></tr>")
+        body.append("</table>")
+    kp_events = bundle.get("kp_events") or {}
+    if kp_events:
+        h2("kp-events", "KP Event Analysis — Promise, Dasha, Transit", "KP घटना विश्लेषण — प्रतिज्ञा, दशा, गोचर")
+        body.append(f"<p>{T('Cuspal sub lord promise, checked against the running dasha and current Jupiter/Saturn transits. Guidance, not a guarantee.', 'कस्पल उपस्वामीको प्रतिज्ञा, चालु दशा र वर्तमान बृहस्पति/शनि गोचरसँग जाँचिएको। मार्गदर्शन हो, ग्यारेन्टी होइन।')}</p>")
+        body.append("<table><tr><th>" + T("Event", "घटना") + "</th><th>" + T("Verdict", "निष्कर्ष") + "</th><th>" + T("Basis", "आधार") + "</th></tr>")
+        for ev in kp_events.values():
+            body.append(f"<tr><td>{_esc(ev['event_ne'] if ne else ev['event_en'])}</td>"
+                        f"<td>{_esc(ev['verdict_ne'] if ne else ev['verdict'])}</td>"
+                        f"<td>{pick(ev['summary'])}</td></tr>")
+        body.append("</table>")
+    sudar = bundle.get("sudarshana") or {}
+    if sudar.get("confirmed") is not None:
+        h2("sudarshana", "Sudarshana Chakra — Confirmed Results", "सुदर्शन चक्र — पुष्टि भएका फलहरू")
+        body.append(f"<p>{T('The same chart read from Lagna, Moon and Sun. A planet in the same relative house in two or three rings has its results confirmed.', 'उही कुण्डली लग्न, चन्द्र र सूर्यबाट पढिन्छ। दुई वा तीन घेरामा एउटै सापेक्ष भावमा रहेको ग्रहको फल पुष्टि हुन्छ।')}</p>")
+        if sudar["confirmed"]:
+            body.append("<ul>" + "".join(
+                f"<li>{_esc(c['planet'])}: {T('house', 'भाव')} {c['house']} ({_esc(c['level'])})</li>"
+                for c in sudar["confirmed"]) + "</ul>")
+        else:
+            body.append(f"<p>{T('No planet repeats a relative house across rings in this chart.', 'यस कुण्डलीमा कुनै ग्रहले घेराहरूमा सापेक्ष भाव दोहोर्याएको छैन।')}</p>")
+
     # ------------------------------------------------------------ planet chapters
     h2("planets", "The Planets — Chapter by Chapter", "ग्रहहरू — अध्यायगत विश्लेषण")
     for pname in PLANET_ORDER:
