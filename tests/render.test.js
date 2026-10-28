@@ -137,7 +137,7 @@ function loadApp({ lang = "en", throwOnSave = false, fetchScript = null } = {}) 
 function loadBundles() {
   const out = {};
   for (const n of ["sample", "london", "sydney", "urlabari", "retro"]) {
-    out[n] = JSON.parse(fs.readFileSync(`/tmp/b_${n}.json`, "utf8"));
+    out[n] = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", `b_${n}.json`), "utf8"));
   }
   return out;
 }
@@ -167,7 +167,7 @@ test("renderBundle renders all real bundles in EN and NE without throwing", () =
 
 test("renderBundle renders every section for the sample bundle", () => {
   const { h, elements } = loadApp({ lang: "en" });
-  h.STATE.bundle = JSON.parse(fs.readFileSync("/tmp/b_sample.json", "utf8"));
+  h.STATE.bundle = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "b_sample.json"), "utf8"));
   h.STATE.birthPayload = { dob: "1998-05-14", tob: "06:30", place_id: "kathmandu" };
   h.renderBundle();
   const elFor = (id) => elements.get(id) || elements.get("qs:#" + id + " tbody");
@@ -180,7 +180,7 @@ test("renderBundle renders every section for the sample bundle", () => {
 
 test("saveCurrentChart stores, dedupes, and never throws on storage failure", () => {
   const { h, store } = loadApp({ lang: "en" });
-  h.STATE.bundle = JSON.parse(fs.readFileSync("/tmp/b_sample.json", "utf8"));
+  h.STATE.bundle = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "b_sample.json"), "utf8"));
   h.STATE.birthPayload = { dob: "1998-05-14", tob: "06:30", place_id: "kathmandu" };
   h.saveCurrentChart();
   h.saveCurrentChart(); // same chart twice -> still one entry
@@ -193,13 +193,13 @@ test("saveCurrentChart stores, dedupes, and never throws on storage failure", ()
   // Storage failure must never throw (it once hid every chart behind the
   // generic error, because save ran inside the submit handler's try).
   const bad = loadApp({ throwOnSave: true });
-  bad.h.STATE.bundle = JSON.parse(fs.readFileSync("/tmp/b_sample.json", "utf8"));
+  bad.h.STATE.bundle = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "b_sample.json"), "utf8"));
   bad.h.STATE.birthPayload = { dob: "1998-05-14", tob: "06:30", place_id: "kathmandu" };
   bad.h.saveCurrentChart(); // must not throw
 });
 
 test("one missing bundle section never kills the whole render", () => {
-  const base = JSON.parse(fs.readFileSync("/tmp/b_sample.json", "utf8"));
+  const base = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "b_sample.json"), "utf8"));
   const CORE = new Set(["birth", "lagna", "planets", "charts"]);
   const failures = [];
   for (const key of Object.keys(base)) {
@@ -228,7 +228,7 @@ test("one missing bundle section never kills the whole render", () => {
 
 test("renderBundle with a corrupted section still renders the rest", () => {
   const { h, elements, el } = loadApp({ lang: "en" });
-  const bundle = JSON.parse(fs.readFileSync("/tmp/b_sample.json", "utf8"));
+  const bundle = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "b_sample.json"), "utf8"));
   bundle.strength = { shadbala: null }; // corrupted strength section
   bundle.lal_kitab = null;
   h.STATE.bundle = bundle;
