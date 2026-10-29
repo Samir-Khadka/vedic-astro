@@ -15,6 +15,17 @@ def test_health():
     assert r.status_code == 200 and r.json()["status"] == "ok"
 
 
+def test_health_head():
+    # UptimeRobot's free checks use HEAD; a GET-only route answered 405.
+    r = client.head("/health")
+    assert r.status_code == 200
+
+
+def test_horoscope_bad_tz_is_400_not_500():
+    r = client.get("/api/horoscope", params={"sign": 3, "tz": "Mars/Olympus"})
+    assert r.status_code == 400
+
+
 def test_places_search():
     r = client.get("/api/places", params={"q": "kath"})
     assert r.status_code == 200

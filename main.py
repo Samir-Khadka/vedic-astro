@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.responses import FileResponse
@@ -134,7 +134,11 @@ def _payload(b: BirthInput) -> dict:
 
 
 @app.get("/health")
+@app.head("/health")
 def health():
+    # HEAD is explicit: UptimeRobot's free checks use HEAD, and Starlette
+    # does not answer HEAD for a GET-only route (it returned 405, which
+    # showed two live monitors as falsely Down).
     return {"status": "ok", "service": "vedic-astro"}
 
 
@@ -283,6 +287,10 @@ def horoscope(
         ZoneInfo(tz)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except ZoneInfoNotFoundError as e:
+        # Unknown IANA names raise ZoneInfoNotFoundError (a KeyError, not a
+        # ValueError) — without this it surfaced as a 500.
+        raise HTTPException(status_code=400, detail=f"unknown IANA timezone: {tz}") from e
     try:
         return horoscope_module.horoscope(sign, span, day, tz)
     except ValueError as e:
