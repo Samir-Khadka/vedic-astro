@@ -142,15 +142,12 @@ def sunrise_sunset(local_date: date, lat: float, lon: float, tz_name: str) -> tu
     def to_local(jd: float | None) -> datetime | None:
         if jd is None:
             return None
-        y, m, d, h = swe.revjul(jd)
-        hh = int(h)
-        mm = int((h - hh) * 60)
-        ss = int(round((((h - hh) * 60) - mm) * 60))
-        if ss == 60:
-            ss = 0
-            mm += 1
-        utc_dt = datetime(y, m, d, hh, mm, ss, tzinfo=timezone.utc)
-        return utc_dt.astimezone(tz)
+        # Timedelta arithmetic normalises every rollover (seconds -> 60
+        # flipping the minute to 60, minute -> 60 flipping the hour, hour
+        # -> 24 flipping the day), which the manual hh/mm/ss split above
+        # could not: a revjul hour like 23.9999976... raised
+        # "ValueError: minute must be in 0..59".
+        return jd_to_utc_datetime(jd).astimezone(tz)
 
     return to_local(rise_jd), to_local(set_jd)
 

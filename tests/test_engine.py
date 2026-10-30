@@ -1,6 +1,6 @@
 """Engine tests: golden values, first-principles invariants, and
 cross-checks against raw Swiss Ephemeris calls made independently here."""
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import swisseph as swe
@@ -158,3 +158,32 @@ def test_matching_bounds():
     result = guna_milan(a, b)
     assert 0 <= result["total"] <= 36
     assert len(result["breakdown"]) == 8
+
+
+def test_sunrise_sunset_minute_rollover_no_crash(monkeypatch):
+    """Regression: a revjul hour like 23.9999976 (fractional seconds round
+    the minute up to 60) must not raise 'ValueError: minute must be in 0..59'.
+    The old manual hh/mm/ss split crashed on this real Swiss Ephemeris
+    output; the timedelta-based conversion normalises every rollover."""
+    import astro.ephemeris as e
+
+    jd = 2460312.4999999  # swe.revjul -> (2024, 1, 2, 23.999997597187757)
+    y, m, d, h = swe.revjul(jd)
+    raw_mm = int((h - int(h)) * 60)
+    raw_ss = int(round((((h - int(h)) * 60) - raw_mm) * 60))
+    assert raw_mm == 59 and raw_ss == 60  # the shape that used to crash
+    monkeypatch.setattr(e, "_rise_trans", lambda *a, **k: jd)
+    rise, set_ = e.sunrise_sunset(date(2024, 1, 2), 27.7172, 85.3240, "Asia/Kathmandu")
+    assert rise is not None and set_ is not None
+    assert rise.tzinfo is not None and set_.tzinfo is not None
+
+
+def test_sunrise_sunset_kathmandu_sane():
+    """Sanity: real rise/set computation returns valid local datetimes with
+    sunrise before sunset on a normal day."""
+    rise, set_ = ephemeris.sunrise_sunset(
+        date(2024, 1, 2), 27.7172, 85.3240, "Asia/Kathmandu")
+    assert rise is not None and set_ is not None
+    assert str(rise.tzinfo) == "Asia/Kathmandu"
+    assert rise < set_
+    assert 5 <= rise.hour <= 8 and 16 <= set_.hour <= 19

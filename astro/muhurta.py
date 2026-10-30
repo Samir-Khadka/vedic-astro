@@ -137,7 +137,11 @@ def _segments(start: datetime, end: datetime, n: int, lords: list[str]) -> list[
     out = []
     for i in range(n):
         s = start + span * i
-        e = start + span * (i + 1)
+        # Anchor the last boundary to `end` exactly: timedelta division
+        # rounds to the microsecond, so start + span*n can drift by a few
+        # microseconds from end (visible once rise/set carry sub-second
+        # precision). The table tiles start->end by construction.
+        e = end if i == n - 1 else start + span * (i + 1)
         out.append({
             "index": i + 1, "lord": lords[i],
             "good": lords[i] in GOOD_CHOGHADIYA,
