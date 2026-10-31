@@ -198,6 +198,12 @@ const I18N = {
     nakshatra_deep_hint:"Your Moon nakshatra's nine Taras, today's Tara Bala and Chandra Bala, and every planet's Avastha (maturity + wakefulness).",
     ashto_title:"Ashtottari Dasha — the 108-year conditional system",
     ashto_hint:"Eight lords, Ketu excluded. Traditionally applied when Rahu stands in a kendra/trikona from the Lagna lord and the day-night/paksha rule holds — both conditions are shown, and the sequence is computed regardless.",
+    p3_title:"Classical Dashas — Narayana · Shodshottari · Mudda · Kalachakra",
+    p3_hint:"Four classical timing systems: Jaimini's sign-based Narayana, the 116-year conditional Shodshottari, the Tajika annual Mudda, and the nakshatra-pada Kalachakra with deha/jiva.",
+    p3_narayana:"Narayana Dasha (Jaimini)",
+    p3_shodshottari:"Shodshottari Dasha (116-yr)",
+    p3_mudda:"Mudda Dasha (Tajika annual)",
+    p3_kalachakra:"Kalachakra Dasha",
     sade_lifetime_title:"Lifetime Sade Sati — every period, exact dates",
     sade_lifetime_hint:"Saturn's passage over the three signs around your Moon sign, across a full lifetime. Past, current and future periods are marked.",
     gem_guide_title:"Gemstones & Rudraksha — the complete guide",
@@ -385,6 +391,12 @@ const I18N = {
     nakshatra_deep_hint:"तपाईंको चन्द्र नक्षत्रका नौ तारा, आजको ताराबल र चन्द्रबल, र प्रत्येक ग्रहको अवस्था (परिपक्वता + जागरण)।",
     ashto_title:"अष्टोत्तरी दशा — १०८-वर्षीय सशर्त प्रणाली",
     ashto_hint:"आठ स्वामी, केतु बाहेक। परम्परागत रूपमा राहु लग्न स्वामीबाट केन्द्र/त्रिकोणमा हुँदा र दिन-रात/पक्ष नियम मिल्दा लागू हुन्छ — दुवै शर्त देखाइन्छ, र क्रम जेसुकै भए पनि गणना गरिन्छ।",
+    p3_title:"शास्त्रीय दशाहरू — नारायण · षोडशोत्तरी · मुद्दा · कालचक्र",
+    p3_hint:"चार शास्त्रीय समय प्रणाली: जैमिनीको राशि-आधारित नारायण, ११६-वर्षीय सशर्त षोडशोत्तरी, ताजिक वार्षिक मुद्दा, र देह/जीवसहित नक्षत्र-पाद कालचक्र।",
+    p3_narayana:"नारायण दशा (जैमिनी)",
+    p3_shodshottari:"षोडशोत्तरी दशा (११६-वर्षीय)",
+    p3_mudda:"मुद्दा दशा (ताजिक वार्षिक)",
+    p3_kalachakra:"कालचक्र दशा",
     sade_lifetime_title:"आजीवन साढेसाती — हरेक अवधि, ठ्याक्कै मितिसहित",
     sade_lifetime_hint:"तपाईंको चन्द्र राशिवरिपरि तीन राशिमा शनिको यात्रा, पूरै जीवनभर। विगत, चालु र भावी अवधि चिन्ह लगाइएका छन्।",
     gem_guide_title:"रत्न र रुद्राक्ष — पूर्ण मार्गदर्शन",
@@ -1384,9 +1396,81 @@ function renderGapLayer(b) {
     document.getElementById("ashto-timeline").innerHTML = a.mahadashas.map((m) =>
       `<div class="tl-row"><span class="tl-lord">${planetName(m.lord)}</span> ${m.display_start || m.start} – ${m.end}</div>`).join("");
   }
+  renderP3(b);
   if (b.sade_sati_lifetime) {
     document.querySelector("#sade-lifetime-table tbody").innerHTML = b.sade_sati_lifetime.periods.map((p) =>
       `<tr><td><b>${p.status}</b></td><td>${p.start || "—"}</td><td>${p.peak_start || "—"}</td><td>${p.setting_start || "—"}</td><td>${p.end}</td></tr>`).join("");
+  }
+}
+/* ---------------- Phase 3 classical dashas ---------------- */
+let P3_BUNDLE = null;
+function renderP3(b) {
+  P3_BUNDLE = b;
+  const sel = document.getElementById("p3-select");
+  if (sel && !sel.dataset.bound) {
+    sel.dataset.bound = "1";
+    sel.addEventListener("change", () => renderP3(P3_BUNDLE));
+  }
+  updateP3();
+}
+function updateP3() {
+  const b = P3_BUNDLE;
+  const curEl = document.getElementById("p3-current");
+  const metaEl = document.getElementById("p3-meta");
+  const tlEl = document.getElementById("p3-timeline");
+  if (!b) { curEl.textContent = ""; metaEl.textContent = ""; tlEl.innerHTML = ""; return; }
+  const which = (document.getElementById("p3-select") || {}).value || "narayana";
+  const L = (en, ne) => (typeof LANG !== "undefined" && LANG === "ne" ? ne : en);
+  if (which === "narayana" && b.narayana) {
+    const n = b.narayana, cur = n.current;
+    curEl.textContent = cur
+      ? `${L("Now", "अहिले")}: ${signName(cur.mahadasha.sign)} ${cur.mahadasha.start} – ${cur.mahadasha.end}` +
+        (cur.antardasha ? ` / ${signName(cur.antardasha.sign)}` : "")
+      : "—";
+    metaEl.textContent = `${L("Starts from", "सुरु")}: ${signName(n.mahadashas[0].sign)} (${n.start_sign_en}) · ` +
+      `${L("Direction", "दिशा")}: ${n.forward ? L("forward", "अगाडि") : L("backward", "पछाडि")}`;
+    tlEl.innerHTML = n.mahadashas.slice(0, 24).map((m) => {
+      const isCur = cur && m.start === cur.mahadasha.start;
+      return `<div class="tl-row${isCur ? " is-current" : ""}"><span class="tl-lord">${signName(m.sign)}</span> ` +
+        `${m.display_start || m.start} – ${m.end} · ${m.years}y</div>`;
+    }).join("");
+  } else if (which === "shodshottari" && b.shodshottari) {
+    const s = b.shodshottari, cur = s.current, ap = b.shodshottari_applicability;
+    curEl.textContent = cur
+      ? `${L("Now", "अहिले")}: ${planetName(cur.mahadasha.lord)} ${cur.mahadasha.start} – ${cur.mahadasha.end}` +
+        (cur.antardasha ? ` / ${planetName(cur.antardasha.lord)}` : "")
+      : "—";
+    metaEl.textContent = ap
+      ? `${L("Applies", "लागू हुन्छ")}: ${ap.applies ? "✓" : "✗"} · ${L("Hora lord", "होरा स्वामी")}: ${planetName(ap.hora_lord)} · ${L("Paksha", "पक्ष")}: ${ap.paksha}`
+      : "";
+    tlEl.innerHTML = s.mahadashas.map((m) =>
+      `<div class="tl-row"><span class="tl-lord">${planetName(m.lord)}</span> ${m.display_start || m.start} – ${m.end} · ${m.years}y</div>`).join("");
+  } else if (which === "mudda" && b.mudda) {
+    const md = b.mudda, cur = md.current;
+    curEl.textContent = cur
+      ? `${L("Now", "अहिले")}: ${planetName(cur.mahadasha)} / ${planetName(cur.antardasha)}`
+      : "—";
+    metaEl.textContent = `${L("Varshapravesh", "वर्षप्रवेश")}: ${md.varshapravesh} · ${L("Year", "वर्ष")}: ${md.completed_years + 1}`;
+    tlEl.innerHTML = md.periods.map((m) => {
+      const isCur = cur && m.planet === cur.mahadasha;
+      return `<div class="tl-row${isCur ? " is-current" : ""}"><span class="tl-lord">${planetName(m.planet)}</span> ` +
+        `${m.start} – ${m.end} · ${m.days}d</div>`;
+    }).join("");
+  } else if (which === "kalachakra" && b.kalachakra) {
+    const k = b.kalachakra, cur = k.current;
+    curEl.textContent = cur
+      ? `${L("Now", "अहिले")}: ${signName(cur.mahadasha.sign)} ${cur.mahadasha.start} – ${cur.mahadasha.end}` +
+        (cur.antardasha ? ` / ${signName(cur.antardasha.sign)}` : "")
+      : "—";
+    metaEl.textContent = `${L("Group", "समूह")}: ${k.birth_group} · ${L("Pada", "पाद")}: ${k.birth_pada} · ` +
+      `${L("Deha", "देह")}: ${k.deha_en} · ${L("Jiva", "जीव")}: ${k.jiva_en}`;
+    tlEl.innerHTML = k.mahadashas.slice(0, 18).map((m) => {
+      const isCur = cur && m.start === cur.mahadasha.start;
+      return `<div class="tl-row${isCur ? " is-current" : ""}"><span class="tl-lord">${signName(m.sign)}</span> ` +
+        `${m.display_start || m.start} – ${m.end} · ${m.years}y</div>`;
+    }).join("");
+  } else {
+    curEl.textContent = "—"; metaEl.textContent = ""; tlEl.innerHTML = "";
   }
 }
 /* ---------------- World-class layer: Chalit, Prastara, KP events, Sudarshana --- */
@@ -1801,9 +1885,9 @@ function renderDeep(b) {
 
   if (sl.arudha_lagna) {
     document.getElementById("special-lagna-line").textContent =
-      `${t("arudha_word")}: ${signOf(sl.arudha_lagna.sign)} (${t("house_word_cap")} ${locNum(sl.arudha_lagna.house_from_lagna)}) · ` +
-      `${t("upapada_word")}: ${signOf(sl.upapada.sign)} (${t("house_word_cap")} ${locNum(sl.upapada.house_from_lagna)}) · ` +
-      `${t("chandra_lagna_word")}: ${signOf(sl.chandra_lagna.sign)}`;
+      `${t("arudha_word")}: ${signName(sl.arudha_lagna.sign)} (${t("house_word_cap")} ${locNum(sl.arudha_lagna.house_from_lagna)}) · ` +
+      `${t("upapada_word")}: ${signName(sl.upapada.sign)} (${t("house_word_cap")} ${locNum(sl.upapada.house_from_lagna)}) · ` +
+      `${t("chandra_lagna_word")}: ${signName(sl.chandra_lagna.sign)}`;
   }
   const sr = deep.special_readings || {};
   document.getElementById("deep-special").innerHTML = ["arudha", "upapada"]
@@ -1819,7 +1903,7 @@ function renderDeep(b) {
         pc[p].map((f) => `<p>${bi(f)}</p>`).join("") + "</div>").join("");
 
   document.getElementById("deep-houses").innerHTML = (deep.house_chapters || [])
-    .map((row) => `<div class="chapter-block"><h4>${t("house_word_cap")} ${locNum(row.house)} · ${signOf(row.sign)} · ${planetName(row.lord)}</h4>` +
+    .map((row) => `<div class="chapter-block"><h4>${t("house_word_cap")} ${locNum(row.house)} · ${signName(row.sign)} · ${planetName(row.lord)}</h4>` +
       row.facts.map((f) => `<p>${bi(f)}</p>`).join("") + "</div>").join("");
 
   const dv = deep.divisional_chapters || {};
@@ -1830,7 +1914,7 @@ function renderDeep(b) {
   const cd = b.chara_dasha || {};
   const curEl = document.getElementById("chara-current");
   if (cd.current) {
-    curEl.textContent = `${t("chara_current")}: ${signOf(cd.current.sign)} (${planetName(cd.current.lord)}) · ` +
+    curEl.textContent = `${t("chara_current")}: ${signName(cd.current.sign)} (${planetName(cd.current.lord)}) · ` +
       `${cd.current.start} → ${cd.current.end} · ${t("direction_word")}: ${cd.direction}`;
   } else {
     curEl.textContent = "";
@@ -1838,7 +1922,7 @@ function renderDeep(b) {
   document.getElementById("chara-timeline").innerHTML = (cd.periods || []).slice(0, 12).map((p) => {
     const isCur = cd.current && p.start === cd.current.start;
     return `<div class="tl-row${isCur ? " is-current" : ""}">
-      <div class="tl-head"><span class="lord">${signOf(p.sign)}</span>
+      <div class="tl-head"><span class="lord">${signName(p.sign)}</span>
       <span class="tl-dates">${p.start} → ${p.end} · ${locNum(p.years)}y · ${planetName(p.lord)}</span></div>
       <div class="tl-bar"><i style="width:${Math.min(100, (p.years / 12) * 100)}%"></i></div></div>`;
   }).join("");

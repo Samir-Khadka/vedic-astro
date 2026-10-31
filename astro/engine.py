@@ -13,6 +13,7 @@ from . import (
     chara as chara_module,
     charts as charts_module,
     dasha as dasha_module,
+    dasha_phase3 as dasha_p3_module,
     doshas as doshas_module,
     ephemeris,
     interpret as interpret_module,
@@ -108,7 +109,8 @@ def _serialize_dasha(tree: dict, birth_dt: datetime) -> dict:
     return {"mahadashas": mds, "current": current, "balance_years": round(tree["balance_years"], 3)}
 
 
-def _serialize_ashtottari(tree: dict, birth_dt: datetime) -> dict:
+def _serialize_ashtottari(tree: dict, birth_dt: datetime,
+                        cycle_years: int = 108) -> dict:
     mds = []
     for md in tree["mahadashas"]:
         m = _serialize_period(md)
@@ -126,7 +128,80 @@ def _serialize_ashtottari(tree: dict, birth_dt: datetime) -> dict:
     return {"mahadashas": mds, "current": current,
             "balance_years": round(tree["balance_years"], 3),
             "birth_division": tree.get("birth_division"),
-            "cycle_years": 108}
+            "cycle_years": cycle_years}
+
+
+def _serialize_sign_dasha(tree: dict, birth_dt: datetime) -> dict:
+    """Serialize a sign-based dasha tree (Narayana / Kalachakra)."""
+    from .names import SIGNS_EN, SIGNS_NE
+
+    def ser_sign(p: dict | None) -> dict | None:
+        if p is None:
+            return None
+        return {
+            "sign": p["sign"],
+            "sign_en": SIGNS_EN[p["sign"]],
+            "sign_ne": SIGNS_NE[p["sign"]],
+            "start": p["start"].date().isoformat(),
+            "end": p["end"].date().isoformat(),
+            "years": round(p["years"], 3),
+        }
+
+    mds = []
+    for md in tree["mahadashas"]:
+        m = ser_sign(md)
+        m["antardashas"] = [ser_sign(a) for a in md["antardashas"]]
+        if md["start"] < birth_dt:
+            m["display_start"] = birth_dt.date().isoformat()
+        mds.append(m)
+    cur = tree.get("current")
+    current = None
+    if cur:
+        current = {
+            "mahadasha": ser_sign(cur["mahadasha"]),
+            "antardasha": ser_sign(cur.get("antardasha")),
+        }
+    out = {"mahadashas": mds, "current": current}
+    for key in ("start_sign_en", "start_sign_ne", "forward", "deha_en",
+                "deha_ne", "jiva_en", "jiva_ne", "birth_group",
+                "birth_pada", "note"):
+        if key in tree:
+            out[key] = tree[key]
+    return out
+
+
+def _serialize_mudda(tree: dict, birth_dt: datetime) -> dict:
+    """Serialize the Mudda annual dasha."""
+    periods = []
+    for md in tree["periods"]:
+        m = {
+            "planet": md["planet"],
+            "start": md["start"].date().isoformat(),
+            "end": md["end"].date().isoformat(),
+            "days": round(md["days"], 1),
+            "antardashas": [
+                {"planet": a["planet"],
+                 "start": a["start"].date().isoformat(),
+                 "end": a["end"].date().isoformat(),
+                 "days": round(a["days"], 2)}
+                for a in md["antardashas"]
+            ],
+        }
+        periods.append(m)
+    cur = tree.get("current")
+    current = None
+    if cur:
+        current = {
+            "mahadasha": cur["mahadasha"]["planet"],
+            "antardasha": cur["antardasha"]["planet"] if cur.get("antardasha") else None,
+        }
+    return {
+        "periods": periods,
+        "current": current,
+        "varshapravesh": tree["varshapravesh"].date().isoformat(),
+        "completed_years": tree["completed_years"],
+        "note": tree.get("note"),
+    }
 
 
 def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
@@ -213,6 +288,20 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         planets["Sun"]["longitude"], birth_dt, rise, set_,
         place["lat"], place["lon"])
     chara = chara_module.chara_periods(birth_dt, planets, lagna_sign, now)
+    # Phase 3 dashas: Narayana (Jaimini), Shodshottari (116-yr),
+    # Mudda (Tajika annual), Kalachakra.
+    atmakaraka = karakas.get("Atmakaraka")
+    narayana = dasha_p3_module.narayana_periods(
+        birth_dt, planets, lagna_sign, atmakaraka, now)
+    shodsho_tree = dasha_p3_module.shodshottari_tree(
+        birth_dt, planets["Moon"]["longitude"], now)
+    shodsho_applies = dasha_p3_module.shodshottari_applicability(
+        lagna_sign, lagna_lon % 30.0, birth_panchang["paksha"])
+    mudda = dasha_p3_module.mudda_dasha(
+        birth_dt, planets["Moon"]["longitude"],
+        planets["Sun"]["longitude"], now)
+    kalachakra = dasha_p3_module.kalachakra_tree(
+        birth_dt, planets["Moon"]["longitude"], now)
     saturn_span = transits_module.saturn_moon_span(planets["Moon"]["sign"], jd_now)
     double_tr = transits_module.double_transit(jd_now)
     jd_10y = jd_now + 10.2 * 365.25
@@ -229,6 +318,9 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         "birth_dt": birth_dt, "place": place,
         "transit_ingress": transit_tbl["ingress"],
         "shadbala": sb, "chara": chara, "ingress_chains": ingress_chains,
+        "narayana": narayana, "shodshottari": shodsho_tree,
+        "shodshottari_applicability": shodsho_applies,
+        "mudda": mudda, "kalachakra": kalachakra,
     })
     premium = report_module.generate_premium_report(report_ctx)
 
@@ -427,6 +519,11 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         "nakshatra_deep": nakshatra_deep,
         "ashtottari": _serialize_ashtottari(ashto_tree, birth_dt),
         "ashtottari_applicability": ashto_applies,
+        "narayana": _serialize_sign_dasha(narayana, birth_dt),
+        "shodshottari": _serialize_ashtottari(shodsho_tree, birth_dt, 116),
+        "shodshottari_applicability": shodsho_applies,
+        "mudda": _serialize_mudda(mudda, birth_dt),
+        "kalachakra": _serialize_sign_dasha(kalachakra, birth_dt),
         "sade_sati_lifetime": sade_lifetime,
         "lal_kitab_dasha": lk_dasha,
         "yogini": {
