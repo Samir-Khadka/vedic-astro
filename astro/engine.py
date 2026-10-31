@@ -17,6 +17,7 @@ from . import (
     doshas as doshas_module,
     ephemeris,
     phase4 as phase4_module,
+    phase5 as phase5_module,
     interpret as interpret_module,
     jaimini as jaimini_module,
     kp as kp_module,
@@ -598,6 +599,27 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
             "balance_years": round(tribhagi["balance_years"], 3),
         },
     }
+    # Phase 5: Dasha Consensus Engine (needs the full bundle).
+    try:
+        bundle["dasha_consensus"] = phase5_module.dasha_consensus(bundle)
+    except Exception:
+        bundle["dasha_consensus"] = None
+    # Phase 5: Yoga Fructification, Ashtakavarga Gochar, Arudha Padas.
+    try:
+        bundle["yoga_fructification"] = phase5_module.yoga_fructification(bundle)
+    except Exception:
+        bundle["yoga_fructification"] = None
+    try:
+        bundle["ashtakavarga_gochar"] = phase5_module.ashtakavarga_gochar(bundle)
+    except Exception:
+        bundle["ashtakavarga_gochar"] = None
+    try:
+        _planets_by_name = {p["planet"]: p for p in bundle.get("planets", [])}
+        _lagna_sign = bundle.get("lagna", {}).get("sign", 0)
+        bundle["arudha_padas"] = phase5_module.arudha_padas(
+            _planets_by_name, _lagna_sign)
+    except Exception:
+        bundle["arudha_padas"] = None
     return bundle
 
 

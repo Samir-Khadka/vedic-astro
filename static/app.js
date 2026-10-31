@@ -212,6 +212,12 @@ const I18N = {
     fav_title:"Favourable periods — 30-day tara outlook",
     ishta_title:"Ishta Devta — your guiding deity",
     baby_title:"Namakaran — name syllable",
+    p5_title:"Predictive Intelligence — consensus, timing, scores",
+    p5_hint:"When independent dasha systems agree, confidence is high. Yoga activation windows, daily transit scores, and arudha padas.",
+    consensus_title:"Dasha Consensus — 6 systems, one timeline",
+    yoga_time_title:"Yoga Fructification — when yogas deliver",
+    av_gochar_title:"Ashtakavarga Gochar — daily transit scores",
+    arudha_title:"Arudha Padas — the 12 images",
     sade_lifetime_title:"Lifetime Sade Sati — every period, exact dates",
     sade_lifetime_hint:"Saturn's passage over the three signs around your Moon sign, across a full lifetime. Past, current and future periods are marked.",
     gem_guide_title:"Gemstones & Rudraksha — the complete guide",
@@ -413,6 +419,12 @@ const I18N = {
     fav_title:"शुभ समय — ३०-दिने तारा दृष्टिकोण",
     ishta_title:"इष्ट देवता — तपाईंको मार्गदर्शक देवता",
     baby_title:"नामकरण — नाम अक्षर",
+    p5_title:"भविष्यवाणी बुद्धिमत्ता — सहमति, समय, स्कोर",
+    p5_hint:"जब स्वतन्त्र दशा प्रणालीहरू सहमत हुन्छन्, विश्वास उच्च हुन्छ। योग सक्रियता विन्डो, दैनिक गोचर स्कोर, र आरूढ पादहरू।",
+    consensus_title:"दशा सहमति — ६ प्रणाली, एक समयरेखा",
+    yoga_time_title:"योग फल — योग कहिले फल दिन्छ",
+    av_gochar_title:"अष्टकवर्ग गोचर — दैनिक गोचर स्कोर",
+    arudha_title:"आरूढ पादहरू — १२ छविहरू",
     sade_lifetime_title:"आजीवन साढेसाती — हरेक अवधि, ठ्याक्कै मितिसहित",
     sade_lifetime_hint:"तपाईंको चन्द्र राशिवरिपरि तीन राशिमा शनिको यात्रा, पूरै जीवनभर। विगत, चालु र भावी अवधि चिन्ह लगाइएका छन्।",
     gem_guide_title:"रत्न र रुद्राक्ष — पूर्ण मार्गदर्शन",
@@ -1550,6 +1562,55 @@ function renderP4(b) {
     document.getElementById("baby-meta").textContent =
       `${L("Syllable", "अक्षर")}: ${bn.syllable} · ${bn.nakshatra} ${L("pada", "पाद")} ${bn.pada} · ` +
       `${L("All four", "चारै")}: ${bn.all_padas.join(", ")}`;
+  }
+  renderP5(b);
+}
+
+/* ---------------- Phase 5 predictive intelligence ---------------- */
+function renderP5(b) {
+  const L = (en, ne) => (typeof LANG !== "undefined" && LANG === "ne" ? ne : en);
+  // Dasha consensus
+  if (b.dasha_consensus) {
+    const dc = b.dasha_consensus;
+    const hi = dc.highlights.length;
+    document.getElementById("consensus-meta").textContent =
+      `${hi} ${L("high-confidence periods", "उच्च-विश्वास अवधिहरू")}`;
+    document.getElementById("consensus-list").innerHTML =
+      dc.timeline.slice(0, 24).map((t) => {
+        const cls = t.agreement >= 0.75 && Math.abs(t.consensus) > 0.5 ? " is-current" : "";
+        const mark = t.verdict === "favourable" ? "✓" : (t.verdict === "challenging" ? "✗" : "·");
+        return `<div class="tl-row${cls}"><span class="tl-lord">${t.month}</span> ` +
+          `${mark} ${t.verdict} (${t.consensus}, ${Math.round(t.agreement * 100)}% ${L("agree", "सहमत")})</div>`;
+      }).join("");
+  }
+  // Yoga fructification
+  if (b.yoga_fructification) {
+    document.getElementById("yoga-time-list").innerHTML =
+      b.yoga_fructification.yogas.slice(0, 8).map((y) => {
+        const acts = y.activations.map((a) =>
+          `${a.start} – ${a.end}: ${planetName(a.md)} / ${planetName(a.ad)}`).join("<br>");
+        return `<div class="tl-row"><span class="tl-lord">${y.yoga}</span><br>${acts}</div>`;
+      }).join("");
+  }
+  // Ashtakavarga gochar
+  if (b.ashtakavarga_gochar) {
+    const ag = b.ashtakavarga_gochar;
+    document.getElementById("av-gochar-meta").textContent =
+      `Saturn: ${ag.saturn.sav} · Jupiter: ${ag.jupiter.sav}`;
+    document.getElementById("av-gochar-list").innerHTML =
+      ag.days.slice(0, 14).map((d) => {
+        const cls = d.verdict === "favourable" ? " is-current" : "";
+        const mark = d.verdict === "favourable" ? "✓" : (d.verdict === "challenging" ? "✗" : "·");
+        return `<div class="tl-row${cls}"><span class="tl-lord">${d.date}</span> ` +
+          `${mark} ${signName(d.moon_sign_en)} SAV ${d.sav}</div>`;
+      }).join("");
+  }
+  // Arudha padas
+  if (b.arudha_padas) {
+    document.getElementById("arudha-list").innerHTML =
+      b.arudha_padas.padas.map((p) =>
+        `<div class="tl-row"><span class="tl-lord">${p.label}</span> ` +
+        `${L("House", "भाव")} ${p.house} → ${signName(p.arudha_en)}</div>`).join("");
   }
 }
 /* ---------------- World-class layer: Chalit, Prastara, KP events, Sudarshana --- */
