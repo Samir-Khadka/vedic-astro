@@ -490,10 +490,52 @@
       <p class="hint" data-i18n="gem_guide_hint">Every planet's stone, weight, finger, metal, weekday, mantra and Rudraksha — with this chart's cautions (a dusthana lord's stone is never advised).</p>
       <div id="gem-guide-body"></div>
     </div>
-    <div class="pdf-row">
-      <button type="button" class="btn btn-gold" id="pdf-btn" data-i18n="pdf_btn">Download Premium Report (PDF)</button>
+    <div class="pdf-row book-showcase">
+      <div class="b3d-scene" id="book-3d" role="button" tabindex="0" aria-label="Open your Janma Kundali book">
+        <div class="b3d-book">
+          <div class="b3d-back"></div>
+          <div class="b3d-pages"></div>
+          <div class="b3d-spine"><span class="b3d-spine-om">ॐ</span></div>
+          <div class="b3d-front"><div class="b3d-frame">
+            <div class="b3d-mangala">॥ अथ श्री गणेशाय नमः ॥</div>
+            <div class="b3d-om">ॐ</div>
+            <div class="b3d-name" id="book-3d-name">—</div>
+            <div class="b3d-sub" data-i18n="book_cover_sub">Janma Kundali</div>
+          </div></div>
+        </div>
+        <div class="b3d-shadow"></div>
+        <div class="b3d-tap" data-i18n="book_tap">Tap to open</div>
+      </div>
+      <div class="book-actions">
+        <button type="button" class="btn btn-saffron" id="read-book-btn" data-i18n="read_book">Read Your Book</button>
+        <button type="button" class="btn btn-gold" id="pdf-btn" data-i18n="pdf_btn">Download Premium Report (PDF)</button>
+        <p class="hint" data-i18n="book_hint">Your full kundali as a beautiful flipbook — chapters, charts, dashas and remedies.</p>
+      </div>
     </div>
   </section>
+
+  <!-- FLOATING BOOK READER -->
+  <div id="book-modal" hidden>
+    <div class="bk-backdrop" id="bk-backdrop"></div>
+    <div class="bk-stage">
+      <button class="bk-close" id="bk-close" aria-label="Close">×</button>
+      <div class="bk-bookwrap">
+        <div class="bk-book" id="bk-book">
+          <div class="bk-page bk-left" id="bk-left"></div>
+          <div class="bk-page bk-right" id="bk-right"></div>
+          <div class="bk-leaf" id="bk-leaf" hidden>
+            <div class="bk-face bk-frontf" id="bk-leaf-front"></div>
+            <div class="bk-face bk-backf" id="bk-leaf-back"></div>
+          </div>
+        </div>
+      </div>
+      <div class="bk-nav">
+        <button type="button" class="btn btn-gold" id="bk-prev">←</button>
+        <span id="bk-counter"></span>
+        <button type="button" class="btn btn-gold" id="bk-next">→</button>
+      </div>
+    </div>
+  </div>
 
   <!-- KP PRASHNA (HORARY) -->
   <!-- HOROSCOPE -->

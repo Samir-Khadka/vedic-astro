@@ -51,6 +51,16 @@ const I18N = {
     premium_sub:"The full multi-chapter reading — the depth the premium sites sell, generated from your computed chart.",
     forecast_title:"Favourable Periods — 10 Years", varshphal_title:"Varshphal — Annual Charts",
     remedies_title:"Remedies", pdf_btn:"Download Premium Report (PDF)",
+    read_book:"Read Your Book", book_hint:"Your full kundali as a beautiful flipbook — chapters, charts, dashas and remedies.",
+    book_cover_sub:"Janma Kundali", book_tap:"Tap to open", book_open_aria:"Open your Janma Kundali book",
+    glance_lagna:"Lagna", birth_details:"Birth Details", ayanamsa:"Ayanamsa",
+    charts_title:"Charts", rashi_word:"Rashi", navamsa_word:"Navamsa", th_planet:"Planet",
+    yogas_title:"Yogas", no_yogas:"No major named yogas in this chart.",
+    doshas_title:"Doshas", pitra_dosha:"Pitra Dosha",
+    remedies_hint:"See the full premium report below for remedies.",
+    mahadasha_word:"Mahadasha", antardasha_word:"Antardasha", th_from:"From", th_to:"To",
+    dob:"Date of birth", tob:"Time of birth", place:"Place of birth",
+    manglik:"Manglik", kaal_sarp:"Kaal Sarp", sade_sati:"Sade Sati",
     match_title:"Kundali Matching — Guna Milan", groom:"Groom / Partner 1", bride:"Bride / Partner 2",
     match_submit:"Match Kundalis", th_koota:"Koota", th_score:"Score", th_detail:"Detail",
     footer_text:"Vedic Astro — Swiss Ephemeris · Lahiri Ayanamsa · Parashari, KP & Jaimini methods. For guidance and reflection.",
@@ -201,6 +211,16 @@ const I18N = {
     premium_sub:"पूर्ण बहु-अध्याय विश्लेषण — प्रिमियम साइटहरूले बेच्ने गहिराइ, तपाईंको गणना गरिएको कुण्डलीबाटै तयार।",
     forecast_title:"अनुकूल अवधिहरू — १० वर्ष", varshphal_title:"वर्षफल — वार्षिक कुण्डली",
     remedies_title:"उपायहरू", pdf_btn:"प्रिमियम रिपोर्ट डाउनलोड गर्नुहोस् (PDF)",
+    read_book:"आफ्नो किताब पढ्नुहोस्", book_hint:"तपाईंको पूर्ण कुण्डली सुन्दर फ्लिपबुकको रूपमा — अध्याय, कुण्डली, दशा र उपायहरू।",
+    book_cover_sub:"जन्म कुण्डली", book_tap:"खोल्न ट्याप गर्नुहोस्", book_open_aria:"आफ्नो जन्म कुण्डली किताब खोल्नुहोस्",
+    glance_lagna:"लग्न", birth_details:"जन्म विवरण", ayanamsa:"अयनांश",
+    charts_title:"कुण्डलीहरू", rashi_word:"राशि", navamsa_word:"नवांश", th_planet:"ग्रह",
+    yogas_title:"योगहरू", no_yogas:"यस कुण्डलीमा प्रमुख नामित योगहरू छैनन्।",
+    doshas_title:"दोषहरू", pitra_dosha:"पितृ दोष",
+    remedies_hint:"उपायहरूका लागि तलको प्रिमियम रिपोर्ट हेर्नुहोस्।",
+    mahadasha_word:"महादशा", antardasha_word:"अन्तर्दशा", th_from:"देखि", th_to:"सम्म",
+    dob:"जन्म मिति", tob:"जन्म समय", place:"जन्म स्थान",
+    manglik:"माङ्गलिक", kaal_sarp:"काल सर्प", sade_sati:"साढेसाती",
     match_title:"कुण्डली मेल — गुण मिलान", groom:"दुलहा / साथी १", bride:"दुलही / साथी २",
     match_submit:"कुण्डली मिलाउनुहोस्", th_koota:"कूट", th_score:"अङ्क", th_detail:"विवरण",
     footer_text:"Vedic Astro — स्विस एफेमेरिस · लाहिरी अयनांश · पराशरी, KP र जैमिनी विधि। मार्गदर्शन र मननका लागि।",
@@ -997,6 +1017,8 @@ function renderKarakas(b) {
 function renderBundle() {
   const b = STATE.bundle;
   if (!b) return false;
+  const bookName = document.getElementById("book-3d-name");
+  if (bookName) bookName.textContent = b.name || t("book_cover_sub");
   const notes = document.getElementById("section-notes");
   if (notes) { notes.hidden = true; notes.innerHTML = ""; }
   let coreOk = false;
@@ -1409,6 +1431,240 @@ document.getElementById("pdf-btn").addEventListener("click", () => {
     if (p.place_name) q.set("place_name", p.place_name);
   }
   window.open("/api/report.pdf?" + q.toString(), "_blank");
+});
+
+/* ============ Floating book reader (flipbook) ============ */
+const bkesc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const BK = { pages: [], spread: 0, busy: false, single: false };
+
+function buildBookPages(b) {
+  const ne = LANG === "ne";
+  const name = bkesc(b.name || t("book_cover_sub"));
+  const birth = b.birth || {}, place = birth.place || {};
+  const lagna = b.lagna || {}, moon = (b.planets || [])[1] || {};
+  const bp = b.panchang_at_birth || {};
+  const tithiName = bp.tithi_index != null
+    ? ((ne ? (bp.paksha === "Shukla" ? "शुक्ल " : "कृष्ण ") : (bp.paksha || "") + " ") +
+       (ne ? TITHI_NE[bp.tithi_index] : TITHI_EN[bp.tithi_index])) : "—";
+  const P = [];
+  /* p0 — ornamental left of cover */
+  P.push(`<div class="bk-mangala">॥ शुभम् ॥</div><div class="bk-om">ॐ</div>
+    <p class="bk-center" style="color:#b85f06">${bkesc(ne ? "श्री गणेशाय नमः" : "Salutations to Lord Ganesha")}</p>`);
+  /* p1 — cover */
+  P.push(`<div class="bk-mangala">॥ अथ श्री गणेशाय नमः ॥</div><div class="bk-om">ॐ</div>
+    <div class="bk-name">${name}</div><div class="bk-sub">${bkesc(t("book_cover_sub"))}</div>
+    <div class="bk-meta">${bkesc(birth.date || "")} · ${bkesc(birth.time || "")}<br>${bkesc(place.name || "")}<br><br>
+    ${bkesc(t("glance_lagna"))}: <b>${bkesc(signName(lagna.sign))}</b><br>
+    ${bkesc(t("glance_moon"))}: <b>${bkesc(signName(moon.sign))}</b></div>`);
+  /* p2 — birth details */
+  const det = [
+    [t("dob"), `${bkesc(birth.date || "—")}`],
+    [t("tob"), `${bkesc(birth.time || "—")}`],
+    [t("place"), `${bkesc(place.name || "—")}`],
+    [t("vara"), bp.weekday != null ? bkesc(ne ? WEEKDAY_NE[bp.weekday] : WEEKDAY_EN[bp.weekday]) : "—"],
+    [t("ayanamsa"), "Lahiri"],
+  ];
+  P.push(`<div class="bk-h">${bkesc(t("birth_details"))}</div><table class="bk-table">` +
+    det.map(([k, v]) => `<tr><th>${bkesc(k)}</th><td>${v}</td></tr>`).join("") + `</table>`);
+  /* p3 — panchang */
+  const pan = [
+    [t("tithi"), tithiName],
+    [t("nakshatra"), bp.nakshatra_index != null
+      ? `${bkesc(ne ? NAK_NE[bp.nakshatra_index] : NAK_EN[bp.nakshatra_index])} · ${bkesc(t("pada_word"))} ${locNum(bp.nakshatra_pada)}` : "—"],
+    [t("yoga"), bp.yoga_index != null ? bkesc(ne ? YOGA_NE[bp.yoga_index] : YOGA_EN[bp.yoga_index]) : "—"],
+    [t("karana"), bkesc(ne ? (KARANA_NE[bp.karana] || bp.karana || "—") : (bp.karana || "—"))],
+  ];
+  P.push(`<div class="bk-h">${bkesc(t("birth_panchang_title"))}</div><table class="bk-table">` +
+    pan.map(([k, v]) => `<tr><th>${bkesc(k)}</th><td>${v}</td></tr>`).join("") + `</table>`);
+  /* p4 — charts */
+  const d1 = document.getElementById("chart-d1"), d9 = document.getElementById("chart-d9");
+  P.push(`<div class="bk-h">${bkesc(t("charts_title"))}</div>
+    <div class="bk-chart">${d1 ? d1.innerHTML : ""}<div class="bk-chart-cap">D1 · ${bkesc(t("rashi_word"))}</div></div>
+    <div class="bk-chart">${d9 ? d9.innerHTML : ""}<div class="bk-chart-cap">D9 · ${bkesc(t("navamsa_word"))}</div></div>`);
+  /* p5 — planets */
+  P.push(`<div class="bk-h">${bkesc(t("planets_title"))}</div><table class="bk-table">
+    <tr><th>${bkesc(t("th_planet"))}</th><th>${bkesc(t("th_sign"))}</th><th>°</th><th>${bkesc(t("th_house"))}</th></tr>` +
+    (b.planets || []).map((p) => `<tr><td><b>${bkesc(ne ? p.name_ne : p.planet)}</b>${p.retrograde && !["Rahu","Ketu"].includes(p.planet) ? " (R)" : ""}</td>
+      <td>${bkesc(signName(p.sign))}</td><td>${Number(p.degree_in_sign).toFixed(1)}°</td><td>${p.house}</td></tr>`).join("") +
+    `</table>`);
+  /* p6 — yogas */
+  const yogas = b.yogas || [];
+  P.push(`<div class="bk-h">${bkesc(t("yogas_title"))} (${yogas.length})</div>` +
+    (yogas.length ? yogas.slice(0, 8).map((y) =>
+      `<p class="bk-yoga"><b>${bkesc(y.name)}</b><br><span style="font-size:11px;color:#6b4a26">${bkesc(y.basis || "").slice(0, 140)}</span></p>`).join("")
+      : `<p>${bkesc(t("no_yogas"))}</p>`));
+  /* p7 — doshas */
+  const dz = b.doshas || {}, dl = [];
+  if (dz.manglik) dl.push([t("manglik"), dz.manglik.present ? bkesc(dz.manglik.strength || t("yes")) : t("no")]);
+  if (dz.kaal_sarp) dl.push([t("kaal_sarp"), dz.kaal_sarp.present ? bkesc(dz.kaal_sarp.type || t("yes")) : t("no")]);
+  if (dz.sade_sati) dl.push([t("sade_sati"), dz.sade_sati.active ? bkesc(dz.sade_sati.phase || t("yes")) : t("no")]);
+  if (dz.pitra) dl.push([t("pitra_dosha"), dz.pitra.present ? t("yes") : t("no")]);
+  P.push(`<div class="bk-h">${bkesc(t("doshas_title"))}</div><table class="bk-table">` +
+    dl.map(([k, v]) => `<tr><th>${bkesc(k)}</th><td>${v}</td></tr>`).join("") + `</table>
+    <p style="font-size:11px;color:#6b4a26">${bkesc(t("remedies_hint"))}</p>`);
+  /* p8 — dashas */
+  const dasha = b.dasha || {}, mds = dasha.mahadashas || [], cur = dasha.current || {};
+  const curLine = cur.mahadasha
+    ? `<p><b>${bkesc(cur.mahadasha.lord)}</b> ${bkesc(t("mahadasha_word"))}` +
+      (cur.antardasha ? ` · <b>${bkesc(cur.antardasha.lord)}</b> ${bkesc(t("antardasha_word"))}` : "") + `</p>` : "";
+  P.push(`<div class="bk-h">${bkesc(t("dasha_title"))}</div>${curLine}<table class="bk-table">
+    <tr><th>${bkesc(t("mahadasha_word"))}</th><th>${bkesc(t("th_from"))}</th><th>${bkesc(t("th_to"))}</th></tr>` +
+    mds.map((m) => `<tr${cur.mahadasha && m.lord === cur.mahadasha.lord ? ` style="background:#fbeed7"` : ""}>
+      <td><b>${bkesc(m.lord)}</b></td><td>${bkesc(m.start)}</td><td>${bkesc(m.end)}</td></tr>`).join("") + `</table>`);
+  /* p9 — back cover */
+  P.push(`<div class="bk-om" style="margin-top:34px">ॐ</div>
+    <p class="bk-center" style="color:#7a3c06"><b>॥ ${bkesc(ne ? "समाप्तम्" : "Samaptam") } ॥</b></p>
+    <p class="bk-center" style="font-size:11px;color:#6b4a26">${bkesc(t("footer_text")).slice(0, 160)}</p>
+    <p class="bk-center" style="margin-top:14px"><button type="button" class="btn btn-saffron" id="bk-pdf-btn" style="font-size:12px;padding:9px 20px">${bkesc(t("pdf_btn"))}</button></p>`);
+  return P;
+}
+
+function bkSpreadCount() { return BK.single ? BK.pages.length : Math.ceil(BK.pages.length / 2); }
+
+function bkRender(instant) {
+  const s = BK.spread, left = document.getElementById("bk-left"), right = document.getElementById("bk-right");
+  const book = document.getElementById("bk-book");
+  if (BK.single) {
+    book.classList.add("single");
+    left.hidden = true;
+    right.innerHTML = BK.pages[s] || "";
+  } else {
+    book.classList.remove("single");
+    left.hidden = false;
+    left.innerHTML = BK.pages[2 * s] || "";
+    right.innerHTML = BK.pages[2 * s + 1] || "";
+  }
+  const n = bkSpreadCount();
+  document.getElementById("bk-counter").textContent = `${s + 1} / ${n}`;
+  document.getElementById("bk-prev").disabled = s <= 0;
+  document.getElementById("bk-next").disabled = s >= n - 1;
+}
+
+function bkFlipDone(leaf) {
+  leaf.hidden = true;
+  leaf.style.transition = "none";
+  leaf.style.transform = "";
+  leaf.classList.remove("fwd", "bwd");
+  BK.busy = false;
+}
+
+function bkNext() {
+  if (BK.busy || BK.spread >= bkSpreadCount() - 1) return;
+  if (BK.single) return bkTurnSingle(1);
+  BK.busy = true;
+  const s = BK.spread;
+  const leaf = document.getElementById("bk-leaf");
+  document.getElementById("bk-leaf-front").innerHTML = BK.pages[2 * s + 1] || "";
+  document.getElementById("bk-leaf-back").innerHTML = BK.pages[2 * s + 2] || "";
+  leaf.hidden = false;
+  leaf.classList.add("fwd");
+  leaf.style.transition = "none";
+  leaf.style.transform = "rotateY(0deg)";
+  void leaf.offsetWidth;
+  leaf.style.transition = "transform .8s cubic-bezier(.4,.1,.3,1)";
+  leaf.style.transform = "rotateY(-180deg)";
+  leaf.addEventListener("transitionend", function h(ev) {
+    if (ev.propertyName !== "transform") return;
+    leaf.removeEventListener("transitionend", h);
+    BK.spread = s + 1;
+    bkRender();
+    bkFlipDone(leaf);
+  });
+}
+
+function bkPrev() {
+  if (BK.busy || BK.spread <= 0) return;
+  if (BK.single) return bkTurnSingle(-1);
+  BK.busy = true;
+  const s = BK.spread;
+  const leaf = document.getElementById("bk-leaf");
+  document.getElementById("bk-leaf-front").innerHTML = BK.pages[2 * s] || "";
+  document.getElementById("bk-leaf-back").innerHTML = BK.pages[2 * s - 1] || "";
+  leaf.hidden = false;
+  leaf.classList.add("bwd");
+  leaf.style.transition = "none";
+  leaf.style.transform = "rotateY(0deg)";
+  void leaf.offsetWidth;
+  leaf.style.transition = "transform .8s cubic-bezier(.4,.1,.3,1)";
+  leaf.style.transform = "rotateY(180deg)";
+  leaf.addEventListener("transitionend", function h(ev) {
+    if (ev.propertyName !== "transform") return;
+    leaf.removeEventListener("transitionend", h);
+    BK.spread = s - 1;
+    bkRender();
+    bkFlipDone(leaf);
+  });
+}
+
+function bkTurnSingle(dir) {
+  if (BK.busy) return;
+  BK.busy = true;
+  const page = document.getElementById("bk-right");
+  page.classList.add("bk-turning");
+  page.style.transform = `rotateY(${dir > 0 ? "-" : ""}28deg)`;
+  page.style.opacity = ".25";
+  setTimeout(() => {
+    BK.spread += dir;
+    bkRender();
+    page.style.transform = "rotateY(0deg)";
+    page.style.opacity = "1";
+    setTimeout(() => { page.classList.remove("bk-turning"); page.style.transform = ""; page.style.opacity = ""; BK.busy = false; }, 200);
+  }, 190);
+}
+
+function openBook() {
+  const b = STATE.bundle;
+  if (!b) return;
+  BK.pages = buildBookPages(b);
+  BK.spread = 0;
+  BK.busy = false;
+  BK.single = window.innerWidth < 680;
+  bkRender();
+  document.getElementById("book-modal").hidden = false;
+  document.body.style.overflow = "hidden";
+}
+
+function closeBook() {
+  document.getElementById("book-modal").hidden = true;
+  document.body.style.overflow = "";
+}
+
+document.getElementById("read-book-btn").addEventListener("click", openBook);
+document.getElementById("book-3d").addEventListener("click", openBook);
+document.getElementById("book-3d").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openBook(); }
+});
+document.getElementById("bk-close").addEventListener("click", closeBook);
+document.getElementById("bk-backdrop").addEventListener("click", closeBook);
+document.getElementById("bk-next").addEventListener("click", bkNext);
+document.getElementById("bk-prev").addEventListener("click", bkPrev);
+document.getElementById("bk-book").addEventListener("click", (e) => {
+  if (e.target.closest("button, a")) return;
+  const r = document.getElementById("bk-book").getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width;
+  if (BK.single) { (x > 0.5 ? bkNext : bkPrev)(); }
+  else {
+    const leftHidden = document.getElementById("bk-left").hidden;
+    if (!leftHidden && x < 0.5) bkPrev(); else bkNext();
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if (document.getElementById("book-modal").hidden) return;
+  if (e.key === "Escape") closeBook();
+  else if (e.key === "ArrowRight") bkNext();
+  else if (e.key === "ArrowLeft") bkPrev();
+});
+document.getElementById("book-modal").addEventListener("click", (e) => {
+  if (e.target && e.target.id === "bk-pdf-btn") document.getElementById("pdf-btn").click();
+});
+window.addEventListener("resize", () => {
+  if (document.getElementById("book-modal").hidden) return;
+  const single = window.innerWidth < 680;
+  if (single !== BK.single) {
+    BK.single = single;
+    BK.spread = 0;
+    bkRender();
+  }
 });
 
 /* ---------------- Deep report (interpretation engine v2) ---------------- */
