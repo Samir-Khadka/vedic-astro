@@ -694,6 +694,9 @@ def build_html(bundle: dict, lang: str = "en") -> str:
         for hl in dc["highlights"][:6]:
             body.append(f"<p>{_esc(hl['month'])}: {_esc(hl['verdict'])} "
                         f"({hl['consensus']}, {round(hl['agreement']*100)}% {T('agree', 'सहमत')})</p>")
+    elif dc is None:
+        # Light mode (PDF): consensus skipped for speed; point to the site.
+        body.append(f"<p class='small'>{T('Full 60-month dasha consensus timeline is available in the interactive report on the site.', 'पूर्ण ६०-महिने दशा सहमति समयरेखा साइटको इन्टरएक्टिभ रिपोर्टमा उपलब्ध छ।')}</p>")
     yf = bundle.get("yoga_fructification")
     if yf and yf.get("yogas"):
         body.append(f"<p><b>{T('Yoga activations', 'योग सक्रियता')}:</b></p>")

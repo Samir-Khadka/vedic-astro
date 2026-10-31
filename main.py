@@ -333,7 +333,8 @@ def report_pdf(
     }
     _validate_coords_tz(lat, lon, tz)
     try:
-        bundle = engine.compute_kundali(payload)
+        # light=True: skip heavy Phase 5 consensus for faster PDF on free tier.
+        bundle = engine.compute_kundali(payload, light=True)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     pdf_bytes = pdf_module.render_pdf(bundle, lang="ne" if lang == "ne" else "en")

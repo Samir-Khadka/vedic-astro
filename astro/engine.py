@@ -206,7 +206,13 @@ def _serialize_mudda(tree: dict, birth_dt: datetime) -> dict:
     }
 
 
-def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
+def compute_kundali(payload: dict, now: datetime | None = None,
+                    light: bool = False) -> dict:
+    """Compute the kundali bundle.
+
+    light=True skips the heavy Phase 5 predictive computations (60-month
+    consensus) for faster PDF generation on constrained servers.
+    """
     # Phase 1: the computation honours the requested ayanamsa and house
     # system. The ayanamsa is set thread-locally so every downstream
     # ephemeris call (planets, dashas, transits, KP, panchang) follows it.
@@ -600,9 +606,14 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         },
     }
     # Phase 5: Dasha Consensus Engine (needs the full bundle).
-    try:
-        bundle["dasha_consensus"] = phase5_module.dasha_consensus(bundle)
-    except Exception:
+    # Skip in light mode (PDF) — 60 months × 6 systems is too heavy for
+    # Render free tier; the PDF chapter uses highlights only.
+    if not light:
+        try:
+            bundle["dasha_consensus"] = phase5_module.dasha_consensus(bundle)
+        except Exception:
+            bundle["dasha_consensus"] = None
+    else:
         bundle["dasha_consensus"] = None
     # Phase 5: Yoga Fructification, Ashtakavarga Gochar, Arudha Padas.
     try:
