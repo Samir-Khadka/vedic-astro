@@ -435,6 +435,20 @@ async function loadPanchang() {
    browser's native datalist popup. */
 const PLACE_SELECTED = {};
 const placeTimers = {};
+/* Async /api/tz lookups still in flight, keyed by place-input id. A submit
+   that lands before the lookup resolves would see a tz-less selection and
+   wrongly fail; awaiting the pending promise (bounded) makes a selected
+   place resolve deterministically. */
+const PLACE_TZ_PENDING = {};
+function settlePlaceTz(inputId, timeoutMs = 8000) {
+  const pending = PLACE_TZ_PENDING[inputId];
+  if (!pending) return Promise.resolve();
+  delete PLACE_TZ_PENDING[inputId];
+  return Promise.race([
+    pending,
+    new Promise((_, reject) => setTimeout(() => reject(new Error("tz-timeout")), timeoutMs)),
+  ]).catch(() => {});
+}
 
 const suggestBox = (inputEl) => document.getElementById(inputEl.id + "-suggest");
 
@@ -454,10 +468,22 @@ function selectPlace(inputEl, p) {
     if (!p.tz) {
       // Land places virtually always resolve; for the rare miss, try the
       // offline resolver, then hand the coordinates to the manual fields.
-      fetch(`/api/tz?lat=${encodeURIComponent(p.lat)}&lon=${encodeURIComponent(p.lon)}`)
+      // The lookup is registered so a submit that lands before it resolves
+      // can wait for it instead of failing on a place that was selected.
+      PLACE_TZ_PENDING[inputEl.id] = fetch(`/api/tz?lat=${encodeURIComponent(p.lat)}&lon=${encodeURIComponent(p.lon)}`)
         .then((r) => (r.ok ? r.json() : null))
-        .then((d) => { if (d && d.tz) frag.tz = d.tz; })
-        .catch(() => {});
+        .then((d) => {
+          const tz = d && d.tz;
+          if (tz) {
+            frag.tz = tz;
+            if (inputEl.id === "f-place") {
+              const tzField = document.getElementById("f-tz");
+              if (!tzField.value.trim()) tzField.value = tz; // hand-entered wins
+            }
+          }
+          return tz || null;
+        })
+        .catch(() => null);
       if (inputEl.id === "f-place") {
         document.getElementById("f-lat").value = p.lat;
         document.getElementById("f-lon").value = p.lon;
@@ -568,17 +594,28 @@ function clearCoordError() { coordErrEl.hidden = true; coordErrEl.textContent = 
 
 /* Auto-fill the IANA timezone from the backend once both fields parse. */
 let tzTimer = null;
+async function lookupManualTz() {
+  const latR = readCoord("lat"), lonR = readCoord("lon");
+  if (!latR.ok || !lonR.ok) return;
+  clearCoordError();
+  try {
+    const res = await fetch(`/api/tz?lat=${latR.value}&lon=${lonR.value}`);
+    if (res.ok) document.getElementById("f-tz").value = (await res.json()).tz;
+  } catch (e) { /* leave the field for manual entry */ }
+}
 function scheduleTzLookup() {
   clearTimeout(tzTimer);
-  tzTimer = setTimeout(async () => {
-    const latR = readCoord("lat"), lonR = readCoord("lon");
-    if (!latR.ok || !lonR.ok) return;
-    clearCoordError();
-    try {
-      const res = await fetch(`/api/tz?lat=${latR.value}&lon=${lonR.value}`);
-      if (res.ok) document.getElementById("f-tz").value = (await res.json()).tz;
-    } catch (e) { /* leave the field for manual entry */ }
-  }, 400);
+  tzTimer = setTimeout(lookupManualTz, 400);
+}
+/* A submit can also land inside the 400ms debounce — run the lookup now
+   instead of failing on an empty timezone the user never had a chance to
+   fill. A hand-entered timezone always wins over the lookup. */
+async function ensureManualTz() {
+  try {
+    if (document.getElementById("f-tz").value.trim()) return;
+    clearTimeout(tzTimer);
+    await lookupManualTz();
+  } catch (e) { /* a timezone hint must never break submission */ }
 }
 ["lat", "lon"].forEach((which) => {
   const c = coordEls[which];
@@ -637,7 +674,14 @@ document.getElementById("birth-form").addEventListener("submit", async (ev) => {
   const tob = document.getElementById("f-tob").value;
   if (!dob || !tob) { errEl.textContent = t("err_fields"); errEl.hidden = false; return; }
   let payload = { name, dob, tob };
-  const place = resolvePlace("f-place");
+  await settlePlaceTz("f-place");
+  let place = resolvePlace("f-place");
+  if (!place) {
+    // The place may be selected but its async timezone lookup hadn't landed
+    // yet (or the manual-coords debounce hadn't fired): resolve it now.
+    await ensureManualTz();
+    place = resolvePlace("f-place");
+  }
   if (place) {
     payload = { ...payload, ...place };
   } else {
@@ -752,6 +796,15 @@ function diamondSVG(chartMap, opts) {
   });
   svg += "</svg>";
   return svg;
+}
+
+/* Bindu-table sign column headers: English names truncate to four letters
+   for column width; Nepali names are shown whole — a UTF-16 slice would cut
+   Devanagari combining marks (halant, matras) and print broken words like
+   "वृश्", "कन्य" or "कुम्" instead of "वृश्चिक", "कन्या", "कुम्भ". */
+function signColHeader(i) {
+  const name = signName(i);
+  return LANG === "ne" ? name : name.slice(0, 4);
 }
 
 /* South-Indian fixed-sign grid: sign -> [row, col]; signs never move. */
@@ -1009,7 +1062,7 @@ function renderDoshasYogas(b) {
 function renderAV(b) {
   const av = b.ashtakavarga;
   const head = document.getElementById("av-head");
-  head.innerHTML = `<th>${t("th_planet")}</th>` + SIGNS_EN.map((_, i) => `<th>${signName(i).slice(0, 4)}</th>`).join("");
+  head.innerHTML = `<th>${t("th_planet")}</th>` + SIGNS_EN.map((_, i) => `<th>${signColHeader(i)}</th>`).join("");
   const rows = Object.keys(av);
   document.querySelector("#av-table tbody").innerHTML = rows.map((name) => {
     const label = name === "Sarvashtakavarga" ? t("sarva") : planetName(name);
@@ -1217,7 +1270,7 @@ function renderPrastaraGrid(b) {
   const entry = b.prastara[planet];
   if (!entry) return;
   const head = document.getElementById("prastara-head");
-  head.innerHTML = `<th>${t("th_planet")}</th>` + SIGNS_EN.map((_, i) => `<th>${signName(i).slice(0, 4)}</th>`).join("");
+  head.innerHTML = `<th>${t("th_planet")}</th>` + SIGNS_EN.map((_, i) => `<th>${signColHeader(i)}</th>`).join("");
   let rows = Object.entries(entry.grid).map(([c, row]) => {
     const label = c === "Lagna" ? t("lagna_word") : planetName(c);
     return `<tr><td><b>${label}</b></td>${row.map((v) => `<td class="${v ? "hot" : ""}">${v}</td>`).join("")}</tr>`;
@@ -1412,11 +1465,13 @@ document.getElementById("match-form").addEventListener("submit", async (ev) => {
   function person(prefix) {
     const dob = document.getElementById(prefix + "-dob").value;
     const tob = document.getElementById(prefix + "-tob").value;
-    const place = resolvePlace(prefix + "-place");
-    if (!dob || !tob || !place) return null;
-    return { dob, tob, ...place };
+    return settlePlaceTz(prefix + "-place").then(() => {
+      const place = resolvePlace(prefix + "-place");
+      if (!dob || !tob || !place) return null;
+      return { dob, tob, ...place };
+    });
   }
-  const groom = person("m1"), bride = person("m2");
+  const groom = await person("m1"), bride = await person("m2");
   if (!groom || !bride) { errEl.textContent = t("err_place") + " / " + t("err_fields"); errEl.hidden = false; return; }
   try {
     const res = await fetch("/api/match", {
@@ -1709,11 +1764,11 @@ document.getElementById("prashna-form").addEventListener("submit", async (ev) =>
   errEl.hidden = true;
   const number = parseInt(document.getElementById("p-number").value, 10);
   const question = document.getElementById("p-question").value.trim();
-  const place = resolvePlace("p-place");
   if (!number || number < 1 || number > 249) {
     errEl.textContent = LANG === "ne" ? "कृपया १ देखि २४९ बीचको अङ्क भर्नुहोस्।" : "Please enter a number between 1 and 249.";
     errEl.hidden = false; return;
   }
+  const place = await settlePlaceTz("p-place").then(() => resolvePlace("p-place"));
   if (!place) { errEl.textContent = t("err_place"); errEl.hidden = false; return; }
   const btn = document.getElementById("prashna-btn");
   btn.disabled = true; btn.textContent = t("casting");

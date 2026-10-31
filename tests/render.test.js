@@ -102,6 +102,9 @@ function loadApp({ lang = "en", throwOnSave = false, fetchScript = null } = {}) 
         if (next.throw) throw next.throw;
         return next;
       }
+      if (String(url).includes("/api/tz")) {
+        return { ok: true, json: async () => ({ tz: "Asia/Kathmandu" }) };
+      }
       return {
         ok: true,
         json: async () => ({
@@ -126,8 +129,12 @@ function loadApp({ lang = "en", throwOnSave = false, fetchScript = null } = {}) 
   sandbox.exports = sandbox.module.exports;
   vm.runInContext(fs.readFileSync(path.join(ROOT, "static/share.js"), "utf8"), sandbox);
   Object.assign(sandbox, sandbox.module.exports);
+  // coords.js loads before app.js in production (pure helpers, no DOM);
+  // the vm context needs it for the same reason.
+  vm.runInContext(fs.readFileSync(path.join(ROOT, "static/coords.js"), "utf8"), sandbox);
+  Object.assign(sandbox, sandbox.module.exports);
   const appSrc = fs.readFileSync(path.join(ROOT, "static/app.js"), "utf8") +
-    "\n;globalThis.__harness = { STATE, renderBundle, saveCurrentChart, drawChart, renderMatch, renderPrashna, fetchKundaliWithRetry, isRetryableKundaliError };";
+    "\n;globalThis.__harness = { STATE, renderBundle, saveCurrentChart, drawChart, renderMatch, renderPrashna, fetchKundaliWithRetry, isRetryableKundaliError, signColHeader, settlePlaceTz, PLACE_TZ_PENDING, ensureManualTz };";
   vm.runInContext(appSrc, sandbox);
   // el(id) mirrors document.getElementById (creating the stub on demand);
   // the raw Map only holds ids the app code actually touched.
@@ -263,4 +270,72 @@ test("kundali fetch does not retry a 4xx input error", async () => {
     h.fetchKundaliWithRetry({ dob: "x" }, () => retries++),
     (e) => e.status === 400);
   assert.equal(retries, 0, "input errors are not retried");
+});
+
+/* ---- 2026-10-31: frontend fixes ----
+   signColHeader: bindu-table sign headers previously did signName(i).slice(0, 4),
+   which slices UTF-16 code units — in Nepali this printed broken Devanagari
+   ("वृश्", "कन्य", "कुम्") instead of whole names ("वृश्चिक", "कन्या", "कुम्भ").
+   settlePlaceTz / ensureManualTz: a submit landing before the async /api/tz
+   lookup (place without tz, or the 400ms manual-coords debounce) resolved
+   used to fail with "no place picked" even though the place was selected. */
+
+const SIGNS_NE_FULL = ["मेष","वृष","मिथुन","कर्कट","सिंह","कन्या","तुला","वृश्चिक","धनु","मकर","कुम्भ","मीन"];
+
+test("bindu-table headers show whole Nepali sign names, truncated English", () => {
+  const { h } = loadApp({ lang: "ne" });
+  for (let i = 0; i < 12; i++) {
+    assert.equal(h.signColHeader(i), SIGNS_NE_FULL[i],
+      `sign ${i}: Nepali header must be the whole name, got ${h.signColHeader(i)}`);
+  }
+  const { h: hen } = loadApp({ lang: "en" });
+  assert.equal(hen.signColHeader(7), "Scor", "English keeps the 4-letter form");
+  for (let i = 0; i < 12; i++) {
+    assert.ok(hen.signColHeader(i).length <= 4, `en header ${i} fits the column`);
+  }
+});
+
+test("Ashtakavarga headers render whole Nepali names end to end", () => {
+  const { h, elements } = loadApp({ lang: "ne" });
+  h.STATE.bundle = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "b_sample.json"), "utf8"));
+  h.STATE.birthPayload = { dob: "1998-05-14", tob: "06:30", place_id: "kathmandu" };
+  h.renderBundle();
+  const head = elements.get("av-head").innerHTML;
+  assert.ok(head.includes("<th>वृश्चिक</th>"), `AV header keeps the whole name: ${head.slice(0, 160)}`);
+  assert.ok(!head.includes("वृश्<") && !head.includes("कन्य<") && !head.includes("कुम्<"),
+    "no truncated Devanagari fragments in AV headers");
+});
+
+test("settlePlaceTz waits for a pending lookup, then resolves at once", async () => {
+  const { h } = loadApp({ lang: "en" });
+  let resolved = false;
+  let release;
+  h.PLACE_TZ_PENDING["f-place"] = new Promise((res) => { release = res; }).then(() => { resolved = true; });
+  const settling = h.settlePlaceTz("f-place", 500);
+  await new Promise((r) => setTimeout(r, 30));
+  assert.equal(resolved, false, "still waiting while the lookup is in flight");
+  release();
+  await settling;
+  assert.equal(resolved, true, "submit proceeds once the lookup lands");
+  await h.settlePlaceTz("f-place", 50); // entry consumed: resolves immediately
+});
+
+test("settlePlaceTz gives up after its timeout instead of hanging", async () => {
+  const { h } = loadApp({ lang: "en" });
+  h.PLACE_TZ_PENDING["f-place"] = new Promise(() => {}); // never resolves
+  const t0 = Date.now();
+  await h.settlePlaceTz("f-place", 50);
+  assert.ok(Date.now() - t0 < 5000, "timed out instead of hanging the submit");
+});
+
+test("ensureManualTz fills an empty timezone, keeps a hand-entered one", async () => {
+  const { h, el } = loadApp({ lang: "en" });
+  el("f-lat").value = "27.7172";
+  el("f-lon").value = "85.324";
+  el("f-tz").value = "";
+  await h.ensureManualTz();
+  assert.equal(el("f-tz").value, "Asia/Kathmandu", "debounce-window submit still gets the lookup result");
+  el("f-tz").value = "Pacific/Auckland";
+  await h.ensureManualTz();
+  assert.equal(el("f-tz").value, "Pacific/Auckland", "a hand-entered timezone always wins");
 });
