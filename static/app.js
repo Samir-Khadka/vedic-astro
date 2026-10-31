@@ -1769,7 +1769,21 @@ function renderPremium(b) {
 
 document.getElementById("pdf-btn").addEventListener("click", () => {
   const p = STATE.birthPayload;
-  if (!p) return;
+  const btn = document.getElementById("pdf-btn");
+  if (!p) {
+    // No kundali yet — tell the user instead of failing silently.
+    const msg = (typeof LANG !== "undefined" && LANG === "ne")
+      ? "पहिले कुण्डली बनाउनुहोस्, त्यसपछि रिपोर्ट डाउनलोड गर्नुहोस्।"
+      : "Generate your kundali first, then download the report.";
+    // Show as a temporary button label.
+    const orig = btn.textContent;
+    btn.textContent = msg;
+    btn.disabled = true;
+    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 3000);
+    // Scroll to the form.
+    document.getElementById("kundali-form")?.scrollIntoView({behavior: "smooth"});
+    return;
+  }
   const q = new URLSearchParams();
   q.set("dob", p.dob); q.set("tob", p.tob); q.set("lang", LANG);
   if (p.name) q.set("name", p.name);
@@ -1780,7 +1794,15 @@ document.getElementById("pdf-btn").addEventListener("click", () => {
     q.set("lat", p.lat); q.set("lon", p.lon); q.set("tz", p.tz);
     if (p.place_name) q.set("place_name", p.place_name);
   }
-  window.open("/api/report.pdf?" + q.toString(), "_blank");
+  // Use a temp <a> with download attribute — reliable, not popup-blocked.
+  const a = document.createElement("a");
+  a.href = "/api/report.pdf?" + q.toString();
+  a.download = "vedic-report.pdf";
+  a.target = "_blank";
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 });
 
 /* ============ Floating book reader (flipbook) ============ */
