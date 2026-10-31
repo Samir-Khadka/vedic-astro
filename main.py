@@ -40,6 +40,8 @@ class BirthInput(BaseModel):
     lat: float | None = None
     lon: float | None = None
     tz: str | None = None
+    ayanamsa: str | None = None  # lahiri (default), raman, krishnamurti, yukteshwar
+    house_system: str | None = None  # placidus (default), equal, whole, sripati
 
     @field_validator("lat")
     @classmethod
@@ -322,10 +324,12 @@ def report_pdf(
     place_name: str | None = None,
     lat: float | None = None, lon: float | None = None, tz: str | None = None,
     name: str | None = None, lang: str = "en",
+    ayanamsa: str | None = None, house_system: str | None = None,
 ):
     payload = {
         "name": name, "dob": dob, "tob": tob if len(tob) > 5 else tob + ":00",
         "place_id": place_id, "place_name": place_name, "lat": lat, "lon": lon, "tz": tz,
+        "ayanamsa": ayanamsa, "house_system": house_system,
     }
     _validate_coords_tz(lat, lon, tz)
     try:

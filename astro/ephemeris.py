@@ -1,7 +1,12 @@
-"""Ephemeris layer — Swiss Ephemeris with Lahiri (Chitrapaksha) ayanamsa.
+"""Ephemeris layer — Swiss Ephemeris with selectable ayanamsa.
 
 Every higher-level module consumes the plain-dict structures produced here,
-so the astronomy lives in exactly one place.
+so the astronomy lives in exactly one place. The ayanamsa (Lahiri default;
+Raman / Krishnamurti / Yukteshwar selectable) is held thread-safely in
+astro.ayanamsa and re-asserted in every public entry point, because
+pyswisseph keeps the sidereal mode in thread-local state (see the
+2026-10-23 worker-thread ayanamsa bug: Fagan-Bradley silently shifted
+production longitudes by -0.8832 deg).
 """
 from __future__ import annotations
 
@@ -10,31 +15,34 @@ from zoneinfo import ZoneInfo
 
 import swisseph as swe
 
+from . import ayanamsa as ayanamsa_module
 from .names import NAKSHATRA_SPAN
 
-swe.set_sid_mode(swe.SIDM_LAHIRI)
+_ensure_ayanamsa = ayanamsa_module.ensure_ayanamsa
+
+# House systems for the bhava cusps. KP always uses Placidus (doctrinal),
+# so placidus_cusps() stays as the dedicated KP entry point.
+HOUSE_SYSTEMS: dict[str, tuple[str, bytes]] = {
+    "placidus": ("Placidus", b"P"),
+    "equal": ("Equal house", b"E"),
+    "whole": ("Whole sign", b"W"),
+    "sripati": ("Sripati", b"S"),
+}
+DEFAULT_HOUSE_SYSTEM = "placidus"
 
 
-def _ensure_lahiri() -> None:
-    """Re-assert the Lahiri sidereal mode in the CALLING thread.
-
-    pyswisseph keeps the sidereal mode in thread-local state: the
-    module-level set_sid_mode() above only affects the thread that
-    imports this module. FastAPI/uvicorn serve sync endpoints from a
-    threadpool, and those worker threads default to Fagan-Bradley —
-    which silently shifted every production longitude by -0.8832 deg
-    (found live 2026-10-23: worker-thread ayanamsa 24.7175 vs Lahiri
-    23.8342). Every public entry point below therefore re-asserts the
-    mode before computing; all swe calls in the codebase funnel
-    through this module, so this covers every code path.
-    """
-    swe.set_sid_mode(swe.SIDM_LAHIRI)
+def validate_house_system(name: str | None) -> str:
+    key = (name or DEFAULT_HOUSE_SYSTEM).strip().lower()
+    if key not in HOUSE_SYSTEMS:
+        raise ValueError(
+            f"Unknown house system '{name}'. Supported: {', '.join(sorted(HOUSE_SYSTEMS))}."
+        )
+    return key
 
 
 def ayanamsa_ut(jd: float) -> float:
-    """Lahiri ayanamsa (degrees) at Julian day `jd` (UT), mode-safe."""
-    _ensure_lahiri()
-    return swe.get_ayanamsa_ut(jd)
+    """Ayanamsa (degrees) at Julian day `jd` (UT) under the current mode."""
+    return ayanamsa_module.ayanamsa_value_ut(jd)
 
 _FLAGS = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | swe.FLG_SPEED
 _SWE_PLANETS = {
@@ -72,7 +80,7 @@ def degree_in_sign(longitude: float) -> float:
 
 def planet_longitudes(jd: float) -> dict[str, dict]:
     """Sidereal longitudes and speeds for the 9 grahas at Julian day `jd`."""
-    _ensure_lahiri()
+    _ensure_ayanamsa()
     out: dict[str, dict] = {}
     for name, pid in _SWE_PLANETS.items():
         res, _ret = swe.calc_ut(jd, pid, _FLAGS)
@@ -108,20 +116,27 @@ def planet_longitudes(jd: float) -> dict[str, dict]:
 def ascendant(jd: float, lat: float, lon: float, house_system: bytes = b"W") -> float:
     """Sidereal ascendant longitude. house_system b'W' whole-sign use (only
     the ascendant point matters); b'P' Placidus for KP cusps."""
-    _ensure_lahiri()
+    _ensure_ayanamsa()
     _cusps, ascmc = swe.houses_ex(jd, lat, lon, house_system, swe.FLG_SIDEREAL)
     return ascmc[0] % 360.0
 
 
 def placidus_cusps(jd: float, lat: float, lon: float) -> list[float]:
-    """Sidereal Placidus house cusp longitudes (12), used by KP."""
-    _ensure_lahiri()
-    cusps, _ascmc = swe.houses_ex(jd, lat, lon, b"P", swe.FLG_SIDEREAL)
+    """Sidereal Placidus house cusp longitudes (12). KP always uses these."""
+    return house_cusps(jd, lat, lon, "placidus")
+
+
+def house_cusps(jd: float, lat: float, lon: float, system: str = "placidus") -> list[float]:
+    """Sidereal house cusp longitudes (12) under the chosen house system."""
+    _ensure_ayanamsa()
+    key = validate_house_system(system)
+    flag = HOUSE_SYSTEMS[key][1]
+    cusps, _ascmc = swe.houses_ex(jd, lat, lon, flag, swe.FLG_SIDEREAL)
     return [c % 360.0 for c in cusps]
 
 
 def _rise_trans(jd_start: float, lat: float, lon: float, rsmi: int) -> float | None:
-    _ensure_lahiri()
+    _ensure_ayanamsa()
     try:
         ret, tret = swe.rise_trans(jd_start, swe.SUN, rsmi, (lon, lat, 0.0), 0.0, 0.0)
         if ret == 0:
@@ -153,7 +168,7 @@ def sunrise_sunset(local_date: date, lat: float, lon: float, tz_name: str) -> tu
 
 
 def sun_moon_longitudes(jd: float) -> tuple[float, float]:
-    _ensure_lahiri()
+    _ensure_ayanamsa()
     sun, _ = swe.calc_ut(jd, swe.SUN, _FLAGS)
     moon, _ = swe.calc_ut(jd, swe.MOON, _FLAGS)
     return sun[0] % 360.0, moon[0] % 360.0
@@ -165,7 +180,7 @@ def declinations(jd: float) -> dict[str, float]:
     Needed for Ayana Bala. Declination is a tropical/equatorial quantity,
     so no ayanamsa is involved; the sidereal flag is harmless here.
     """
-    _ensure_lahiri()
+    _ensure_ayanamsa()
     flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | swe.FLG_EQUATORIAL
     out: dict[str, float] = {}
     for name, pid in _SWE_PLANETS.items():

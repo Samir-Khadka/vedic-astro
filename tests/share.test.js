@@ -28,7 +28,9 @@ test("dedupe keeps newest first, max 8", () => {
   const again = dedupeCharts(saved, { dob: "2000-01-10", tob: "06:30", place_id: "kathmandu" });
   assert.equal(again.length, 8);
   assert.equal(again[0].dob, "2000-01-10");
-  assert.equal(chartKey({ dob: "2000-01-10", tob: "06:30", place_id: "kathmandu" }), "2000-01-10|06:30|kathmandu");
+  assert.equal(chartKey({ dob: "2000-01-10", tob: "06:30", place_id: "kathmandu" }), "2000-01-10|06:30|kathmandu|lahiri|placidus");
+  assert.equal(chartKey({ dob: "2000-01-10", tob: "06:30", place_id: "kathmandu", ayanamsa: "raman" }),
+    "2000-01-10|06:30|kathmandu|raman|placidus");
 });
 
 test("shareParams omits empty name", () => {

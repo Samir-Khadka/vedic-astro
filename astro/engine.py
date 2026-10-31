@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 from . import (
     argala as argala_module,
     ashtakavarga as av_module,
+    ayanamsa as ayanamsa_module,
     bala as bala_module,
     chalit as chalit_module,
     chara as chara_module,
@@ -26,8 +27,10 @@ from . import (
     places as places_module,
     prastara as prastara_module,
     predictions as predictions_module,
+    special_lagnas as special_lagnas_module,
     sudarshana as sudarshana_module,
     transits as transits_module,
+    upagrahas as upagrahas_module,
     yogas as yogas_module,
 )
 from .names import (
@@ -127,6 +130,12 @@ def _serialize_ashtottari(tree: dict, birth_dt: datetime) -> dict:
 
 
 def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
+    # Phase 1: the computation honours the requested ayanamsa and house
+    # system. The ayanamsa is set thread-locally so every downstream
+    # ephemeris call (planets, dashas, transits, KP, panchang) follows it.
+    ayanamsa_key = ayanamsa_module.set_ayanamsa(payload.get("ayanamsa"))
+    house_system = ephemeris.validate_house_system(payload.get("house_system"))
+
     place = resolve_place(payload)
     dob = date.fromisoformat(payload["dob"])
     tob = time.fromisoformat(payload["tob"])
@@ -137,14 +146,18 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
     planets = ephemeris.planet_longitudes(jd)
     lagna_lon = ephemeris.ascendant(jd, place["lat"], place["lon"], b"W")
     lagna_sign = int(lagna_lon // 30.0)
-    cusps = ephemeris.placidus_cusps(jd, place["lat"], place["lon"])
+    # Bhava cusps follow the selected house system (drives Bhava Chalit,
+    # Shadbala Dig Bala, Bhava Bala). KP doctrinally requires Placidus,
+    # so it always gets Placidus cusps regardless of the selection.
+    cusps = ephemeris.house_cusps(jd, place["lat"], place["lon"], house_system)
+    placidus = ephemeris.placidus_cusps(jd, place["lat"], place["lon"])
 
     varga_charts = {v: charts_module.build_chart(planets, lagna_lon, v) for v in charts_module.VARGAS}
     combust = charts_module.combustions(planets)
     karakas = charts_module.jaimini_karakas(planets)
 
     dasha_tree = dasha_module.vimshottari_tree(birth_dt, planets["Moon"]["longitude"], now)
-    kp = kp_module.kp_tables(planets, cusps)
+    kp = kp_module.kp_tables(planets, placidus)
 
     # Transits right now (signs of the slow movers) for gochar / Sade Sati.
     jd_now = ephemeris.to_julian_day(now)
@@ -185,6 +198,19 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
     # Chara dasha, Sade Sati span dates, double transit, 10-year
     # ingress chains for the forecast.
     special = jaimini_module.special_lagnas(planets, lagna_sign)
+    # Phase 1: classical special lagnas (BPHS Ch.5) and the six upagrahas.
+    # Sunrise-dependent points are skipped gracefully at polar latitudes.
+    try:
+        classical_lagnas = special_lagnas_module.compute_special_lagnas(
+            birth_dt, place["lat"], place["lon"], place["tz"],
+            lagna_lon, lagna_sign,
+            planets["Moon"]["longitude"], planets["Moon"]["sign"],
+            planets["Moon"]["degree_in_sign"])
+    except ValueError:
+        classical_lagnas = None
+    upagrahas = upagrahas_module.compute_upagrahas(
+        planets["Sun"]["longitude"], birth_dt, rise, set_,
+        place["lat"], place["lon"])
     chara = chara_module.chara_periods(birth_dt, planets, lagna_sign, now)
     saturn_span = transits_module.saturn_moon_span(planets["Moon"]["sign"], jd_now)
     double_tr = transits_module.double_transit(jd_now)
@@ -316,6 +342,37 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         "numerology": numerology_module.numerology(dob),
         "name_letters": naming_module.name_letters(planets["Moon"]["nakshatra"], planets["Moon"]["pada"]),
         "dasha_phala": dasha_phala,
+        "ayanamsa": {
+            "key": ayanamsa_key,
+            "name": ayanamsa_module.mode_name(ayanamsa_key),
+        },
+        "house_system": {
+            "key": house_system,
+            "name": ephemeris.HOUSE_SYSTEMS[house_system][0],
+        },
+        "house_cusps": [
+            {"cusp": i + 1, "longitude": round(c, 4),
+             "sign": int(c // 30) % 12,
+             "sign_en": SIGNS_EN[int(c // 30) % 12],
+             "sign_ne": SIGNS_NE[int(c // 30) % 12],
+             "degree_in_sign": round(c % 30.0, 3)}
+            for i, c in enumerate(cusps)
+        ],
+        "classical_lagnas": (
+            {key: {"longitude": v["longitude"], "sign": v["sign"],
+                   "sign_en": SIGNS_EN[v["sign"]], "sign_ne": SIGNS_NE[v["sign"]],
+                   "degree_in_sign": round(v["longitude"] % 30.0, 3)}
+             for key, v in classical_lagnas.items()}
+            if classical_lagnas else None
+        ),
+        "upagrahas": {
+            key: ({"longitude": v["longitude"], "sign": v["sign"],
+                   "sign_en": SIGNS_EN[v["sign"]], "sign_ne": SIGNS_NE[v["sign"]],
+                   "degree_in_sign": round(v["longitude"] % 30.0, 3),
+                   **({"segment": v["segment"]} if "segment" in v else {})}
+                  if v else None)
+            for key, v in upagrahas.items()
+        },
         "special_lagnas": {
             "arudha_lagna": {
                 "sign": special["arudha_lagna"]["sign"],

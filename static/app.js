@@ -53,7 +53,7 @@ const I18N = {
     remedies_title:"Remedies", pdf_btn:"Download Premium Report (PDF)",
     read_book:"Read Your Book", book_hint:"Your full kundali as a beautiful flipbook — chapters, charts, dashas and remedies.",
     book_cover_sub:"Janma Kundali", book_tap:"Tap to open", book_open_aria:"Open your Janma Kundali book",
-    glance_lagna:"Lagna", birth_details:"Birth Details", ayanamsa:"Ayanamsa",
+    birth_details:"Birth Details", ayanamsa:"Ayanamsa",
     charts_title:"Charts", rashi_word:"Rashi", navamsa_word:"Navamsa", th_planet:"Planet",
     yogas_title:"Yogas", no_yogas:"No major named yogas in this chart.",
     doshas_title:"Doshas", pitra_dosha:"Pitra Dosha",
@@ -151,8 +151,30 @@ const I18N = {
     share_btn:"Copy share link", share_copied:"Link copied!", saved_empty:"No saved charts yet.",
     saved_load:"Open", saved_delete:"Remove",
     chalit_title:"Bhava Chalit — houses by actual cusps",
-    chalit_hint:"Sripathi method: each house is centred on its Placidus cusp. Planets marked shifted sit in a different Chalit house than their Rashi house.",
+    chalit_hint:"Sripathi method: each house is centred on its cusp. Planets marked shifted sit in a different Chalit house than their Rashi house.",
     th_rashi_house:"Rashi house", th_chalit_house:"Chalit house", th_shifted:"Shifted?",
+    f_ayanamsa:"Ayanamsa", f_house:"House system",
+    aya_lahiri:"Lahiri (Chitrapaksha) — default", aya_raman:"Raman",
+    aya_kp:"Krishnamurti (KP)", aya_yuk:"Yukteshwar",
+    hs_placidus:"Placidus — default", hs_equal:"Equal house",
+    hs_whole:"Whole sign", hs_sripati:"Sripati",
+    f_calc_hint:"Ayanamsa shifts every longitude in the chart. KP always uses Placidus cusps, per KP doctrine.",
+    phase1_title:"Classical Core — special lagnas, upagrahas, house cusps",
+    cl_title:"Special Lagnas (BPHS Ch. 5)", up_title:"Upagrahas — the shadow points",
+    hc_title:"House Cusps",
+    th_lagna:"Lagna", th_degree:"Degree", th_use:"Classical use", th_point:"Point", th_note:"Note", th_house:"House",
+    calc_settings:"Computed with {aya} ayanamsa and {hs} cusps.",
+    use_hora:"Wealth, sustenance, flow of resources", use_bhava:"General circumstances of birth",
+    use_ghati:"Power, authority, sudden rise", use_varnada:"Profession, livelihood, social standing",
+    use_shri:"Prosperity, Lakshmi's grace", use_indu:"Wealth potential",
+    lagna_hora:"Hora Lagna", lagna_bhava:"Bhava Lagna", lagna_ghati:"Ghati Lagna",
+    lagna_varnada:"Varnada Lagna", lagna_shri:"Shri Lagna", lagna_indu:"Indu Lagna",
+    up_dhuma:"Grief, loss — where sorrow can strike", up_vyatipata:"Calamity, downfall",
+    up_parivesha:"Enclosure, restriction", up_indrachapa:"Deception, false appearance",
+    up_upaketu:"Comet-like disturbance", up_gulika:"Saturn's son — slow poison (day birth)",
+    up_mandi:"Saturn's son — slow poison (night birth)",
+    note_gulika:"Rises at the start of Saturn's day-segment", note_mandi:"Rises at the start of Saturn's night-segment",
+    kp_placidus_note:"KP cusps are always Placidus, per KP doctrine.",
     prastara_title:"Prastara Ashtakavarga — the bindu grids",
     prastara_hint:"Each grid shows which contributor donates a bindu in each sign. Reduced totals apply Trikona then Ekadhipatya Shodhana (BPHS).",
     prastara_pick:"Planet grid",
@@ -213,7 +235,7 @@ const I18N = {
     remedies_title:"उपायहरू", pdf_btn:"प्रिमियम रिपोर्ट डाउनलोड गर्नुहोस् (PDF)",
     read_book:"आफ्नो किताब पढ्नुहोस्", book_hint:"तपाईंको पूर्ण कुण्डली सुन्दर फ्लिपबुकको रूपमा — अध्याय, कुण्डली, दशा र उपायहरू।",
     book_cover_sub:"जन्म कुण्डली", book_tap:"खोल्न ट्याप गर्नुहोस्", book_open_aria:"आफ्नो जन्म कुण्डली किताब खोल्नुहोस्",
-    glance_lagna:"लग्न", birth_details:"जन्म विवरण", ayanamsa:"अयनांश",
+    birth_details:"जन्म विवरण", ayanamsa:"अयनांश",
     charts_title:"कुण्डलीहरू", rashi_word:"राशि", navamsa_word:"नवांश", th_planet:"ग्रह",
     yogas_title:"योगहरू", no_yogas:"यस कुण्डलीमा प्रमुख नामित योगहरू छैनन्।",
     doshas_title:"दोषहरू", pitra_dosha:"पितृ दोष",
@@ -311,8 +333,30 @@ const I18N = {
     share_btn:"साझा लिङ्क कपी गर्नुहोस्", share_copied:"लिङ्क कपी भयो!", saved_empty:"अहिलेसम्म कुनै सुरक्षित कुण्डली छैन।",
     saved_load:"खोल्नुहोस्", saved_delete:"हटाउनुहोस्",
     chalit_title:"भाव चलित — वास्तविक भावसीमाबाट घरहरू",
-    chalit_hint:"श्रीपति विधि: प्रत्येक भाव आफ्नो प्लेसिडस कस्पमा केन्द्रित हुन्छ। 'सरेको' चिन्ह लागेका ग्रह राशि घरभन्दा फरक चलित घरमा छन्।",
+    chalit_hint:"श्रीपति विधि: प्रत्येक भाव आफ्नो कस्पमा केन्द्रित हुन्छ। 'सरेको' चिन्ह लागेका ग्रह राशि घरभन्दा फरक चलित घरमा छन्।",
     th_rashi_house:"राशि भाव", th_chalit_house:"चलित भाव", th_shifted:"सरेको?",
+    f_ayanamsa:"अयनांश", f_house:"भाव प्रणाली",
+    aya_lahiri:"लाहिरी (चित्रपक्ष) — पूर्वनिर्धारित", aya_raman:"रमन",
+    aya_kp:"कृष्णमूर्ति (KP)", aya_yuk:"युक्टेश्वर",
+    hs_placidus:"प्लेसिडस — पूर्वनिर्धारित", hs_equal:"समान भाव",
+    hs_whole:"पूर्ण राशि", hs_sripati:"श्रीपति",
+    f_calc_hint:"अयनांशले कुण्डलीका सबै देशान्तर सार्छ। KP मा सधैं प्लेसिडस कस्प प्रयोग हुन्छ।",
+    phase1_title:"शास्त्रीय आधार — विशेष लग्न, उपग्रह, भाव कस्प",
+    cl_title:"विशेष लग्नहरू (BPHS अध्याय ५)", up_title:"उपग्रहहरू — छाया बिन्दुहरू",
+    hc_title:"भाव कस्पहरू",
+    th_lagna:"लग्न", th_degree:"डिग्री", th_use:"शास्त्रीय प्रयोग", th_point:"बिन्दु", th_note:"टिप्पणी", th_house:"भाव",
+    calc_settings:"{aya} अयनांश र {hs} कस्प प्रयोग गरी गणना गरिएको।",
+    use_hora:"धन, जीविका, स्रोतको प्रवाह", use_bhava:"जन्मका सामान्य परिस्थिति",
+    use_ghati:"शक्ति, अधिकार, आकस्मिक उत्थान", use_varnada:"पेशा, जीविका, सामाजिक स्थान",
+    use_shri:"समृद्धि, लक्ष्मीको कृपा", use_indu:"धन सम्भावना",
+    lagna_hora:"होरा लग्न", lagna_bhava:"भाव लग्न", lagna_ghati:"घटी लग्न",
+    lagna_varnada:"वर्णद लग्न", lagna_shri:"श्री लग्न", lagna_indu:"इन्दु लग्न",
+    up_dhuma:"शोक, हानि — दुःख पर्न सक्ने ठाउँ", up_vyatipata:"विपत्ति, पतन",
+    up_parivesha:"घेराबन्दी, बन्धन", up_indrachapa:"छल, मिथ्या रूप",
+    up_upaketu:"धूमकेतुजस्तो विघ्न", up_gulika:"शनिपुत्र — मन्द विष (दिनको जन्म)",
+    up_mandi:"शनिपुत्र — मन्द विष (रातको जन्म)",
+    note_gulika:"शनिको दिन-खण्डको सुरुमा उदय", note_mandi:"शनिको रात-खण्डको सुरुमा उदय",
+    kp_placidus_note:"KP कस्प सधैं प्लेसिडस हुन्छन्।",
     prastara_title:"प्रस्तार अष्टकवर्ग — बिन्दु तालिकाहरू",
     prastara_hint:"प्रत्येक तालिकाले कुन योगदानकर्ताले कुन राशिमा बिन्दु दिन्छ भन्ने देखाउँछ। घटाइएको जम्मामा त्रिकोण अनि एकाधिपत्य शोधन (BPHS) लागू हुन्छ।",
     prastara_pick:"ग्रहको तालिका",
@@ -700,6 +744,8 @@ document.getElementById("birth-form").addEventListener("submit", async (ev) => {
   const tob = document.getElementById("f-tob").value;
   if (!dob || !tob) { errEl.textContent = t("err_fields"); errEl.hidden = false; return; }
   let payload = { name, dob, tob };
+  payload.ayanamsa = document.getElementById("f-ayanamsa").value;
+  payload.house_system = document.getElementById("f-house").value;
   await settlePlaceTz("f-place");
   let place = resolvePlace("f-place");
   if (!place) {
@@ -1029,6 +1075,7 @@ function renderBundle() {
     ["numerology", renderNumerology], ["lalkitab", renderLalKitab],
     ["premium", renderPremium], ["deep", renderDeep],
     ["worldclass", renderWorldclass], ["gap", renderGapLayer],
+    ["phase1", renderPhase1],
   ];
   for (const [name, fn] of sections) {
     if (renderSection(name, fn, b) && name === "chart") coreOk = true;
@@ -1085,6 +1132,54 @@ function renderKP(b) {
     <tr><td>${c.house}</td><td>${LANG === "ne" ? c.sign_ne : c.sign_en}</td>
     <td>${planetName(c.sign_lord)}</td><td>${planetName(c.star_lord)}</td>
     <td><b>${planetName(c.sub_lord)}</b></td></tr>`).join("");
+  const kpCard = document.querySelector("#kp-table").closest(".card");
+  if (kpCard && !kpCard.querySelector(".kp-placidus-note")) {
+    const p = document.createElement("p");
+    p.className = "hint kp-placidus-note";
+    p.textContent = t("kp_placidus_note");
+    kpCard.appendChild(p);
+  }
+}
+
+/* Phase 1 — classical calculation core: special lagnas, upagrahas,
+   house cusps, all computed under the selected ayanamsa. */
+function renderPhase1(b) {
+  const note = document.getElementById("calc-settings-note");
+  if (note && b.ayanamsa && b.house_system) {
+    note.textContent = t("calc_settings")
+      .replace("{aya}", b.ayanamsa.name).replace("{hs}", b.house_system.name);
+  }
+  const LAGNA_KEYS = [
+    ["hora_lagna", "lagna_hora", "use_hora"],
+    ["bhava_lagna", "lagna_bhava", "use_bhava"],
+    ["ghati_lagna", "lagna_ghati", "use_ghati"],
+    ["varnada_lagna", "lagna_varnada", "use_varnada"],
+    ["shri_lagna", "lagna_shri", "use_shri"],
+    ["indu_lagna", "lagna_indu", "use_indu"],
+  ];
+  const cl = b.classical_lagnas;
+  document.querySelector("#classical-lagnas-table tbody").innerHTML = cl
+    ? LAGNA_KEYS.map(([k, nk, uk]) => {
+        const v = cl[k];
+        return `<tr><td><b>${t(nk)}</b></td><td>${signName(v.sign)}</td>` +
+          `<td>${v.degree_in_sign.toFixed(2)}°</td><td>${t(uk)}</td></tr>`;
+      }).join("")
+    : "";
+  const UP_KEYS = [
+    ["dhuma", "up_dhuma", null], ["vyatipata", "up_vyatipata", null],
+    ["parivesha", "up_parivesha", null], ["indrachapa", "up_indrachapa", null],
+    ["upaketu", "up_upaketu", null],
+    ["gulika", "up_gulika", "note_gulika"], ["mandi", "up_mandi", "note_mandi"],
+  ];
+  document.querySelector("#upagrahas-table tbody").innerHTML = UP_KEYS.map(([k, nk, nnk]) => {
+    const v = b.upagrahas[k];
+    if (!v) return `<tr><td><b>${t(nk)}</b></td><td colspan="3">—</td></tr>`;
+    return `<tr><td><b>${t(nk)}</b></td><td>${signName(v.sign)}</td>` +
+      `<td>${v.degree_in_sign.toFixed(2)}°</td><td>${nnk ? t(nnk) : "—"}</td></tr>`;
+  }).join("");
+  document.querySelector("#house-cusps-table tbody").innerHTML = b.house_cusps.map((c) =>
+    `<tr><td><b>${c.cusp}</b></td><td>${signName(c.sign)}</td>` +
+    `<td>${c.degree_in_sign.toFixed(2)}°</td></tr>`).join("");
 }
 
 function renderDoshasYogas(b) {
@@ -1425,6 +1520,8 @@ document.getElementById("pdf-btn").addEventListener("click", () => {
   const q = new URLSearchParams();
   q.set("dob", p.dob); q.set("tob", p.tob); q.set("lang", LANG);
   if (p.name) q.set("name", p.name);
+  if (p.ayanamsa) q.set("ayanamsa", p.ayanamsa);
+  if (p.house_system) q.set("house_system", p.house_system);
   if (p.place_id) q.set("place_id", p.place_id);
   else {
     q.set("lat", p.lat); q.set("lon", p.lon); q.set("tz", p.tz);
@@ -2026,6 +2123,8 @@ if (calBtn) calBtn.addEventListener("click", async () => {
   document.getElementById("f-name").value = params.name || "";
   document.getElementById("f-dob").value = params.dob || "";
   document.getElementById("f-tob").value = params.tob || "";
+  if (params.ayanamsa) document.getElementById("f-ayanamsa").value = params.ayanamsa;
+  if (params.house_system) document.getElementById("f-house").value = params.house_system;
   if (params.place_id) {
     PLACE_SELECTED["f-place"] = { place_id: params.place_id };
     document.getElementById("f-place").value = params.place_name || "";

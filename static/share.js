@@ -15,6 +15,8 @@ function shareParams(payload) {
   if (payload.name) q.name = payload.name;
   q.dob = payload.dob;
   q.tob = payload.tob;
+  if (payload.ayanamsa && payload.ayanamsa !== "lahiri") q.ayanamsa = payload.ayanamsa;
+  if (payload.house_system && payload.house_system !== "placidus") q.house_system = payload.house_system;
   if (payload.place_id) {
     q.place_id = payload.place_id;
   } else {
@@ -39,8 +41,13 @@ function parseShareParams(search) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) return null;
   if (!/^\d{2}:\d{2}(:\d{2})?$/.test(tob)) return null;
   const place_id = q.get("place_id");
+  const extra = {};
+  const aya = q.get("ayanamsa");
+  if (aya && ["lahiri", "raman", "krishnamurti", "yukteshwar"].includes(aya)) extra.ayanamsa = aya;
+  const hs = q.get("house_system");
+  if (hs && ["placidus", "equal", "whole", "sripati"].includes(hs)) extra.house_system = hs;
   if (place_id) {
-    return { name: q.get("name") || "", dob, tob, place_id };
+    return { name: q.get("name") || "", dob, tob, place_id, ...extra };
   }
   const lat = parseFloat(q.get("lat"));
   const lon = parseFloat(q.get("lon"));
@@ -48,7 +55,7 @@ function parseShareParams(search) {
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || !tz) return null;
   if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
   return { name: q.get("name") || "", dob, tob, lat, lon, tz,
-           place_name: q.get("place_name") || "" };
+           place_name: q.get("place_name") || "", ...extra };
 }
 
 function chartKey(payload) {
@@ -56,7 +63,9 @@ function chartKey(payload) {
   // and tests pass plain payloads — unwrap so both key the same chart.
   const p = (payload && payload.payload) || payload || {};
   const place = p.place_id || `${p.lat},${p.lon}`;
-  return `${p.dob}|${p.tob}|${place}`;
+  const aya = p.ayanamsa || "lahiri";
+  const hs = p.house_system || "placidus";
+  return `${p.dob}|${p.tob}|${place}|${aya}|${hs}`;
 }
 
 function dedupeCharts(saved, payload, max) {

@@ -145,6 +145,27 @@
         </div>
         <p class="coord-error" id="coord-error" role="alert" hidden></p>
       </details>
+      <div class="field-row">
+        <div class="field">
+          <label for="f-ayanamsa" data-i18n="f_ayanamsa">Ayanamsa</label>
+          <select id="f-ayanamsa">
+            <option value="lahiri" data-i18n="aya_lahiri">Lahiri (Chitrapaksha) — default</option>
+            <option value="raman" data-i18n="aya_raman">Raman</option>
+            <option value="krishnamurti" data-i18n="aya_kp">Krishnamurti (KP)</option>
+            <option value="yukteshwar" data-i18n="aya_yuk">Yukteshwar</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-house" data-i18n="f_house">House system</label>
+          <select id="f-house">
+            <option value="placidus" data-i18n="hs_placidus">Placidus — default</option>
+            <option value="equal" data-i18n="hs_equal">Equal house</option>
+            <option value="whole" data-i18n="hs_whole">Whole sign</option>
+            <option value="sripati" data-i18n="hs_sripati">Sripati</option>
+          </select>
+        </div>
+      </div>
+      <p class="hint" data-i18n="f_calc_hint">Ayanamsa shifts every longitude in the chart. KP always uses Placidus cusps, per KP doctrine.</p>
       <p class="form-error" id="form-error" role="alert" hidden></p>
       <button type="submit" class="btn btn-gold btn-wide" id="submit-btn" data-i18n="submit">Generate Kundali</button>
     </form>
@@ -332,6 +353,32 @@
       <div class="table-scroll">
         <table class="data-table" id="chalit-table">
           <thead><tr><th data-i18n="th_planet">Planet</th><th data-i18n="th_sign">Sign</th><th data-i18n="th_rashi_house">Rashi house</th><th data-i18n="th_chalit_house">Chalit house</th><th data-i18n="th_shifted">Shifted?</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="glass card wide">
+      <h3 data-i18n="phase1_title">Classical Core — special lagnas, upagrahas, house cusps</h3>
+      <p class="hint" id="calc-settings-note"></p>
+      <h4 data-i18n="cl_title">Special Lagnas (BPHS Ch. 5)</h4>
+      <div class="table-scroll">
+        <table class="data-table" id="classical-lagnas-table">
+          <thead><tr><th data-i18n="th_lagna">Lagna</th><th data-i18n="th_sign">Sign</th><th data-i18n="th_degree">Degree</th><th data-i18n="th_use">Classical use</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <h4 data-i18n="up_title">Upagrahas — the shadow points</h4>
+      <div class="table-scroll">
+        <table class="data-table" id="upagrahas-table">
+          <thead><tr><th data-i18n="th_point">Point</th><th data-i18n="th_sign">Sign</th><th data-i18n="th_degree">Degree</th><th data-i18n="th_note">Note</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <h4 data-i18n="hc_title">House Cusps</h4>
+      <div class="table-scroll">
+        <table class="data-table" id="house-cusps-table">
+          <thead><tr><th data-i18n="th_house">House</th><th data-i18n="th_sign">Sign</th><th data-i18n="th_degree">Degree</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
