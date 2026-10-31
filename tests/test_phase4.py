@@ -134,3 +134,44 @@ def test_favourable_periods():
     assert len(fp["days"]) == 30
     assert 0 <= fp["good_days"] <= 30
     assert all(1 <= d["tara"] <= 9 for d in fp["days"])
+
+
+# ---------------------------------------------------------------------------
+# Ishta Devta
+# ---------------------------------------------------------------------------
+
+def test_ishta_devta():
+    # Atmakaraka Mars, Karakamsa Scorpio -> Jivanmuktamsa Libra.
+    # Libra empty -> lord Venus -> Lakshmi.
+    navamsa = {"Sun": 0, "Moon": 1, "Mars": 7, "Mercury": 2, "Jupiter": 3,
+               "Venus": 4, "Saturn": 5, "Rahu": 0, "Ketu": 8, "Lagna": 0}
+    id = p4.ishta_devta("Mars", navamsa)
+    assert id["karakamsa_en"] == "Scorpio"
+    assert id["jivanmuktamsa_en"] == "Libra"
+    assert id["indicator_planet"] == "Venus"
+    assert id["deity_en"] == "Lakshmi"
+
+
+def test_ishta_devta_occupied():
+    # Ketu in Jivanmuktamsa -> Ganesha.
+    navamsa = {"Sun": 0, "Moon": 1, "Mars": 7, "Mercury": 2, "Jupiter": 3,
+               "Venus": 4, "Saturn": 5, "Rahu": 0, "Ketu": 6, "Lagna": 0}
+    id = p4.ishta_devta("Mars", navamsa)
+    assert id["indicator_planet"] == "Ketu"
+    assert id["deity_en"] == "Ganesha"
+
+
+# ---------------------------------------------------------------------------
+# Baby-name syllables
+# ---------------------------------------------------------------------------
+
+def test_baby_name_syllables():
+    bn = p4.baby_name_syllables("Ashwini", 1)
+    assert bn["syllable"] == "Chu"
+    assert bn["all_padas"] == ["Chu", "Che", "Cho", "La"]
+    bn = p4.baby_name_syllables("Jyeshtha", 4)
+    assert bn["syllable"] == "Yu"
+    # All 27 nakshatras have 4 syllables.
+    assert len(p4._PADA_SYLLABLES) == 27
+    for nak, syls in p4._PADA_SYLLABLES.items():
+        assert len(syls) == 4, nak

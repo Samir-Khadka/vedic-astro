@@ -205,8 +205,116 @@ def sarvatobhadra(natal: dict, transits: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Dasha pravesh — the chart of the dasha-entry moment
+# Ishta Devta — the personal deity (Jaimini)
 # ---------------------------------------------------------------------------
+# Planet -> Ishta Devta (Jaimini Upadesha Sutras 1.2.72-79; BPHS).
+_ISHTA_DEVATA = {
+    "Sun": ("Shiva", "शिव"),
+    "Moon": ("Gauri (Parvati)", "गौरी (पार्वती)"),
+    "Mars": ("Skanda (Subrahmanya)", "स्कन्द (सुब्रह्मण्य)"),
+    "Mercury": ("Vishnu", "विष्णु"),
+    "Jupiter": ("Samba Shiva", "साम्ब शिव"),
+    "Venus": ("Lakshmi", "लक्ष्मी"),
+    "Saturn": ("Vishnu (Kurma)", "विष्णु (कूर्म)"),
+    "Rahu": ("Durga", "दुर्गा"),
+    "Ketu": ("Ganesha", "गणेश"),
+}
+
+
+def ishta_devta(atmakaraka: str, navamsa: dict) -> dict:
+    """The Ishta Devta from the Karakamsa (Atmakaraka's Navamsa sign).
+
+    The 12th from Karakamsa is Jivanmuktamsa: a planet there (strongest
+    if several) indicates the deity; if empty, the lord of that sign.
+    navamsa: {body: sign 0-11} from build_chart(..., "D9").
+    """
+    from .names import SIGNS_EN, SIGNS_NE
+    # Sign lords (whole-sign).
+    _LORDS = ["Mars", "Venus", "Mercury", "Moon", "Sun", "Mercury",
+              "Venus", "Mars", "Jupiter", "Saturn", "Saturn", "Jupiter"]
+
+    karakamsa = navamsa[atmakaraka]
+    jivan = (karakamsa + 11) % 12  # 12th from Karakamsa
+    occupants = [p for p in ("Sun", "Moon", "Mars", "Mercury", "Jupiter",
+                             "Venus", "Saturn", "Rahu", "Ketu")
+                 if navamsa.get(p) == jivan]
+    if occupants:
+        # Strongest = highest degree in sign; we don't have degrees here,
+        # so list all and take the first as primary.
+        indicator = occupants[0]
+        method = "planet in Jivanmuktamsa"
+    else:
+        indicator = _LORDS[jivan]
+        method = "lord of Jivanmuktamsa (house empty)"
+    deity_en, deity_ne = _ISHTA_DEVATA[indicator]
+    return {
+        "atmakaraka": atmakaraka,
+        "karakamsa_en": SIGNS_EN[karakamsa],
+        "karakamsa_ne": SIGNS_NE[karakamsa],
+        "jivanmuktamsa_en": SIGNS_EN[jivan],
+        "jivanmuktamsa_ne": SIGNS_NE[jivan],
+        "indicator_planet": indicator,
+        "method": method,
+        "deity_en": deity_en,
+        "deity_ne": deity_ne,
+        "note": ("Ishta Devta guides the soul toward moksha. Worship of "
+                 "this form is classically recommended."),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Baby-name syllables — the 108 nakshatra-pada aksharas
+# ---------------------------------------------------------------------------
+# North-Indian list (astrosimply, cross-checked vs Dekho Panchang/Daanyam/
+# VedicFeed). Spellings match astro.names.NAKSHATRAS_EN.
+_PADA_SYLLABLES = {
+    "Ashwini": ["Chu", "Che", "Cho", "La"],
+    "Bharani": ["Li", "Lu", "Le", "Lo"],
+    "Krittika": ["A", "I", "U", "E"],
+    "Rohini": ["O", "Va", "Vi", "Vu"],
+    "Mrigashira": ["Ve", "Vo", "Ka", "Ki"],
+    "Ardra": ["Ku", "Gha", "Ng", "Chha"],
+    "Punarvasu": ["Ke", "Ko", "Ha", "Hi"],
+    "Pushya": ["Hu", "He", "Ho", "Da"],
+    "Ashlesha": ["Di", "Du", "De", "Do"],
+    "Magha": ["Ma", "Mi", "Mu", "Me"],
+    "Purva Phalguni": ["Mo", "Ta", "Ti", "Tu"],
+    "Uttara Phalguni": ["Te", "To", "Pa", "Pi"],
+    "Hasta": ["Pu", "Sha", "Na", "Tha"],
+    "Chitra": ["Pe", "Po", "Ra", "Ri"],
+    "Swati": ["Ru", "Re", "Ro", "Ta"],
+    "Vishakha": ["Ti", "Tu", "Te", "To"],
+    "Anuradha": ["Na", "Ni", "Nu", "Ne"],
+    "Jyeshtha": ["No", "Ya", "Yi", "Yu"],
+    "Mula": ["Ye", "Yo", "Bha", "Bhi"],
+    "Purva Ashadha": ["Bhu", "Dha", "Pha", "Dha"],
+    "Uttara Ashadha": ["Bhe", "Bho", "Ja", "Ji"],
+    "Shravana": ["Khi", "Khu", "Khe", "Kho"],
+    "Dhanishta": ["Ga", "Gi", "Gu", "Ge"],
+    "Shatabhisha": ["Go", "Sa", "Si", "Su"],
+    "Purva Bhadrapada": ["Se", "So", "Da", "Di"],
+    "Uttara Bhadrapada": ["Du", "Tha", "Jha", "Jna"],
+    "Revati": ["De", "Do", "Cha", "Chi"],
+}
+
+
+def baby_name_syllables(nakshatra_27: str, pada: int) -> dict:
+    """The Namakaran syllable for a Moon nakshatra + pada (1-4).
+
+    Returns the pada's syllable plus the other three of the nakshatra
+    (all four are considered auspicious).
+    """
+    syllables = _PADA_SYLLABLES[nakshatra_27]
+    return {
+        "nakshatra": nakshatra_27,
+        "pada": pada,
+        "syllable": syllables[pada - 1],
+        "all_padas": syllables,
+        "note": ("The name traditionally begins with this sound. All four "
+                 "padas of the janma nakshatra are auspicious; regional "
+                 "panchangs differ on a few cells — the family pandit's "
+                 "panchang is authoritative."),
+    }
 
 def dasha_pravesh(birth_dt: datetime, dasha_start: datetime,
                   lat: float, lon: float) -> dict:

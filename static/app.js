@@ -210,6 +210,8 @@ const I18N = {
     pravesh_title:"Dasha Pravesh — chart of the dasha-entry moment",
     tcal_title:"Transit calendar — upcoming ingresses",
     fav_title:"Favourable periods — 30-day tara outlook",
+    ishta_title:"Ishta Devta — your guiding deity",
+    baby_title:"Namakaran — name syllable",
     sade_lifetime_title:"Lifetime Sade Sati — every period, exact dates",
     sade_lifetime_hint:"Saturn's passage over the three signs around your Moon sign, across a full lifetime. Past, current and future periods are marked.",
     gem_guide_title:"Gemstones & Rudraksha — the complete guide",
@@ -409,6 +411,8 @@ const I18N = {
     pravesh_title:"दशा प्रवेश — दशा-प्रारम्भ क्षणको कुण्डली",
     tcal_title:"गोचर पात्रो — आगामी राशिपरिवर्तन",
     fav_title:"शुभ समय — ३०-दिने तारा दृष्टिकोण",
+    ishta_title:"इष्ट देवता — तपाईंको मार्गदर्शक देवता",
+    baby_title:"नामकरण — नाम अक्षर",
     sade_lifetime_title:"आजीवन साढेसाती — हरेक अवधि, ठ्याक्कै मितिसहित",
     sade_lifetime_hint:"तपाईंको चन्द्र राशिवरिपरि तीन राशिमा शनिको यात्रा, पूरै जीवनभर। विगत, चालु र भावी अवधि चिन्ह लगाइएका छन्।",
     gem_guide_title:"रत्न र रुद्राक्ष — पूर्ण मार्गदर्शन",
@@ -1531,6 +1535,21 @@ function renderP4(b) {
       return `<div class="tl-row${cls}"><span class="tl-lord">${d.date}</span> ` +
         `${mark} Tara ${d.tara} · ${planetName(d.md)} / ${planetName(d.ad)}</div>`;
     }).join("");
+  }
+  // Ishta Devta
+  if (b.ishta_devta) {
+    const id = b.ishta_devta;
+    const deity = (typeof LANG !== "undefined" && LANG === "ne") ? id.deity_ne : id.deity_en;
+    document.getElementById("ishta-meta").textContent =
+      `${deity} · ${L("via", "मार्फत")} ${planetName(id.indicator_planet)} ` +
+      `(${L("12th from Karakamsa", "कारकांशबाट १२औं")}: ${signName(id.jivanmuktamsa_en)})`;
+  }
+  // Baby name
+  if (b.baby_name) {
+    const bn = b.baby_name;
+    document.getElementById("baby-meta").textContent =
+      `${L("Syllable", "अक्षर")}: ${bn.syllable} · ${bn.nakshatra} ${L("pada", "पाद")} ${bn.pada} · ` +
+      `${L("All four", "चारै")}: ${bn.all_padas.join(", ")}`;
   }
 }
 /* ---------------- World-class layer: Chalit, Prastara, KP events, Sudarshana --- */

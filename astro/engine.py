@@ -306,7 +306,6 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
     # Phase 4: Sarvatobhadra, dasha pravesh, transit calendar,
     # favourable periods.
     from .names import NAKSHATRAS_EN, WEEKDAYS_EN, SIGNS_EN as _SE
-    transit_longs = ephemeris.planet_longitudes(jd_now)
     sbc_natal = {
         "moon_nakshatra_27": NAKSHATRAS_EN[birth_panchang["nakshatra_index"]],
         "moon_longitude": planets["Moon"]["longitude"],
@@ -314,9 +313,10 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         "tithi": birth_panchang["tithi_index"] + 1,
         "weekday_en": WEEKDAYS_EN[birth_panchang["weekday"]],
     }
+    # Reuse now_planets (computed above) — avoids a duplicate ephemeris call.
     sbc_transits = {
-        p: {"nakshatra_27": NAKSHATRAS_EN[transit_longs[p]["nakshatra"]],
-            "longitude": transit_longs[p]["longitude"]}
+        p: {"nakshatra_27": NAKSHATRAS_EN[now_planets[p]["nakshatra"]],
+            "longitude": now_planets[p]["longitude"]}
         for p in ("Sun", "Moon", "Mars", "Mercury", "Jupiter",
                   "Venus", "Saturn", "Rahu", "Ketu")
     }
@@ -328,6 +328,12 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
     p4_calendar = phase4_module.transit_calendar(now)
     p4_favourable = phase4_module.favourable_periods(
         birth_dt, birth_panchang["nakshatra_index"], dasha_tree, now)
+    # Ishta Devta + baby-name syllable.
+    _navamsa = varga_charts["D9"]
+    ishta = phase4_module.ishta_devta(atmakaraka, _navamsa)
+    _moon_nak = NAKSHATRAS_EN[birth_panchang["nakshatra_index"]]
+    _moon_pada = birth_panchang["nakshatra_pada"]
+    baby_name = phase4_module.baby_name_syllables(_moon_nak, _moon_pada)
     saturn_span = transits_module.saturn_moon_span(planets["Moon"]["sign"], jd_now)
     double_tr = transits_module.double_transit(jd_now)
     jd_10y = jd_now + 10.2 * 365.25
@@ -350,6 +356,7 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         "sarvatobhadra": sbc, "dasha_pravesh": pravesh,
         "transit_calendar": p4_calendar,
         "favourable_periods": p4_favourable,
+        "ishta_devta": ishta, "baby_name": baby_name,
     })
     premium = report_module.generate_premium_report(report_ctx)
 
@@ -557,6 +564,8 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         "dasha_pravesh": pravesh,
         "transit_calendar": p4_calendar,
         "favourable_periods": p4_favourable,
+        "ishta_devta": ishta,
+        "baby_name": baby_name,
         "sade_sati_lifetime": sade_lifetime,
         "lal_kitab_dasha": lk_dasha,
         "yogini": {
