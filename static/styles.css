@@ -1,22 +1,27 @@
 :root {
   color-scheme: light;
-  /* Phase 5 — premium light palette: warm ivory + royal violet + antique gold */
-  --bg: #FAF6ED;
-  --bg-2: #F3EAD8;
-  --ink: #2A1445;
-  --ink-body: #463A5E;
-  --ink-dim: #7A6E94;
+  /* Warm devotional palette: cream + saffron + antique gold + royal violet.
+     Light premium only — no black/dark sections. */
+  --bg: #FBF4E8;
+  --bg-2: #F5EAD3;
+  --ink: #3A1E0C;
+  --ink-body: #5C3A20;
+  --ink-dim: #8A6A4A;
   --gold: #B8860B;
   --gold-strong: #9A7209;
   --gold-deep: #7A5B06;
   --gold-bright: #C9A227;
   --gold-soft: #E7C65B;
+  --saffron: #E07B0A;
+  --saffron-deep: #B85F06;
+  --saffron-soft: #F6C177;
+  --vermillion: #D9481C;
   --violet: #5B21B6;
   --violet-2: #7C3AED;
   --glass: rgba(255, 255, 255, 0.78);
-  --glass-border: rgba(184, 134, 11, 0.32);
-  --hairline: rgba(70, 58, 94, 0.14);
-  --shadow: rgba(76, 29, 149, 0.12);
+  --glass-border: rgba(224, 123, 10, 0.30);
+  --hairline: rgba(92, 58, 32, 0.14);
+  --shadow: rgba(184, 95, 6, 0.12);
   --danger: #BE123C;
   --ok: #0F766E;
   --radius: 18px;
@@ -29,10 +34,10 @@ html { scroll-behavior: smooth; }
 body {
   margin: 0;
   background:
-    radial-gradient(1200px 800px at 75% -10%, rgba(201, 162, 39, 0.18) 0%, transparent 55%),
-    radial-gradient(900px 620px at 8% 108%, rgba(124, 58, 237, 0.06) 0%, transparent 60%),
+    radial-gradient(1200px 800px at 75% -10%, rgba(224, 123, 10, 0.16) 0%, transparent 55%),
+    radial-gradient(900px 620px at 8% 108%, rgba(217, 72, 28, 0.07) 0%, transparent 60%),
     radial-gradient(760px 540px at 108% 42%, rgba(91, 33, 182, 0.05) 0%, transparent 65%),
-    linear-gradient(180deg, #FAF6ED 0%, #F7F0DE 52%, #F3EAD8 100%);
+    linear-gradient(180deg, #FBF4E8 0%, #F8EFDD 52%, #F5EAD3 100%);
   background-attachment: fixed;
   color: var(--ink-body);
   font-family: var(--font-body);
@@ -167,6 +172,12 @@ main { max-width: 1120px; margin: 0 auto; padding: 0 20px 64px; }
 .strip-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
 .strip-item .k { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-dim); }
 .strip-item .v { font-size: 16px; font-weight: 600; }
+.panchang-strip { margin-top: 12px; }
+.panchang-strip .strip-title-sm {
+  grid-column: 1 / -1; font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--saffron-deep); font-weight: 700;
+}
+.panchang-strip .strip-item .v { color: var(--saffron-deep); }
 
 /* Forms */
 .form-card { padding: 26px; max-width: 720px; }
@@ -205,7 +216,7 @@ legend { padding: 0 8px; color: var(--violet); font-weight: 600; }
   border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 13px; cursor: pointer;
 }
 .mini-btn.is-active { color: #2A1445; background: linear-gradient(120deg, var(--gold-soft), var(--gold-bright)); border-color: var(--gold); font-weight: 700; }
-#chart-svg-wrap { display: grid; place-items: center; }
+.chart-pair .chart-one { display: grid; place-items: center; }
 .kundali-svg { width: min(420px, 100%); height: auto; }
 .kundali-svg .house-poly { fill: rgba(124, 58, 237, 0.05); stroke: rgba(184, 134, 11, 0.6); stroke-width: 1; }
 .kundali-svg .house-poly.lagna-house { fill: rgba(201, 162, 39, 0.16); }
@@ -214,6 +225,20 @@ legend { padding: 0 8px; color: var(--violet); font-weight: 600; }
 .kundali-svg .planet-txt { fill: #2A1445; font-size: 12.5px; font-weight: 600; text-anchor: middle; }
 .kundali-svg .lagna-txt { fill: var(--violet); font-size: 11px; font-weight: 700; text-anchor: middle; }
 .chart-caption { text-align: center; color: var(--ink-dim); font-size: 14px; margin: 10px 0 0; }
+
+/* Kundali chart pair — Lagna + Navamsa side by side, the traditional view */
+.chart-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.chart-one { display: grid; place-items: center; }
+.chart-one .kundali-svg { width: min(340px, 100%); }
+.chart-name {
+  font-family: var(--font-display); font-size: 17px; font-weight: 700;
+  color: var(--saffron-deep); margin: 0 0 8px; text-align: center;
+}
+.chart-name .chart-sub { display: block; font-family: var(--font-body); font-size: 12px; font-weight: 400; color: var(--ink-dim); }
+.varga-more { margin-top: 12px; border-top: 1px solid var(--hairline); padding-top: 10px; }
+.varga-more summary { cursor: pointer; color: var(--violet); font-weight: 600; font-size: 14px; }
+.varga-more .kundali-svg { width: min(340px, 100%); }
+@media (max-width: 640px) { .chart-pair { grid-template-columns: 1fr; } }
 
 /* Tables */
 .table-scroll { overflow-x: auto; }
@@ -441,8 +466,9 @@ body.webgl-on .hero-ring { display: none; }
 /* Buttons — gradient + sheen sweep */
 .btn-gold {
   position: relative; overflow: hidden; isolation: isolate;
-  background: linear-gradient(120deg, #EFD06B, var(--gold-bright) 45%, var(--gold));
-  box-shadow: 0 10px 34px rgba(201, 162, 39, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  background: linear-gradient(120deg, #F6A93B, var(--saffron) 45%, var(--saffron-deep));
+  color: #FFF8EC;
+  box-shadow: 0 10px 34px rgba(224, 123, 10, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.55);
   transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
 }
 .btn-gold::after {
@@ -503,7 +529,7 @@ body.webgl-on .hero-ring { display: none; }
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(480px 320px at 50% 30%, rgba(201, 162, 39, 0.16), transparent 70%);
 }
-#chart-svg-wrap, #prashna-chart-wrap {
+#prashna-chart-wrap {
   position: relative; display: grid; place-items: center;
   padding: 20px 12px; border-radius: 14px;
   border: 1px solid rgba(184, 134, 11, 0.45);

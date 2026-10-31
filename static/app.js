@@ -80,6 +80,9 @@ const I18N = {
     section_failed:"This section could not be shown",
     err_incomplete:"The chart data came back incomplete, so the chart itself could not be drawn. Please try again.",
     chart_caption_d1:"Rashi chart (D1) — Nepali janma-patri style", chart_caption_d9:"Navamsa chart (D9)", chart_caption_d10:"Dashamsa chart (D10)",
+    chart_caption_pair:"Lagna (D1) + Navamsa (D9) — the traditional kundali pair; D10 below for career",
+    chart_lagna:"Lagna", chart_navamsa:"Navamsa", chart_d1_sub:"Rashi · D1", chart_d9_sub:"D9 · strength of planets",
+    varga_more:"More vargas — Dashamsa (D10), career chart", birth_panchang_title:"Panchang at birth", vara:"Weekday",
     glance_lagna:"Lagna (Ascendant)", glance_moon:"Moon sign", glance_sun:"Sun sign", glance_lagna_lord:"Lagna lord", pada_word:"Pada",
     sarva:"Sarvashtakavarga",
     nav_prashna:"KP Prashna",
@@ -227,6 +230,9 @@ const I18N = {
     section_failed:"यो खण्ड देखाउन सकिएन",
     err_incomplete:"कुण्डली डाटा अपूर्ण आयो, त्यसैले चार्ट कोर्न सकिएन। फेरि प्रयास गर्नुहोस्।",
     chart_caption_d1:"राशि कुण्डली (D1) — नेपाली जन्मपत्री शैली", chart_caption_d9:"नवांश कुण्डली (D9)", chart_caption_d10:"दशमांश कुण्डली (D10)",
+    chart_caption_pair:"लग्न (D1) + नवांश (D9) — परम्परागत कुण्डली जोडी; करियरका लागि D10 तल",
+    chart_lagna:"लग्न", chart_navamsa:"नवांश", chart_d1_sub:"राशि · D1", chart_d9_sub:"D9 · ग्रह बल",
+    varga_more:"थप वर्गहरू — दशमांश (D10), करियर कुण्डली", birth_panchang_title:"जन्म पञ्चाङ्ग", vara:"वार",
     glance_lagna:"लग्न", glance_moon:"चन्द्र राशि", glance_sun:"सूर्य राशि", glance_lagna_lord:"लग्न स्वामी", pada_word:"पद",
     sarva:"सर्वाष्टकवर्ग",
     nav_prashna:"KP प्रश्न",
@@ -705,10 +711,7 @@ document.getElementById("birth-form").addEventListener("submit", async (ev) => {
     errEl.hidden = true;
     STATE.bundle = bundle;
     STATE.birthPayload = payload;
-    STATE.varga = "D1";
     saveCurrentChart();
-    document.querySelectorAll(".mini-btn[data-varga]").forEach((b) =>
-      b.classList.toggle("is-active", b.dataset.varga === "D1"));
     /* Unhide BEFORE rendering: a partial render (with per-section notes)
        is still a chart, and must not be hidden behind a generic error. */
     document.getElementById("results").hidden = false;
@@ -846,40 +849,43 @@ function southSVG(chartMap, opts) {
   return svg;
 }
 
-function bundleChartOpts() {
+function bundleChartOpts(varga) {
   const b = STATE.bundle;
   const retro = new Set((b?.planets || []).filter((p) => p.retrograde).map((p) => p.planet));
-  if (STATE.varga !== "D1") return { style: STATE.chartStyle, retro, captionShort: STATE.varga };
+  // Degrees + lagna degree print only on the Rashi (D1) chart — the Nepali
+  // janma-patri style; divisional charts stay clean like the reference sites.
+  if (varga !== "D1") return { style: STATE.chartStyle, retro, captionShort: varga };
   const degrees = {};
   (b?.planets || []).forEach((p) => { degrees[p.planet] = p.degree_in_sign; });
   return {
     style: STATE.chartStyle, retro, degrees,
-    lagnaDegree: b ? b.lagna.degree_in_sign : null, captionShort: STATE.varga,
+    lagnaDegree: b ? b.lagna.degree_in_sign : null, captionShort: varga,
   };
 }
 
-function drawChart(chartMap) {
-  if (!chartMap) return; // missing varga data: the section note covers it
-  const wrap = document.getElementById("chart-svg-wrap");
-  const opts = bundleChartOpts();
-  wrap.innerHTML = STATE.chartStyle === "south" ? southSVG(chartMap, opts) : diamondSVG(chartMap, opts);
-  const cap = document.getElementById("chart-caption");
-  if (STATE.chartStyle === "south") cap.textContent = t("chart_caption_south");
-  else cap.textContent = STATE.varga === "D1" ? t("chart_caption_d1") : STATE.varga === "D9" ? t("chart_caption_d9") : t("chart_caption_d10");
+function drawChartInto(el, chartMap, varga) {
+  if (!el || !chartMap) return; // missing varga data: the section note covers it
+  const opts = bundleChartOpts(varga);
+  el.innerHTML = STATE.chartStyle === "south" ? southSVG(chartMap, opts) : diamondSVG(chartMap, opts);
 }
-document.querySelectorAll(".mini-btn[data-varga]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    STATE.varga = btn.dataset.varga;
-    document.querySelectorAll(".mini-btn[data-varga]").forEach((b) => b.classList.toggle("is-active", b === btn));
-    if (STATE.bundle) drawChart(STATE.bundle.charts[STATE.varga]);
-  });
-});
+
+/* Traditional kundali view: Lagna (D1) + Navamsa (D9) side by side,
+   Dashamsa (D10) one tap below — the layout the popular kundali sites use. */
+function renderChartPair() {
+  const b = STATE.bundle;
+  if (!b) return;
+  drawChartInto(document.getElementById("chart-d1"), b.charts["D1"], "D1");
+  drawChartInto(document.getElementById("chart-d9"), b.charts["D9"], "D9");
+  drawChartInto(document.getElementById("chart-d10"), b.charts["D10"], "D10");
+  const cap = document.getElementById("chart-caption");
+  cap.textContent = STATE.chartStyle === "south" ? t("chart_caption_south") : t("chart_caption_pair");
+}
 document.querySelectorAll(".mini-btn[data-style]").forEach((btn) => {
   btn.addEventListener("click", () => {
     STATE.chartStyle = btn.dataset.style;
     localStorage.setItem("vedic-astro-style", STATE.chartStyle);
     document.querySelectorAll(".mini-btn[data-style]").forEach((b) => b.classList.toggle("is-active", b === btn));
-    if (STATE.bundle) drawChart(STATE.bundle.charts[STATE.varga]);
+    if (STATE.bundle) renderChartPair();
   });
 });
 
@@ -946,7 +952,25 @@ function renderCore(b) {
   document.getElementById("glance-strip").innerHTML = glanceItems.map(([k, v]) =>
     `<div class="strip-item"><span class="k">${k}</span><span class="v">${v}</span></div>`).join("");
 
-  drawChart(b.charts[STATE.varga]);
+  /* Panchang at birth — tithi, vara, nakshatra, yoga, karana: the five
+     limbs every traditional janma-patri prints under the charts. */
+  const bp = b.panchang_at_birth;
+  if (bp) {
+    const tithiName = (LANG === "ne" ? (bp.paksha === "Shukla" ? "शुक्ल " : "कृष्ण ") : bp.paksha + " ") +
+      (LANG === "ne" ? TITHI_NE[bp.tithi_index] : TITHI_EN[bp.tithi_index]);
+    const bpItems = [
+      [t("tithi"), tithiName],
+      [t("vara"), LANG === "ne" ? WEEKDAY_NE[bp.weekday] : WEEKDAY_EN[bp.weekday]],
+      [t("nakshatra"), `${LANG === "ne" ? NAK_NE[bp.nakshatra_index] : NAK_EN[bp.nakshatra_index]} · ${t("pada_word")} ${locNum(bp.nakshatra_pada)}`],
+      [t("yoga"), LANG === "ne" ? YOGA_NE[bp.yoga_index] : YOGA_EN[bp.yoga_index]],
+      [t("karana"), LANG === "ne" ? (KARANA_NE[bp.karana] || bp.karana) : bp.karana],
+    ];
+    document.getElementById("birth-panchang-strip").innerHTML =
+      `<div class="strip-title-sm">${t("birth_panchang_title")}</div>` +
+      bpItems.map(([k, v]) => `<div class="strip-item"><span class="k">${k}</span><span class="v">${v}</span></div>`).join("");
+  }
+
+  renderChartPair();
 
   const tbody = document.querySelector("#planet-table tbody");
   tbody.innerHTML = b.planets.map((p) => `

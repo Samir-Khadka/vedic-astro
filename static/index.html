@@ -163,23 +163,32 @@
     <div id="section-notes" hidden aria-live="polite"></div>
     <p><button type="button" class="mini-btn" id="share-btn" data-i18n="share_btn">Copy share link</button></p>
     <div class="glance-strip" id="glance-strip" aria-label="Chart at a glance"></div>
+    <div class="glance-strip panchang-strip" id="birth-panchang-strip" aria-label="Panchang at birth"></div>
 
     <div class="results-grid">
       <div class="glass card chart-card">
         <div class="card-head">
           <h3 data-i18n="chart_title">Birth Chart</h3>
-          <div class="chart-toggle" role="group" aria-label="Chart type">
-            <button type="button" class="mini-btn is-active" data-varga="D1">D1</button>
-            <button type="button" class="mini-btn" data-varga="D9">D9</button>
-            <button type="button" class="mini-btn" data-varga="D10">D10</button>
+          <div class="chart-toggle style-toggle" role="group" aria-label="Chart style">
+            <button type="button" class="mini-btn is-active" data-style="nepali" data-i18n="style_nepali">Nepali</button>
+            <button type="button" class="mini-btn" data-style="north" data-i18n="style_north">North Indian</button>
+            <button type="button" class="mini-btn" data-style="south" data-i18n="style_south">South Indian</button>
           </div>
         </div>
-        <div class="chart-toggle style-toggle" role="group" aria-label="Chart style">
-          <button type="button" class="mini-btn is-active" data-style="nepali" data-i18n="style_nepali">Nepali</button>
-          <button type="button" class="mini-btn" data-style="north" data-i18n="style_north">North Indian</button>
-          <button type="button" class="mini-btn" data-style="south" data-i18n="style_south">South Indian</button>
+        <div class="chart-pair">
+          <div class="chart-one">
+            <h4 class="chart-name"><span data-i18n="chart_lagna">Lagna</span><span class="chart-sub" data-i18n="chart_d1_sub">Rashi · D1</span></h4>
+            <div id="chart-d1"></div>
+          </div>
+          <div class="chart-one">
+            <h4 class="chart-name"><span data-i18n="chart_navamsa">Navamsa</span><span class="chart-sub" data-i18n="chart_d9_sub">D9 · strength of planets</span></h4>
+            <div id="chart-d9"></div>
+          </div>
         </div>
-        <div id="chart-svg-wrap"></div>
+        <details class="varga-more">
+          <summary data-i18n="varga_more">More vargas — Dashamsa (D10), career chart</summary>
+          <div class="chart-one"><div id="chart-d10"></div></div>
+        </details>
         <p class="chart-caption" id="chart-caption"></p>
       </div>
 
