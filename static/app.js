@@ -204,6 +204,12 @@ const I18N = {
     p3_shodshottari:"Shodshottari Dasha (116-yr)",
     p3_mudda:"Mudda Dasha (Tajika annual)",
     p3_kalachakra:"Kalachakra Dasha",
+    p4_title:"Classical Utilities — Sarvatobhadra · Pravesh · Transits · Ephemeris",
+    p4_hint:"The 9×9 Sarvatobhadra Chakra's vedha on your natal points, the dasha-entry chart, upcoming ingresses, and a 30-day tara outlook.",
+    sbc_title:"Sarvatobhadra Chakra — transit vedha",
+    pravesh_title:"Dasha Pravesh — chart of the dasha-entry moment",
+    tcal_title:"Transit calendar — upcoming ingresses",
+    fav_title:"Favourable periods — 30-day tara outlook",
     sade_lifetime_title:"Lifetime Sade Sati — every period, exact dates",
     sade_lifetime_hint:"Saturn's passage over the three signs around your Moon sign, across a full lifetime. Past, current and future periods are marked.",
     gem_guide_title:"Gemstones & Rudraksha — the complete guide",
@@ -397,6 +403,12 @@ const I18N = {
     p3_shodshottari:"षोडशोत्तरी दशा (११६-वर्षीय)",
     p3_mudda:"मुद्दा दशा (ताजिक वार्षिक)",
     p3_kalachakra:"कालचक्र दशा",
+    p4_title:"शास्त्रीय उपकरणहरू — सर्वतोभद्र · प्रवेश · गोचर · पञ्चाङ्ग",
+    p4_hint:"९×९ सर्वतोभद्र चक्रको तपाईंको जन्म बिन्दुहरूमा वेध, दशा-प्रवेश कुण्डली, आगामी राशिपरिवर्तन, र ३०-दिने तारा दृष्टिकोण।",
+    sbc_title:"सर्वतोभद्र चक्र — गोचर वेध",
+    pravesh_title:"दशा प्रवेश — दशा-प्रारम्भ क्षणको कुण्डली",
+    tcal_title:"गोचर पात्रो — आगामी राशिपरिवर्तन",
+    fav_title:"शुभ समय — ३०-दिने तारा दृष्टिकोण",
     sade_lifetime_title:"आजीवन साढेसाती — हरेक अवधि, ठ्याक्कै मितिसहित",
     sade_lifetime_hint:"तपाईंको चन्द्र राशिवरिपरि तीन राशिमा शनिको यात्रा, पूरै जीवनभर। विगत, चालु र भावी अवधि चिन्ह लगाइएका छन्।",
     gem_guide_title:"रत्न र रुद्राक्ष — पूर्ण मार्गदर्शन",
@@ -1397,6 +1409,7 @@ function renderGapLayer(b) {
       `<div class="tl-row"><span class="tl-lord">${planetName(m.lord)}</span> ${m.display_start || m.start} – ${m.end}</div>`).join("");
   }
   renderP3(b);
+  renderP4(b);
   if (b.sade_sati_lifetime) {
     document.querySelector("#sade-lifetime-table tbody").innerHTML = b.sade_sati_lifetime.periods.map((p) =>
       `<tr><td><b>${p.status}</b></td><td>${p.start || "—"}</td><td>${p.peak_start || "—"}</td><td>${p.setting_start || "—"}</td><td>${p.end}</td></tr>`).join("");
@@ -1471,6 +1484,53 @@ function updateP3() {
     }).join("");
   } else {
     curEl.textContent = "—"; metaEl.textContent = ""; tlEl.innerHTML = "";
+  }
+}
+/* ---------------- Phase 4 classical utilities ---------------- */
+function renderP4(b) {
+  const L = (en, ne) => (typeof LANG !== "undefined" && LANG === "ne" ? ne : en);
+  // Sarvatobhadra
+  if (b.sarvatobhadra) {
+    const s = b.sarvatobhadra;
+    document.getElementById("sbc-meta").textContent =
+      `${L("Janma nakshatra", "जन्म नक्षत्र")}: ${s.natal_points.janma_nakshatra_28} · ` +
+      `${L("Tithi group", "तिथि समूह")}: ${s.natal_points.tithi_group}`;
+    const labels = {janma_nakshatra: L("Janma nakshatra", "जन्म नक्षत्र"),
+      lagna_rasi: L("Lagna rasi", "लग्न राशि"), tithi: L("Tithi", "तिथि"),
+      weekday: L("Weekday", "बार")};
+    document.getElementById("sbc-summary").innerHTML = Object.entries(s.summary).map(([key, v]) => {
+      const ben = v.benefic.map(planetName).join(", ") || "—";
+      const mal = v.malefic.map(planetName).join(", ") || "—";
+      return `<div class="tl-row"><span class="tl-lord">${labels[key] || key}</span> ` +
+        `<span style="color:#2e7d32">✓ ${ben}</span> · <span style="color:#c62828">✗ ${mal}</span></div>`;
+    }).join("");
+  }
+  // Dasha pravesh
+  if (b.dasha_pravesh) {
+    const p = b.dasha_pravesh;
+    document.getElementById("pravesh-meta").textContent =
+      `${L("Dasha began", "दशा सुरु")}: ${p.dasha_start} · ${L("Lagna", "लग्न")}: ${signName(p.lagna.sign)}`;
+    document.getElementById("pravesh-planets").innerHTML = p.planets.map((pl) =>
+      `<div class="tl-row"><span class="tl-lord">${planetName(pl.planet)}</span> ` +
+      `${signName(pl.sign)} ${pl.longitude.toFixed(1)}°</div>`).join("");
+  }
+  // Transit calendar
+  if (b.transit_calendar) {
+    document.getElementById("tcal-list").innerHTML = b.transit_calendar.events.map((e) =>
+      `<div class="tl-row"><span class="tl-lord">${planetName(e.planet)}</span> ` +
+      `${e.date} → ${signName(e.to_sign_en)}</div>`).join("");
+  }
+  // Favourable periods
+  if (b.favourable_periods) {
+    const f = b.favourable_periods;
+    document.getElementById("fav-meta").textContent =
+      `${f.good_days} / ${f.days.length} ${L("favourable days", "शुभ दिन")}`;
+    document.getElementById("fav-list").innerHTML = f.days.map((d) => {
+      const cls = d.tara_good ? " is-current" : "";
+      const mark = d.tara_good ? "✓" : "·";
+      return `<div class="tl-row${cls}"><span class="tl-lord">${d.date}</span> ` +
+        `${mark} Tara ${d.tara} · ${planetName(d.md)} / ${planetName(d.ad)}</div>`;
+    }).join("");
   }
 }
 /* ---------------- World-class layer: Chalit, Prastara, KP events, Sudarshana --- */

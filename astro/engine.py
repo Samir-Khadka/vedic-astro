@@ -16,6 +16,7 @@ from . import (
     dasha_phase3 as dasha_p3_module,
     doshas as doshas_module,
     ephemeris,
+    phase4 as phase4_module,
     interpret as interpret_module,
     jaimini as jaimini_module,
     kp as kp_module,
@@ -302,6 +303,31 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         planets["Sun"]["longitude"], now)
     kalachakra = dasha_p3_module.kalachakra_tree(
         birth_dt, planets["Moon"]["longitude"], now)
+    # Phase 4: Sarvatobhadra, dasha pravesh, transit calendar,
+    # favourable periods.
+    from .names import NAKSHATRAS_EN, WEEKDAYS_EN, SIGNS_EN as _SE
+    transit_longs = ephemeris.planet_longitudes(jd_now)
+    sbc_natal = {
+        "moon_nakshatra_27": NAKSHATRAS_EN[birth_panchang["nakshatra_index"]],
+        "moon_longitude": planets["Moon"]["longitude"],
+        "lagna_rasi_en": _SE[lagna_sign],
+        "tithi": birth_panchang["tithi_index"] + 1,
+        "weekday_en": WEEKDAYS_EN[birth_panchang["weekday"]],
+    }
+    sbc_transits = {
+        p: {"nakshatra_27": NAKSHATRAS_EN[transit_longs[p]["nakshatra"]],
+            "longitude": transit_longs[p]["longitude"]}
+        for p in ("Sun", "Moon", "Mars", "Mercury", "Jupiter",
+                  "Venus", "Saturn", "Rahu", "Ketu")
+    }
+    sbc = phase4_module.sarvatobhadra(sbc_natal, sbc_transits)
+    # Dasha pravesh for the current Vimshottari MD.
+    _md_now = dasha_tree["current"]["mahadasha"]
+    pravesh = phase4_module.dasha_pravesh(
+        birth_dt, _md_now["start"], place["lat"], place["lon"])
+    p4_calendar = phase4_module.transit_calendar(now)
+    p4_favourable = phase4_module.favourable_periods(
+        birth_dt, birth_panchang["nakshatra_index"], dasha_tree, now)
     saturn_span = transits_module.saturn_moon_span(planets["Moon"]["sign"], jd_now)
     double_tr = transits_module.double_transit(jd_now)
     jd_10y = jd_now + 10.2 * 365.25
@@ -321,6 +347,9 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         "narayana": narayana, "shodshottari": shodsho_tree,
         "shodshottari_applicability": shodsho_applies,
         "mudda": mudda, "kalachakra": kalachakra,
+        "sarvatobhadra": sbc, "dasha_pravesh": pravesh,
+        "transit_calendar": p4_calendar,
+        "favourable_periods": p4_favourable,
     })
     premium = report_module.generate_premium_report(report_ctx)
 
@@ -524,6 +553,10 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         "shodshottari_applicability": shodsho_applies,
         "mudda": _serialize_mudda(mudda, birth_dt),
         "kalachakra": _serialize_sign_dasha(kalachakra, birth_dt),
+        "sarvatobhadra": sbc,
+        "dasha_pravesh": pravesh,
+        "transit_calendar": p4_calendar,
+        "favourable_periods": p4_favourable,
         "sade_sati_lifetime": sade_lifetime,
         "lal_kitab_dasha": lk_dasha,
         "yogini": {
