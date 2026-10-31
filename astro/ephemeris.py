@@ -189,6 +189,22 @@ def declinations(jd: float) -> dict[str, float]:
     return out
 
 
+def latitudes(jd: float) -> dict[str, float]:
+    """Ecliptic latitude (degrees, +north) of the 7 grahas at `jd`.
+
+    Needed for Graha Yuddha: the planet further north wins the war.
+    The classics are explicit that declination has no say here — only
+    the ecliptic latitude (kshepa) decides the victor.
+    """
+    _ensure_ayanamsa()
+    flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL
+    out: dict[str, float] = {}
+    for name, pid in _SWE_PLANETS.items():
+        res, _ret = swe.calc_ut(jd, pid, flags)
+        out[name] = res[1]
+    return out
+
+
 def planet_longitude_at(name: str, jd: float) -> float:
     """Sidereal longitude of one graha at an arbitrary Julian day."""
     return planet_longitudes(jd)[name]["longitude"]

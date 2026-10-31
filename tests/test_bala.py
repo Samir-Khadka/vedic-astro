@@ -98,7 +98,8 @@ def test_bhava_bala_sample():
     assert len(bb) == 12
     for row in bb:
         assert row["lord"] in PLANETS_7
-        assert abs(row["total_rupas"] - (row["lord_bala_rupas"] + row["drik_bala_rupas"])) < 0.02
+        assert abs(row["total_rupas"] - (row["lord_bala_rupas"] + row["dig_bala_rupas"]
+                                        + row["drik_bala_rupas"])) < 0.02
         # House 1 lord == Lagna lord (Venus for Taurus Lagna).
         if row["house"] == 1:
             assert row["lord"] == "Venus"

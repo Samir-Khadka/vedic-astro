@@ -25,14 +25,28 @@ details, and totals legitimately vary between schools):
   (weekday lord) 45, Hora lord 60 virupas, each given only to that lord.
   Month/year lords are the weekday lords of the days the current solar
   month / solar year began (Sun's last sign ingress / Aries ingress),
-  the standard published method. Yuddha (planetary war) Bala is not
-  computed (it is 0 in the great majority of charts and its diameter
-  rules vary by school); this is stated in the output.
+  the standard published method.
+* Yuddha Bala (the 9th Kala sub-bala): two tara-grahas (Mars, Mercury,
+  Jupiter, Venus, Saturn) within 1 degree of longitude are at Graha
+  Yuddha. The planet further north in ecliptic latitude wins
+  (Brihat Samhita via Utpala; declination has no say). The quantum is
+  |Tri-bala A - Tri-bala B| / |disc A - disc B| (B.V. Raman's "Graha
+  and Bhava Balas", BPHS 27.20), where Tri-bala = Sthana + Dig + Kala
+  up to Hora (Ayana excluded) and the apparent disc diameters are
+  Mars 9.4", Mercury 6.6", Jupiter 190.4", Venus 16.6", Saturn 158".
+  Added to the victor's and subtracted from the vanquished's Kala
+  Bala. Uncapped, per the classical rule; exactly 0 in the great
+  majority of charts, which have no war.
 * Bhava Bala = Bhavadhipati Bala (the house lord's total Shadbala, in
-  rupas) + Drik Bala on the house cusp. The classical Dig Bala of houses
-  is omitted: it is defined over bhava-madhya geometry whose published
-  formulations disagree, while our houses are whole-sign. The omission
-  is flagged in the output.
+  rupas) + Bhava Dig Bala + Drik Bala on the house cusp. Bhava Dig
+  Bala reads the nature of the sign holding the bhava-madhya
+  (Phaladeepika): Nara signs (Gemini, Virgo, Libra, Aquarius, first
+  half of Sagittarius) are strong in the East, Chatushpada (Aries,
+  Taurus, Leo, second half of Sagittarius, first half of Capricorn)
+  in the South, Jalachara (Cancer, Pisces, second half of Capricorn)
+  in the North, Keeta (Scorpio) in the West — full 60 virupas when
+  the house stands at its kind's direction (1st/10th/4th/7th),
+  falling linearly to 0 at the opposite house.
 """
 from __future__ import annotations
 
@@ -344,14 +358,109 @@ def _cheshta(planet: str, planets: dict, jd: float, ayana_raw: float, paksha: fl
 
 
 # ---------------------------------------------------------------------------
+# Graha Yuddha (planetary war) — the 9th Kala sub-bala
+# ---------------------------------------------------------------------------
+_WAR_PLANETS = ("Mars", "Mercury", "Jupiter", "Venus", "Saturn")
+# Apparent disc diameters in arc-seconds (B.V. Raman, "Graha and Bhava Balas").
+_DISC = {"Mars": 9.4, "Mercury": 6.6, "Jupiter": 190.4, "Venus": 16.6,
+         "Saturn": 158.0}
+
+
+def _yuddha_bala(planets: dict, sthana: dict, dig: dict, kala: dict,
+                 lats: dict) -> dict:
+    """Pairwise Graha Yuddha awards.
+
+    War: two tara-grahas within 1 degree of longitude. The victor is the
+    planet further north in ecliptic latitude (an exact tie leaves the
+    war undecided and awards nothing). Quantum = |Tri-bala A - Tri-bala
+    B| / |disc A - disc B| with Tri-bala = Sthana + Dig + Kala up to
+    Hora (Ayana excluded) — Raman/BPHS 27.20. Returns
+    {planet: {"quantum", "outcome" ("victor"/"vanquished"/None),
+    "opponent"}}; a planet fighting two opponents accumulates each
+    pair's quantum.
+    """
+    out = {p: {"quantum": 0.0, "outcome": None, "opponent": None}
+           for p in PLANETS_7}
+    fighters = [p for p in _WAR_PLANETS if p in planets]
+    tribala = {}
+    for p in fighters:
+        k = kala[p]
+        tri_kala = (k["nathonnatha"] + k["paksha"] + k["tribhaga"]
+                    + k["vaara"] + k["hora"] + k["masa"] + k["abda"])
+        tribala[p] = sthana[p] + dig[p] + tri_kala
+    for i, a in enumerate(fighters):
+        for b in fighters[i + 1:]:
+            if _ang_dist(planets[a]["longitude"], planets[b]["longitude"]) >= 1.0:
+                continue
+            la, lb = lats[a], lats[b]
+            if abs(la - lb) < 1e-9:
+                continue  # indeterminate victor: classical silence, award nothing
+            victor, loser = (a, b) if la > lb else (b, a)
+            denom = abs(_DISC[a] - _DISC[b])
+            quantum = abs(tribala[a] - tribala[b]) / denom if denom > 0 else 0.0
+            out[victor]["quantum"] += quantum
+            out[victor]["outcome"] = "victor"
+            out[victor]["opponent"] = loser
+            out[loser]["quantum"] += quantum
+            out[loser]["outcome"] = "vanquished"
+            out[loser]["opponent"] = victor
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Bhava Dig Bala — directional strength of houses
+# ---------------------------------------------------------------------------
+# Sign natures (Phaladeepika). Sagittarius and Capricorn split by half.
+_NARA = {2, 5, 6, 10}    # Gemini, Virgo, Libra, Aquarius
+_CHATU = {0, 1, 4}       # Aries, Taurus, Leo
+_JALA = {3, 11}          # Cancer, Pisces
+_DIG_DIRECTION_HOUSE = {"nara": 1, "chatushpada": 10, "jalachara": 4,
+                        "keeta": 7}
+
+
+def _sign_kind(sign: int, degree_in_sign: float) -> str:
+    if sign == 8:  # Sagittarius: first half Nara, second Chatushpada
+        return "nara" if degree_in_sign < 15.0 else "chatushpada"
+    if sign == 9:  # Capricorn: first half Chatushpada, second Jalachara
+        return "chatushpada" if degree_in_sign < 15.0 else "jalachara"
+    if sign in _NARA:
+        return "nara"
+    if sign in _CHATU:
+        return "chatushpada"
+    if sign in _JALA:
+        return "jalachara"
+    return "keeta"  # Scorpio
+
+
+def _bhava_dig_bala(cusp_lon: float, cusps: list[float]) -> float:
+    """Bhava Dig Bala in virupas for the house whose madhya is `cusp_lon`.
+
+    Full 60 virupas when the house stands at its sign-kind's direction
+    (East=1st for Nara, South=10th for Chatushpada, North=4th for
+    Jalachara, West=7th for Keeta), falling linearly to 0 opposite —
+    the house analogue of planetary Dig Bala.
+    """
+    sign = int(cusp_lon // 30.0)
+    kind = _sign_kind(sign, cusp_lon % 30.0)
+    target = cusps[_DIG_DIRECTION_HOUSE[kind] - 1]
+    return max(0.0, 60.0 * (1.0 - _ang_dist(cusp_lon, target) / 180.0))
+
+
+# ---------------------------------------------------------------------------
 # Shadbala proper
 # ---------------------------------------------------------------------------
 def shadbala(planets: dict, lagna_sign: int, cusps: list[float], charts: dict,
              birth_dt, lat: float, lon: float, tz_name: str, jd: float) -> dict:
     decls = ephemeris.declinations(jd)
+    lats = ephemeris.latitudes(jd)
     kala, kala_meta = _kala_bala(planets, birth_dt, lat, lon, tz_name, jd, decls)
 
-    rows: dict[str, dict] = {}
+    # First pass: Sthana / Dig / Cheshta / Naisargika / Drik per planet.
+    # Yuddha Bala is computed after this pass — it needs every fighter's
+    # Tri-bala (Sthana + Dig + Kala up to Hora).
+    sthana: dict[str, float] = {}
+    dig: dict[str, float] = {}
+    parts: dict[str, dict] = {}
     for p in PLANETS_7:
         pl = planets[p]
         # --- Sthana Bala ---
@@ -381,32 +490,50 @@ def shadbala(planets: dict, lagna_sign: int, cusps: list[float], charts: dict,
                             or (p in ("Moon", "Venus") and drek == 1)
                             or (p in ("Mercury", "Saturn") and drek == 2)) else 0.0
 
-        sthana = uccha + sapta + ojayugma + kendradi + drekkana
+        sthana[p] = uccha + sapta + ojayugma + kendradi + drekkana
 
         # --- Dig Bala ---
-        dig = (180.0 - _ang_dist(pl["longitude"], cusps[_DIG_ZERO_CUSP[p]])) / 3.0
+        dig[p] = (180.0 - _ang_dist(pl["longitude"], cusps[_DIG_ZERO_CUSP[p]])) / 3.0
 
         # --- Cheshta / Naisargika / Drik ---
         cheshta = _cheshta(p, planets, jd, kala_meta["ayana_raw"][p], kala_meta["paksha"][p])
-        naisargika = NAISARGIKA[p]
-        drik = _drik_net(pl["longitude"], planets, exclude=p)
+        parts[p] = {"uccha": uccha, "sapta": sapta, "ojayugma": ojayugma,
+                    "kendradi": kendradi, "drekkana": drekkana,
+                    "cheshta": cheshta, "naisargika": NAISARGIKA[p],
+                    "drik": _drik_net(pl["longitude"], planets, exclude=p)}
 
-        total = sthana + dig + kala[p]["total"] + cheshta + naisargika + drik
+    # --- Yuddha Bala (9th Kala sub-bala): pairwise planetary war ---
+    yuddha = _yuddha_bala(planets, sthana, dig, kala, lats)
+    for p in PLANETS_7:
+        yw = yuddha[p]
+        signed = (yw["quantum"] if yw["outcome"] == "victor"
+                  else (-yw["quantum"] if yw["outcome"] == "vanquished" else 0.0))
+        kala[p]["yuddha"] = round(signed, 2)
+        kala[p]["total"] = round(kala[p]["total"] + kala[p]["yuddha"], 2)
+        if yw["opponent"]:
+            kala[p]["yuddha_foe"] = yw["opponent"]
+            kala[p]["yuddha_outcome"] = yw["outcome"]
+
+    # Second pass: finalize rows with the war-adjusted Kala Bala.
+    rows: dict[str, dict] = {}
+    for p in PLANETS_7:
+        pt = parts[p]
+        total = sthana[p] + dig[p] + kala[p]["total"] + pt["cheshta"] + pt["naisargika"] + pt["drik"]
         rows[p] = {
-            "sthana": {"uccha": round(uccha, 2), "saptavargaja": round(sapta, 2),
-                       "ojayugma": round(ojayugma, 2), "kendradi": round(kendradi, 2),
-                       "drekkana": round(drekkana, 2), "total": round(sthana, 2)},
-            "dig": round(dig, 2),
+            "sthana": {"uccha": round(pt["uccha"], 2), "saptavargaja": round(pt["sapta"], 2),
+                       "ojayugma": round(pt["ojayugma"], 2), "kendradi": round(pt["kendradi"], 2),
+                       "drekkana": round(pt["drekkana"], 2), "total": round(sthana[p], 2)},
+            "dig": round(dig[p], 2),
             "kala": kala[p],
-            "cheshta": round(cheshta, 2),
-            "naisargika": naisargika,
-            "drik": round(drik, 2),
+            "cheshta": round(pt["cheshta"], 2),
+            "naisargika": pt["naisargika"],
+            "drik": round(pt["drik"], 2),
             "total_virupas": round(total, 2),
             "rupas": round(total / 60.0, 2),
             "min_rupas": MIN_RUPAS[p],
             "ratio": round(total / 60.0 / MIN_RUPAS[p], 2),
-            "ishta": round(math.sqrt(max(uccha, 0.0) * max(cheshta, 0.0)), 2),
-            "kashta": round(math.sqrt(max(60.0 - uccha, 0.0) * max(60.0 - cheshta, 0.0)), 2),
+            "ishta": round(math.sqrt(max(pt["uccha"], 0.0) * max(pt["cheshta"], 0.0)), 2),
+            "kashta": round(math.sqrt(max(60.0 - pt["uccha"], 0.0) * max(60.0 - pt["cheshta"], 0.0)), 2),
         }
 
     ranked = sorted(PLANETS_7, key=lambda q: rows[q]["rupas"], reverse=True)
@@ -421,20 +548,26 @@ def shadbala(planets: dict, lagna_sign: int, cusps: list[float], charts: dict,
 
 
 def bhava_bala(planets: dict, lagna_sign: int, cusps: list[float], shadbala_rows: dict) -> list[dict]:
-    """Per-house strength: house lord's Shadbala + Drik Bala on the cusp.
-    (Dig Bala of houses omitted — see module docstring.)"""
+    """Per-house strength: house lord's Shadbala + Bhava Dig Bala + Drik Bala.
+
+    Bhava Dig Bala reads the nature of the sign holding the bhava-madhya
+    (cusp): Nara signs are strong eastward, Chatushpada southward,
+    Jalachara northward, Keeta westward.
+    """
     rows = shadbala_rows["planets"] if "planets" in shadbala_rows else shadbala_rows
     out = []
     for h in range(1, 13):
         sign = (lagna_sign + h - 1) % 12
         lord = SIGN_LORDS[sign]
         lord_rupas = rows[lord]["rupas"]
+        dig_rupas = _bhava_dig_bala(cusps[h - 1], cusps) / 60.0
         drik_rupas = _drik_net(cusps[h - 1], planets) / 60.0
         out.append({
             "house": h, "sign": sign, "lord": lord,
             "lord_bala_rupas": lord_rupas,
+            "dig_bala_rupas": round(dig_rupas, 2),
             "drik_bala_rupas": round(drik_rupas, 2),
-            "total_rupas": round(lord_rupas + drik_rupas, 2),
+            "total_rupas": round(lord_rupas + dig_rupas + drik_rupas, 2),
         })
     return out
 

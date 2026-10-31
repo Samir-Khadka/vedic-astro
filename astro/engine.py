@@ -172,6 +172,7 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         "pitra": doshas_module.pitra(planets, lagna_sign),
     }
     av = av_module.compute_ashtakavarga(planets, lagna_sign)
+    shodhya = av_module.compute_shodhya_pindas(av, planets)
     yoga_list = yogas_module.detect_yogas(planets, lagna_sign)
     birth_panchang = panchang_module.panchang_at(birth_dt, place["lat"], place["lon"], place["tz"])
     rise, set_ = ephemeris.sunrise_sunset(dob, place["lat"], place["lon"], place["tz"])
@@ -323,6 +324,7 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
         },
         "doshas": dosha_results,
         "ashtakavarga": av,
+        "shodhya_pindas": shodhya,
         "yogas": yoga_list,
         "panchang_at_birth": birth_panchang,
         "transits_now": {p: {"sign": s, "sign_en": SIGNS_EN[s], "sign_ne": SIGNS_NE[s]} for p, s in transit_signs.items()},
@@ -333,8 +335,8 @@ def compute_kundali(payload: dict, now: datetime | None = None) -> dict:
             "bhava_bala": bb,
             "vimshopaka": vs,
             "bhava_bala_note": {
-                "en": "Bhava Bala = house lord's Shadbala + Drik Bala on the house (Dig Bala of houses omitted — see the method note in the analysis).",
-                "ne": "भाव बल = भाव स्वामीको षड्बल + भावमाथिको दृष्टि बल (भावहरूको दिग्बल छाडिएको छ — विश्लेषणको विधि-टिप्पणी हेर्नुहोस्)।",
+                "en": "Bhava Bala = house lord's Shadbala + Bhava Dig Bala (directional strength from the sign's nature: Nara east, Chatushpada south, Jalachara north, Keeta west) + Drik Bala on the house.",
+                "ne": "भाव बल = भाव स्वामीको षड्बल + भाव दिग्बल (राशिको स्वभावअनुसार दिशागत बल: नर पूर्व, चतुष्पद दक्षिण, जलचर उत्तर, कीट पश्चिम) + भावमाथिको दृष्टि बल।",
             },
         },
         "transits_detail": transit_tbl,

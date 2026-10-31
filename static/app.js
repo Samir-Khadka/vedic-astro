@@ -104,7 +104,12 @@ const I18N = {
     th_sthana:"Sthana", th_dig:"Dig", th_kala:"Kala", th_cheshta:"Cheshta", th_naisargika:"Naisargika",
     th_drik:"Drik", th_total:"Total", th_rupas:"Rupas", th_min:"Min", th_ratio:"Ratio", th_rank:"Rank",
     th_ishta:"Ishta", th_kashta:"Kashta", th_lord:"Lord", th_lord_bala:"Lord's Shadbala",
+    th_bhava_dig:"Bhava Dig", th_significators:"Significators ↓",
+    shodhya_title:"Shodhya Pinda — purified bindu strength",
+    th_rasi_pinda:"Rasi Pinda", th_graha_pinda:"Graha Pinda", th_shodhya_pinda:"Shodhya Pinda",
+    shodhya_hint:"After Trikona then Ekadhipatya Shodhana (BPHS). Used for timing events — e.g. Venus's pinda × 7th-house bindus ÷ 27.",
     transit_title:"Transits (Gochar) & Ingress Dates", th_now:"Now", th_from_moon:"From Moon", th_ingress:"Next ingress",
+    yuddha_note:"Graha Yuddha (planetary war): {wars} — victor gains, vanquished loses the war quantum in Kala Bala.",
     numerology_title:"Numerology & Name Letter",
     moolank:"Moolank (root number)", bhagyank:"Bhagyank (destiny number)", name_letter:"Name letter (Moon nakshatra)",
     ruler_word:"Ruler",
@@ -286,7 +291,12 @@ const I18N = {
     th_sthana:"स्थान", th_dig:"दिग्", th_kala:"काल", th_cheshta:"चेष्टा", th_naisargika:"नैसर्गिक",
     th_drik:"दृष्टि", th_total:"जम्मा", th_rupas:"रूपा", th_min:"न्यूनतम", th_ratio:"अनुपात", th_rank:"क्रम",
     th_ishta:"इष्ट", th_kashta:"कष्ट", th_lord:"स्वामी", th_lord_bala:"स्वामीको षड्बल",
+    th_bhava_dig:"भाव दिग्", th_significators:"सङ्केतक ↓",
+    shodhya_title:"शोध्य पिण्ड — शुद्ध बिन्दु शक्ति",
+    th_rasi_pinda:"राशि पिण्ड", th_graha_pinda:"ग्रह पिण्ड", th_shodhya_pinda:"शोध्य पिण्ड",
+    shodhya_hint:"त्रिकोण अनि एकाधिपत्य शोधनपछि (बृहत् पराशर)। घटना समय निर्धारणमा — जस्तै शुक्रको पिण्ड × सप्तम भावका बिन्दु ÷ २७।",
     transit_title:"गोचर र प्रवेश मितिहरू", th_now:"हाल", th_from_moon:"चन्द्रमाबाट", th_ingress:"अर्को प्रवेश",
+    yuddha_note:"ग्रहयुद्ध: {wars} — विजेताले पाउँछ, पराजितले कालबलमा युद्ध-परिमाण गुमाउँछ।",
     numerology_title:"अङ्कशास्त्र र नामको अक्षर",
     moolank:"मूलाङ्क", bhagyank:"भाग्याङ्क", name_letter:"नामको अक्षर (चन्द्र नक्षत्र)",
     ruler_word:"स्वामी ग्रह",
@@ -1128,10 +1138,13 @@ function renderDasha(b) {
 
 function renderKP(b) {
   const tbody = document.querySelector("#kp-table tbody");
-  tbody.innerHTML = b.kp.cusps.map((c) => `
-    <tr><td>${c.house}</td><td>${LANG === "ne" ? c.sign_ne : c.sign_en}</td>
-    <td>${planetName(c.sign_lord)}</td><td>${planetName(c.star_lord)}</td>
-    <td><b>${planetName(c.sub_lord)}</b></td></tr>`).join("");
+  tbody.innerHTML = b.kp.cusps.map((c) => {
+    const sig = (b.kp.house_significators[c.house] || {}).significator_order || [];
+    return `<tr><td>${c.house}</td><td>${LANG === "ne" ? c.sign_ne : c.sign_en}</td>` +
+    `<td>${planetName(c.sign_lord)}</td><td>${planetName(c.star_lord)}</td>` +
+    `<td><b>${planetName(c.sub_lord)}</b></td>` +
+    `<td class="sig-list">${sig.map(planetName).join(" › ")}</td></tr>`;
+  }).join("");
   const kpCard = document.querySelector("#kp-table").closest(".card");
   if (kpCard && !kpCard.querySelector(".kp-placidus-note")) {
     const p = document.createElement("p");
@@ -1209,6 +1222,12 @@ function renderAV(b) {
     const label = name === "Sarvashtakavarga" ? t("sarva") : planetName(name);
     return `<tr><td><b>${label}</b></td>${av[name].map((v) => `<td class="${v >= 5 ? "hot" : ""}">${v}</td>`).join("")}</tr>`;
   }).join("");
+  const sp = b.shodhya_pindas || {};
+  document.querySelector("#shodhya-table tbody").innerHTML = PLANET_ORDER.map((p) => {
+    const r = sp[p] || {};
+    return `<tr><td><b>${planetName(p)}</b></td><td>${locNum(r.rasi_pinda ?? "—")}</td>` +
+      `<td>${locNum(r.graha_pinda ?? "—")}</td><td><b>${locNum(r.shodhya_pinda ?? "—")}</b></td></tr>`;
+  }).join("");
 }
 
 function renderPredictions(b) {
@@ -1230,6 +1249,14 @@ function renderStrength(b) {
   document.getElementById("strength-summary").textContent =
     `${t("strongest_word")}: ${planetName(sb.strongest)} (${sb.planets[sb.strongest].rupas}) · ` +
     `${t("weakest_word")}: ${planetName(sb.weakest)} (${sb.planets[sb.weakest].rupas})`;
+  const wars = PLANET_ORDER.filter((p) => sb.planets[p].kala.yuddha_outcome === "victor");
+  const yuddhaEl = document.getElementById("yuddha-note");
+  if (yuddhaEl) {
+    yuddhaEl.textContent = wars.length
+      ? t("yuddha_note").replace("{wars}", wars.map((p) =>
+          `${planetName(p)} ⚔ ${planetName(sb.planets[p].kala.yuddha_foe)}`).join("; "))
+      : "";
+  }
   document.querySelector("#shadbala-table tbody").innerHTML = PLANET_ORDER.map((p) => {
     const r = sb.planets[p];
     return `<tr><td><b>${planetName(p)}</b></td><td>${r.sthana.total.toFixed(1)}</td><td>${r.dig.toFixed(1)}</td>` +
@@ -1238,9 +1265,11 @@ function renderStrength(b) {
       `<td>${r.min_rupas.toFixed(1)}</td><td>${r.ratio.toFixed(2)}</td><td>${locNum(r.rank)}</td>` +
       `<td>${r.ishta.toFixed(1)}</td><td>${r.kashta.toFixed(1)}</td></tr>`;
   }).join("");
-  document.querySelector("#bhava-bala-table tbody").innerHTML = b.strength.bhava_bala.map((h) =>
-    `<tr><td>${locNum(h.house)}</td><td>${planetName(h.lord)}</td><td>${h.lord_bala_rupas.toFixed(2)}</td>` +
-    `<td>${h.drik_bala_rupas.toFixed(2)}</td><td><b>${h.total_rupas.toFixed(2)}</b></td></tr>`).join("");
+  document.querySelector("#bhava-bala-table tbody").innerHTML = b.strength.bhava_bala.map((h) => {
+    const digv = h.dig_bala_rupas;
+    return `<tr><td>${locNum(h.house)}</td><td>${planetName(h.lord)}</td><td>${h.lord_bala_rupas.toFixed(2)}</td>` +
+    `<td>${digv == null ? "—" : digv.toFixed(2)}</td><td>${h.drik_bala_rupas.toFixed(2)}</td><td><b>${h.total_rupas.toFixed(2)}</b></td></tr>`;
+  }).join("");
   document.getElementById("bhava-bala-note").textContent = bi(b.strength.bhava_bala_note);
   document.querySelector("#vimshopaka-table tbody").innerHTML = PLANET_ORDER.map((p) => {
     const v = b.strength.vimshopaka[p];
