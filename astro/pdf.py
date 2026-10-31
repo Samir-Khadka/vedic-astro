@@ -49,31 +49,53 @@ def _esc(s) -> str:
 
 _CSS = """
 @page { size: A4; margin: 18mm 15mm 16mm 15mm;
-  @bottom-center { content: "Vedic Astro — Premium Kundali Report · " counter(page) " / " counter(pages);
-                   font-size: 8pt; color: #8a8578; } }
+  @bottom-center { content: "Vedic Astro — Janma Kundali · " counter(page) " / " counter(pages);
+                   font-size: 8pt; color: #8a6a4a; } }
 @page cover { margin: 0; @bottom-center { content: none; } }
-body { font-family: 'Noto Sans Devanagari','DejaVu Sans',sans-serif; color:#1c1a2e; font-size:10.5pt; line-height:1.5; }
-.cover { page: cover; height: 297mm; background: #141126; color: #f3ead2; text-align: center;
-         padding-top: 92mm; box-sizing: border-box; }
-.cover h1 { font-size: 30pt; color: #e9c767; margin: 0 6mm 4mm; }
-.cover .sub { font-size: 13pt; color: #cfc4a5; margin: 0 10mm; }
-.cover .meta { margin-top: 14mm; font-size: 11pt; color: #a99e7f; }
-h2 { color:#6b4f12; border-bottom:1.5px solid #c9a227; padding-bottom:1mm; margin-top:7mm;
+body { font-family: 'Noto Sans Devanagari','DejaVu Sans',sans-serif; color:#3a1e0c; font-size:10.5pt; line-height:1.5;
+       background: #fdf9f0; }
+/* Cover — light devotional: cream page, double gold-saffron frame */
+.cover { page: cover; height: 297mm; box-sizing: border-box; text-align: center;
+         background: #fdf9f0; padding: 12mm; }
+.cover-frame { border: 3pt double #b8860b; height: 269mm; box-sizing: border-box; padding: 10mm 8mm; }
+.cover-frame-inner { border: 1pt solid #e07b0a; height: 100%; box-sizing: border-box;
+                     padding-top: 38mm; }
+.cover .mangala { font-size: 16pt; color: #7a3c06; margin-bottom: 10mm; }
+.cover .om { font-size: 64pt; color: #e07b0a; margin: 0 0 8mm; line-height: 1; }
+.cover h1 { font-size: 30pt; color: #5c2f08; margin: 0 6mm 4mm; }
+.cover .sub { font-size: 14pt; color: #b85f06; margin: 0 10mm 3mm; }
+.cover .meta { margin-top: 12mm; font-size: 11pt; color: #6b4a26; }
+.cover .foot { margin-top: 18mm; font-size: 9pt; color: #8a6a4a; }
+/* Chapter heads */
+h2 { color:#7a3c06; border-bottom:1.5px solid #e07b0a; padding-bottom:1mm; margin-top:7mm;
      font-size:14.5pt; page-break-before: always; }
 h2.no-break { page-break-before: auto; }
-h3 { color:#3a2f5e; margin-top:4.5mm; font-size:11.5pt; }
+h2 .ch-num { display:block; font-size:10pt; color:#b85f06; letter-spacing:2pt; margin-bottom:1mm; }
+h3 { color:#5c2f08; margin-top:4.5mm; font-size:11.5pt; }
 table { border-collapse:collapse; width:100%; margin:2.5mm 0; }
-th,td { border:0.5pt solid #b9b3d6; padding:1.4mm 1.8mm; text-align:left; font-size:9pt; }
-th { background:#efe9fb; }
+th,td { border:0.5pt solid #d9b98a; padding:1.4mm 1.8mm; text-align:left; font-size:9pt; }
+th { background:#fbeed7; color:#7a3c06; }
 .meta { color:#555; font-size:9.5pt; }
-.toc { font-size:11pt; line-height:1.9; }
-.toc a { color:#1c1a2e; text-decoration:none; }
+/* TOC */
+.toc { font-size:11pt; line-height:2; }
+.toc a { color:#3a1e0c; text-decoration:none; }
 .toc a::after { content: leader('.') target-counter(attr(href), page); }
+/* Summary cards */
+.sum-grid { display: block; }
+.sum-card { border: 1pt solid #d9b98a; border-radius: 3mm; background: #fffdf7;
+            padding: 4mm 5mm; margin: 0 0 4mm 0; }
+.sum-card h3 { margin: 0 0 2mm; color:#b85f06; font-size:12pt; }
+.sum-card .count { float: right; font-size: 11pt; color:#e07b0a; font-weight:700; }
+.sum-card p { margin: 1mm 0; font-size: 9.5pt; color:#5c3a20; }
+/* Birth detail two-column */
+.detail-table td { border: none; padding: 2mm 3mm; font-size: 10.5pt; }
+.detail-table td.k { color:#b85f06; font-size:9pt; text-transform:uppercase; letter-spacing:0.06em; width:32%; }
+.detail-table td.v { font-weight:700; color:#3a1e0c; }
 .chart-row { text-align:center; }
 .chart-box { display:inline-block; margin:2mm 3mm; vertical-align:top; }
-.chart-title { font-weight:700; color:#6b4f12; margin-bottom:1mm; }
+.chart-title { font-weight:700; color:#7a3c06; margin-bottom:1mm; }
 p { margin: 1.6mm 0; text-align: justify; }
-.small { font-size: 9pt; color:#555; }
+.small { font-size: 9pt; color:#6b5a44; }
 """
 
 
@@ -101,26 +123,33 @@ def build_html(bundle: dict, lang: str = "en") -> str:
     sections: list[tuple[str, str]] = []  # (anchor, title) for the TOC
     body: list[str] = []
 
+    ch_num = [0]
+
     def h2(anchor: str, en: str, nep: str, no_break: bool = False) -> None:
         title = nep if ne else en
-        sections.append((anchor, title))
-        body.append(f"<h2 id='{anchor}'{' class=\"no-break\"' if no_break else ''}>{_esc(title)}</h2>")
+        ch_num[0] += 1
+        label = T(f"Chapter {ch_num[0]}", f"अध्याय {ch_num[0]}")
+        sections.append((anchor, f"{label} — {title}"))
+        body.append(f"<h2 id='{anchor}'{' class=\"no-break\"' if no_break else ''}>"
+                    f"<span class='ch-num'>{_esc(label)}</span>{_esc(title)}</h2>")
 
     # ---------------------------------------------------------------- cover
     parts = [
         "<!DOCTYPE html><html><head><meta charset='utf-8'><style>",
         _CSS,
         "</style></head><body>",
-        "<div class='cover'>",
+        "<div class='cover'><div class='cover-frame'><div class='cover-frame-inner'>",
+        f"<div class='mangala'>॥ अथ श्री गणेशाय नमः ॥</div>",
+        "<div class='om'>ॐ</div>",
         f"<h1>{_esc(name)}</h1>",
-        f"<div class='sub'>{T('Premium Kundali Report', 'प्रिमियम कुण्डली रिपोर्ट')}</div>",
-        f"<div class='sub'>{T('Parashari · KP · Jaimini — computed with Swiss Ephemeris, Lahiri ayanamsa',
-                              'पराशरी · KP · जैमिनी — स्विस एफेमेरिस, लाहिरी अयनांशले गणना गरिएको')}</div>",
+        f"<div class='sub'>{T('Janma Kundali', 'जन्म कुण्डली')}</div>",
         f"<div class='meta'>{_esc(birth['date'])} · {_esc(birth['time'])} · {_esc(place['name'])}<br>"
         f"{T('Lagna', 'लग्न')}: {_esc(lagna['sign_ne'] if ne else lagna['sign_en'])} · "
         f"{T('Moon', 'चन्द्र')}: {_esc(moon['sign_ne'] if ne else moon['sign_en'])} / "
         f"{_esc(moon['nakshatra_ne'] if ne else moon['nakshatra_en'])}</div>",
-        "</div>",
+        f"<div class='foot'>{T('Computed with Swiss Ephemeris · Lahiri ayanamsa · Parashari, KP & Jaimini methods',
+                                'स्विस एफेमेरिस · लाहिरी अयनांश · पराशरी, KP र जैमिनी विधिबाट गणना')}</div>",
+        "</div></div></div>",
     ]
 
     # ------------------------------------------------- birth details & panchang
@@ -310,6 +339,14 @@ def build_html(bundle: dict, lang: str = "en") -> str:
 
     # ------------------------------------------------------------------- dashas
     h2("dashas", "Dasha Chapters — Vimshottari Deep-Dive", "दशा अध्यायहरू — विंशोत्तरी गहन विश्लेषण")
+    mds = (bundle.get("dasha") or {}).get("mahadashas") or []
+    if mds:
+        body.append(f"<h3 class='no-break'>{T('Vimshottari Mahadashas', 'विंशोत्तरी महादशाहरू')}</h3>")
+        body.append("<table><tr><th>" + T("Mahadasha", "महादशा") + "</th><th>" + T("Start date", "सुरु मिति")
+                    + "</th><th>" + T("End date", "अन्त्य मिति") + "</th></tr>")
+        for md in mds:
+            body.append(f"<tr><td>{_esc(md['lord'])}</td><td>{_esc(md['start'])}</td><td>{_esc(md['end'])}</td></tr>")
+        body.append("</table>")
     cur = bundle["dasha"].get("current") or {}
     md0, ad0 = cur.get("mahadasha") or {}, cur.get("antardasha") or {}
     if md0:
@@ -602,18 +639,71 @@ def build_html(bundle: dict, lang: str = "en") -> str:
     body.append(f"<p class='small'>{T('Generated by Vedic Astro — Swiss Ephemeris (Lahiri ayanamsa), Parashari + KP + Jaimini methods (special lagnas, Chara dasha, Shadbala). Every reading in this report is computed from this chart alone. For guidance and reflection; not a substitute for professional advice.',
                                       'Vedic Astro द्वारा तयार — स्विस एफेमेरिस (लाहिरी अयनांश), पराशरी + KP + जैमिनी विधि (विशेष लग्न, चर दशा, षड्बल)। यस रिपोर्टका हरेक विश्लेषण यही कुण्डलीबाट मात्र गणना गरिएका हुन्। मार्गदर्शन र मननका लागि; व्यावसायिक सल्लाहको विकल्प होइन।')}</p>")
 
+    # ------------------------------------------------------- summary page
+    # "Your Janma Kundali — Summary": count cards + one-line excerpts, all
+    # computed from this chart (mirrors the traditional report summary page).
+    def first_fact(facts, n=2):
+        out = []
+        for f in facts or []:
+            out.append(pick(f))
+            if len(out) >= n:
+                break
+        return out
+
+    sum_cards = []
+    yogas_all = bundle.get("yogas") or []
+    if yogas_all:
+        sum_cards.append((T("Yogas", "योगहरू"), str(len(yogas_all)),
+                          [_esc(y["name"]) for y in yogas_all[:3]]))
+    doshas_all = bundle.get("doshas") or {}
+    dosha_present = []
+    if doshas_all:
+        if doshas_all.get("manglik", {}).get("present"):
+            dosha_present.append(T("Manglik", "मांगलिक"))
+        if doshas_all.get("kaal_sarp", {}).get("present"):
+            dosha_present.append(T("Kaal Sarp", "कालसर्प"))
+        if doshas_all.get("pitra", {}).get("present"):
+            dosha_present.append(T("Pitra Dosha", "पितृ दोष"))
+        if doshas_all.get("sade_sati", {}).get("active"):
+            dosha_present.append(T("Sade Sati (active)", "साढेसाती (सक्रिय)"))
+    sum_cards.append((T("Doshas", "दोषहरू"),
+                      str(len(dosha_present)) if dosha_present else T("none", "छैन"),
+                      dosha_present or [T("No major dosha afflictions detected.", "प्रमुख दोष देखिएन।")]))
+    rep_ch = report.get("chapters", {})
+    pred = bundle.get("predictions", {})
+    for key, title_en, title_ne in (("career", "Career", "पेशा"),
+                                    ("marriage", "Marriage", "विवाह"),
+                                    ("finance", "Wealth", "धन"),
+                                    ("health", "Health", "स्वास्थ्य")):
+        facts = rep_ch.get(key) or pred.get(key) or pred.get(
+            {"marriage": "relationships", "finance": "wealth"}.get(key, key))
+        lines = first_fact(facts, 2)
+        if lines:
+            sum_cards.append((T(title_en, title_ne), "", lines))
+    summary = ["<h2 class='no-break' style='page-break-before:always'>"
+               + T("Your Janma Kundali — Summary", "तपाईंको जन्म कुण्डली — सारांश") + "</h2>"
+               + "<div class='sum-grid'>"]
+    for title, count, lines in sum_cards:
+        summary.append(
+            f"<div class='sum-card'><h3>{_esc(title)}"
+            + (f"<span class='count'>{_esc(count)}</span>" if count else "")
+            + "</h3>" + "".join(f"<p>{_esc(l)[:220]}</p>" for l in lines) + "</div>")
+    summary.append("</div>")
+
     # ------------------------------------------------------------- assemble + TOC
     toc = ["<h2 class='no-break' style='page-break-before:always'>"
            + T("Contents", "विषयसूची") + "</h2><div class='toc'>"]
     for anchor, title in sections:
         toc.append(f"<div><a href='#{anchor}'>{_esc(title)}</a></div>")
     toc.append("</div>")
-    # Insert TOC right after the cover.
+    # Insert TOC + summary right after the cover.
     parts.append("<!--TOC-->")
+    parts.append("<!--SUMMARY-->")
     parts.extend(body)
     parts.append("</body></html>")
     html_text = "".join(parts)
-    return html_text.replace("<!--TOC-->", "".join(toc), 1)
+    html_text = html_text.replace("<!--TOC-->", "".join(toc), 1)
+    return html_text.replace("<!--SUMMARY-->", "".join(summary), 1)
 
 
 def render_pdf(bundle: dict, lang: str = "en") -> bytes:
