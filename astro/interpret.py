@@ -692,9 +692,9 @@ def _ad_interplay(md_lord: str, ad_lord: str, planets: dict,
                      "महादशा स्वामीबाट कठिन भाव (६/८/१२) मा छ, त्यसैले उप-अवधिले महादशाका विषय तन्काउँछ र होसियारी माग्छ"),
         "upachaya": ("stands in a growth house from the Mahadasha lord — results improve steadily through the sub-period",
                      "महादशा स्वामीबाट उपचय भावमा छ — उप-अवधिभरि फल क्रमशः सुध्रँदै जान्छ"),
-    }.get(rel, ("stands in the 2nd/11th from the Mahadasha lord, colouring the sub-period with "
+    }.get(rel, ("stands in the 2nd from the Mahadasha lord, colouring the sub-period with "
                 "questions of resources and gains",
-                "महादशा स्वामीबाट दोस्रो/एघारौँमा छ, जसले उप-अवधिलाई स्रोत र लाभका प्रश्नले रङ्गाउँछ"))
+                "महादशा स्वामीबाट दोस्रोमा छ, जसले उप-अवधिलाई स्रोत र लाभका प्रश्नले रङ्गाउँछ"))
     bits_en = [f"Relative to {md_lord}, {ad_lord} {rel_txt[0]}"]
     bits_ne = [f"{PLANET_NE[md_lord]}को तुलनामा {PLANET_NE[ad_lord]} {rel_txt[1]}"]
     # Mutual aspect?

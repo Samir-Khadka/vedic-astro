@@ -13,6 +13,15 @@ KENDRA = {1, 4, 7, 10}
 TRIKONA = {1, 5, 9}
 
 
+def _ord(n: int) -> str:
+    """English ordinal: 1st, 2nd, 3rd, 4th, ..."""
+    if 10 <= n % 100 <= 20:
+        suffix = "th"
+    else:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suffix}"
+
+
 def _sign(planets: dict, name: str) -> int:
     return planets[name]["sign"]
 
@@ -74,7 +83,7 @@ def detect_yogas(planets: dict, lagna_sign: int) -> list[dict]:
             h1, h2 = keys[i], keys[j]
             p1, p2 = dhana_lords[h1], dhana_lords[h2]
             if p1 == p2:
-                add("Dhana Yoga", f"The same planet ({p1}) rules both the {h1}th and {h2}th houses")
+                add("Dhana Yoga", f"The same planet ({p1}) rules both the {_ord(h1)} and {_ord(h2)} houses")
             elif _conjunct(planets, p1, p2):
                 add("Dhana Yoga", f"{p1} (lord of {h1}) conjoins {p2} (lord of {h2})")
             elif houses_of_lord[h1] == h2 and houses_of_lord[h2] == h1:
@@ -83,14 +92,16 @@ def detect_yogas(planets: dict, lagna_sign: int) -> list[dict]:
     # Raj yoga: kendra lord + trikona lord association.
     kendra_lords = {lords[h] for h in KENDRA}
     trikona_lords = {lords[h] for h in TRIKONA}
+    ruled_houses: dict[str, list[int]] = {}
+    for h, p in lords.items():
+        ruled_houses.setdefault(p, []).append(h)
     for kp in kendra_lords:
         for tp in trikona_lords:
             if kp == tp:
                 continue
             if _conjunct(planets, kp, tp):
                 add("Raj Yoga", f"Kendra lord {kp} conjoins trikona lord {tp}")
-            elif house[kp] == [h for h, p in lords.items() if p == tp][0] and \
-                    house[tp] == [h for h, p in lords.items() if p == kp][0]:
+            elif house[kp] in ruled_houses[tp] and house[tp] in ruled_houses[kp]:
                 add("Raj Yoga", f"Exchange between kendra lord {kp} and trikona lord {tp}")
 
     # Vargottama is per-planet (reported in predictions); not a yoga here.

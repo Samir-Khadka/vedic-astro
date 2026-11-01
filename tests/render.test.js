@@ -134,7 +134,7 @@ function loadApp({ lang = "en", throwOnSave = false, fetchScript = null } = {}) 
   vm.runInContext(fs.readFileSync(path.join(ROOT, "static/coords.js"), "utf8"), sandbox);
   Object.assign(sandbox, sandbox.module.exports);
   const appSrc = fs.readFileSync(path.join(ROOT, "static/app.js"), "utf8") +
-    "\n;globalThis.__harness = { STATE, renderBundle, saveCurrentChart, drawChart, renderMatch, renderPrashna, fetchKundaliWithRetry, isRetryableKundaliError, signColHeader, settlePlaceTz, PLACE_TZ_PENDING, ensureManualTz };";
+    "\n;globalThis.__harness = { STATE, renderBundle, saveCurrentChart, drawChartInto, renderMatch, renderPrashna, fetchKundaliWithRetry, isRetryableKundaliError, signColHeader, settlePlaceTz, PLACE_TZ_PENDING, ensureManualTz };";
   vm.runInContext(appSrc, sandbox);
   // el(id) mirrors document.getElementById (creating the stub on demand);
   // the raw Map only holds ids the app code actually touched.
@@ -149,7 +149,7 @@ function loadBundles() {
   return out;
 }
 
-const SECTION_IDS = ["results-title", "glance-strip", "chart-svg-wrap", "planet-table",
+const SECTION_IDS = ["results-title", "glance-strip", "chart-d1", "chart-d9", "chart-d10", "planet-table",
   "current-dasha", "kp-table", "dosha-cards", "av-table", "prediction-sections",
   "strength-summary", "transit-table", "numerology-body", "lalkitab-body",
   "premium-chapters", "deep-planets", "chalit-table", "argala-table"];
@@ -164,8 +164,10 @@ test("renderBundle renders all real bundles in EN and NE without throwing", () =
       h.renderBundle(); // must not throw
       const title = elements.get("results-title").textContent;
       assert.ok(title.length > 0, `${name}/${lang}: results-title set`);
-      assert.ok(elements.get("chart-svg-wrap").innerHTML.includes("<svg"),
-        `${name}/${lang}: chart SVG rendered`);
+      for (const cid of ["chart-d1", "chart-d9", "chart-d10"]) {
+        assert.ok(elements.get(cid).innerHTML.includes("<svg"),
+          `${name}/${lang}: ${cid} chart SVG rendered`);
+      }
       assert.ok(elements.get("glance-strip").innerHTML.length > 0,
         `${name}/${lang}: glance strip rendered`);
     }
@@ -226,7 +228,7 @@ test("one missing bundle section never kills the whole render", () => {
       assert.equal(coreOk, false, `core correctly reports failure without ${key}`);
     } else {
       assert.equal(coreOk, true, `core still renders without ${key}`);
-      assert.ok(el("chart-svg-wrap").innerHTML.includes("<svg"),
+      assert.ok(el("chart-d1").innerHTML.includes("<svg"),
         `chart still renders without ${key}`);
     }
   }
@@ -241,7 +243,7 @@ test("renderBundle with a corrupted section still renders the rest", () => {
   h.STATE.bundle = bundle;
   h.STATE.birthPayload = { dob: "1998-05-14", tob: "06:30", place_id: "kathmandu" };
   assert.equal(h.renderBundle(), true, "core chart still renders");
-  assert.ok(el("chart-svg-wrap").innerHTML.includes("<svg"));
+  assert.ok(el("chart-d1").innerHTML.includes("<svg"));
   assert.ok(el("glance-strip").innerHTML.length > 0);
   const notes = elements.get("section-notes");
   assert.ok(notes && notes.children.length >= 2,

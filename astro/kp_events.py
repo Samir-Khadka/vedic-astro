@@ -52,10 +52,8 @@ def kp_event_analysis(kp: dict, dasha_tree: dict, transit_signs: dict,
     for key, ev in EVENTS.items():
         fav = set(ev["houses"])
         neg = set(_negating(ev["houses"]))
-        house = ev["houses"][1] if len(ev["houses"]) > 1 else ev["houses"][0]
-        # Primary house: marriage 7, career 10, wealth 2, children 5,
-        # education 4, foreign 12, property 4 — the first listed house
-        # is the significator anchor except career (10) and wealth (2).
+        # Primary house per event: marriage 7, career 10, wealth 2,
+        # children 5, education 4, foreign 12, property 4.
         primary = {"marriage": 7, "career": 10, "wealth": 2, "children": 5,
                    "education": 4, "foreign": 12, "property": 4}[key]
         sub_lord = cusps[primary]["sub_lord"]

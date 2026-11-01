@@ -69,4 +69,5 @@ def relation_between(a_sign: int, b_sign: int) -> str:
         return "dusthana"
     if rel in (3, 11):
         return "upachaya"
-    return "2nd/11th" if rel in (2, 11) else "other"
+    # 11 is an upachaya counted above, so only the 2nd falls through here.
+    return "2nd" if rel == 2 else "other"
