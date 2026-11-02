@@ -49,6 +49,10 @@ _SWE_PLANETS = {
     "Sun": swe.SUN, "Moon": swe.MOON, "Mars": swe.MARS, "Mercury": swe.MERCURY,
     "Jupiter": swe.JUPITER, "Venus": swe.VENUS, "Saturn": swe.SATURN,
 }
+# Rahu = TRUE node (the convention Hamro Patro and Jagannatha Hora print,
+# i.e. what Nepali janma-patris use); Ketu is exactly opposite and is
+# handled explicitly in the single-planet helpers below.
+_SINGLE_IDS = {**_SWE_PLANETS, "Rahu": swe.TRUE_NODE}
 
 
 def to_julian_day(local_dt: datetime) -> float:
@@ -206,8 +210,28 @@ def latitudes(jd: float) -> dict[str, float]:
 
 
 def planet_longitude_at(name: str, jd: float) -> float:
-    """Sidereal longitude of one graha at an arbitrary Julian day."""
-    return planet_longitudes(jd)[name]["longitude"]
+    """Sidereal longitude of one graha at an arbitrary Julian day.
+
+    Single swe.calc_ut — the transit scanners (ingress bisection,
+    solar-return search) call this thousands of times per chart, so
+    the old planet_longitudes()[name] path (nine calc_ut per call)
+    was ~90% of the /api/kundali wall time.
+    """
+    _ensure_ayanamsa()
+    if name == "Ketu":
+        res, _ret = swe.calc_ut(jd, swe.TRUE_NODE, _FLAGS)
+        return (res[0] + 180.0) % 360.0
+    res, _ret = swe.calc_ut(jd, _SINGLE_IDS[name], _FLAGS)
+    return res[0] % 360.0
+
+
+def planet_sign_at(name: str, jd: float) -> int:
+    """Sidereal sign index (0..11) of one graha at Julian day `jd`.
+
+    Single-planet fast path with the same sign_of() semantics as
+    planet_longitudes()[name]["sign"].
+    """
+    return sign_of(planet_longitude_at(name, jd))
 
 
 def jd_to_utc_datetime(jd: float) -> datetime:

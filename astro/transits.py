@@ -21,7 +21,10 @@ INGRESS_PLANETS = ["Saturn", "Jupiter", "Rahu", "Ketu", "Mars", "Sun"]
 
 
 def _sign_at(planet: str, jd: float) -> int:
-    return ephemeris.planet_longitudes(jd)[planet]["sign"]
+    # Single-planet fast path: the scanners below call this ~8k times per
+    # chart, and the old planet_longitudes() route spent nine swe.calc_ut
+    # per call (~90% of /api/kundali wall time).
+    return ephemeris.planet_sign_at(planet, jd)
 
 
 def _jd_to_date(jd: float) -> str:

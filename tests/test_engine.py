@@ -187,3 +187,36 @@ def test_sunrise_sunset_kathmandu_sane():
     assert str(rise.tzinfo) == "Asia/Kathmandu"
     assert rise < set_
     assert 5 <= rise.hour <= 8 and 16 <= set_.hour <= 19
+
+
+def test_single_planet_helpers_match_full_chart():
+    """perf: planet_sign_at/planet_longitude_at must agree exactly with the
+    nine-planet planet_longitudes() path they replace in the scanners."""
+    base = ephemeris.to_julian_day(datetime(1995, 6, 15, 5, 0))
+    names = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus",
+             "Saturn", "Rahu", "Ketu"]
+    for i in range(12):
+        jd = base + i * 37.7
+        full = ephemeris.planet_longitudes(jd)
+        for n in names:
+            assert ephemeris.planet_sign_at(n, jd) == full[n]["sign"], (n, jd)
+            assert ephemeris.planet_longitude_at(n, jd) == full[n]["longitude"], (n, jd)
+
+
+def test_transit_scanners_pinned_dates():
+    """perf regression: the single-calc_ut scanner path must produce the
+    same ingress dates as the verified nine-planet path (Saturn's real
+    2027 Aries ingress with its retrograde dip back to Pisces, plus a
+    Rahu ingress)."""
+    from astro import transits
+    jd = ephemeris.to_julian_day(datetime(2026, 11, 2, 0, 0))
+    assert transits.next_ingress("Saturn", jd)["date"] == "2027-06-02"
+    assert transits.next_ingress("Rahu", jd)["date"] == "2026-11-25"
+    chain = transits.ingress_chain("Saturn", jd, jd + 5 * 365.25)
+    got = [(c["date"], c["from_sign"], c["to_sign"]) for c in chain]
+    assert got[:4] == [
+        ("2027-06-02", 11, 0),
+        ("2027-10-20", 0, 11),
+        ("2028-02-23", 11, 0),
+        ("2029-08-08", 0, 1),
+    ]
