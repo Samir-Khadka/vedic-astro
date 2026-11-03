@@ -31,6 +31,41 @@ def _jd_to_date(jd: float) -> str:
     return ephemeris.jd_to_date_str(jd)
 
 
+# Bisection tolerance for ingress moments. The old 0.002-day window let
+# the reported JD sit up to ~3 minutes past the true ingress, so two
+# scanners walking different cursor paths could date the same ingress
+# on different UTC days when it fell near midnight (e.g. Saturn's
+# 2027-06-02 Aries ingress at 23:58 UTC). At 1e-6 days every path
+# converges to the same moment and the dates agree.
+_BISECT_TOL = 1e-6
+
+
+def _bisect_ingress(planet: str, lo: float, hi: float, start_sign: int,
+                    forward: bool) -> float:
+    """Canonical ingress moment inside the bracket [lo, hi].
+
+    The bracket holds exactly one sign change: sign(lo) == start_sign
+    and sign(hi) != start_sign when scanning forward (reversed when
+    scanning back). Returns the bracket midpoint, so every caller
+    converges to the same JD for the same ingress.
+    """
+    for _ in range(64):
+        mid = (lo + hi) / 2.0
+        past = _sign_at(planet, mid) != start_sign
+        if past:
+            if forward:
+                hi = mid
+            else:
+                lo = mid
+        elif forward:
+            lo = mid
+        else:
+            hi = mid
+        if hi - lo < _BISECT_TOL:
+            break
+    return (lo + hi) / 2.0
+
+
 def next_ingress(planet: str, jd_from: float, max_days: float = 900.0) -> dict:
     """Next moment after `jd_from` at which `planet` changes sign."""
     start_sign = _sign_at(planet, jd_from)
@@ -43,19 +78,12 @@ def next_ingress(planet: str, jd_from: float, max_days: float = 900.0) -> dict:
         if hi - jd_from > max_days:
             raise ValueError(f"no ingress found for {planet}")
     # Bisect: sign at lo == start_sign, sign at hi != start_sign.
-    for _ in range(48):
-        mid = (lo + hi) / 2.0
-        if _sign_at(planet, mid) == start_sign:
-            lo = mid
-        else:
-            hi = mid
-        if hi - lo < 0.002:
-            break
+    jd_ing = _bisect_ingress(planet, lo, hi, start_sign, forward=True)
     return {
         "planet": planet,
         "from_sign": start_sign,
-        "to_sign": _sign_at(planet, hi),
-        "date": _jd_to_date(hi),
+        "to_sign": _sign_at(planet, jd_ing + 0.01),
+        "date": _jd_to_date(jd_ing),
     }
 
 
@@ -72,20 +100,13 @@ def prev_ingress(planet: str, jd_from: float, max_days: float = 1200.0) -> dict:
         if jd_from - lo > max_days:
             raise ValueError(f"no previous ingress found for {planet}")
     # Bisect: sign at lo != start_sign, sign at hi == start_sign.
-    for _ in range(48):
-        mid = (lo + hi) / 2.0
-        if _sign_at(planet, mid) == start_sign:
-            hi = mid
-        else:
-            lo = mid
-        if hi - lo < 0.002:
-            break
+    jd_ing = _bisect_ingress(planet, lo, hi, start_sign, forward=False)
     return {
         "planet": planet,
-        "from_sign": _sign_at(planet, lo),
+        "from_sign": _sign_at(planet, jd_ing - 0.01),
         "to_sign": start_sign,
-        "date": _jd_to_date(hi),
-        "jd": hi,
+        "date": _jd_to_date(jd_ing),
+        "jd": jd_ing,
     }
 
 
@@ -100,15 +121,7 @@ def ingress_jd(planet: str, jd_from: float) -> float:
         hi += step
         if hi - jd_from > 4000:
             raise ValueError(f"no ingress found for {planet}")
-    for _ in range(48):
-        mid = (lo + hi) / 2.0
-        if _sign_at(planet, mid) == start_sign:
-            lo = mid
-        else:
-            hi = mid
-        if hi - lo < 0.002:
-            break
-    return hi
+    return _bisect_ingress(planet, lo, hi, start_sign, forward=True)
 
 
 def ingress_chain(planet: str, jd_from: float, jd_to: float) -> list[dict]:
@@ -136,44 +149,55 @@ def saturn_moon_span(moon_sign: int, jd_now: float) -> dict | None:
     will enter moon-1, moon, moon+1 and moon+2.
 
     Computed only when Saturn is in the span or one sign before it;
-    otherwise None. Retrograde re-entries are resolved to the FIRST
-    entry into moon-1 and the FINAL exit into moon+2 going forward
-    from now for future boundaries — patros print the span this way.
+    otherwise None. Retrograde dips are resolved the way patros print
+    the span: past boundaries are the FIRST entries (the backward walk
+    keeps overwriting, so an entry left and re-entered during a dip
+    resolves to its earliest date), and the span END is the FINAL entry
+    into moon+2 (the forward walk continues until Saturn has moved on
+    to moon+3, updating on every re-entry).
     """
     cur = _sign_at("Saturn", jd_now)
     rel = (cur - moon_sign) % 12
     if rel not in (10, 11, 0, 1):
         return None
-    targets = [(moon_sign - 1) % 12, moon_sign, (moon_sign + 1) % 12, (moon_sign + 2) % 12]
+    rising = (moon_sign - 1) % 12
+    peak = moon_sign
+    setting = (moon_sign + 1) % 12
+    end_target = (moon_sign + 2) % 12
+    beyond = (moon_sign + 3) % 12
+    targets = (rising, peak, setting, end_target)
     found: dict[int, float] = {}
-    # Backwards: entry dates for targets at or before now.
+    # Backwards: entry dates for targets at or before now. Overwriting
+    # as we walk back resolves retrograde re-entries to the FIRST entry.
     back_jd = jd_now
-    for _ in range(6):
-        if all(t in found for t in targets):
-            break
+    for _ in range(12):
         ing = prev_ingress("Saturn", back_jd)
-        if ing["to_sign"] in targets and ing["to_sign"] not in found:
+        if ing["to_sign"] in targets:
             found[ing["to_sign"]] = ing["jd"]
         back_jd = ing["jd"] - 1.0
         if jd_now - back_jd > 3650:
             break
-    # Forwards: entry dates for the targets still ahead.
+    # Forwards: first future entries into the rising/peak/setting signs;
+    # the END keeps updating until Saturn has moved past the span.
     fwd_jd = jd_now
-    for _ in range(8):
-        if all(t in found for t in targets):
+    past_end = False
+    for _ in range(16):
+        if all(t in found for t in targets) and past_end:
             break
         njd = ingress_jd("Saturn", fwd_jd)
         nsign = _sign_at("Saturn", njd + 0.01)
-        if nsign in targets and nsign not in found:
+        if nsign == end_target or (nsign in targets and nsign not in found):
             found[nsign] = njd
+        if nsign == beyond and end_target in found:
+            past_end = True
         fwd_jd = njd + 1.0
     if not all(t in found for t in targets):
         return None
     return {
-        "start": _jd_to_date(found[targets[0]]),         # Saturn enters moon-1
-        "peak_start": _jd_to_date(found[targets[1]]),    # enters the Moon sign
-        "setting_start": _jd_to_date(found[targets[2]]),  # enters moon+1
-        "end": _jd_to_date(found[targets[3]]),           # enters moon+2: over
+        "start": _jd_to_date(found[rising]),         # Saturn enters moon-1
+        "peak_start": _jd_to_date(found[peak]),      # enters the Moon sign
+        "setting_start": _jd_to_date(found[setting]),  # enters moon+1
+        "end": _jd_to_date(found[end_target]),       # enters moon+2: over
     }
 
 

@@ -220,3 +220,31 @@ def test_transit_scanners_pinned_dates():
         ("2028-02-23", 11, 0),
         ("2029-08-08", 0, 1),
     ]
+
+
+def test_saturn_moon_span_retrograde_dip_boundaries():
+    """saturn_moon_span must follow the patro span convention — past
+    boundaries are the FIRST entries, the end is the FINAL exit —
+    even when Saturn retrogrades across a span boundary.
+
+    Real case: Moon in Pisces, 2024-01-01. Saturn first entered
+    Aquarius (moon-1) on 2022-04-29, dipped back to Capricorn, and
+    re-entered on 2023-01-17; it will enter Taurus (moon+2) on
+    2029-08-08, dip back to Aries, and finally exit on 2030-04-17.
+    sade_sati_lifetime already implements this; the span must agree."""
+    from astro import transits
+    jd = ephemeris.to_julian_day(datetime(2024, 1, 1, 0, 0))
+    span = transits.saturn_moon_span(11, jd)
+    assert span is not None
+    assert span["start"] == "2022-04-29"       # first entry, not the 2023 re-entry
+    assert span["peak_start"] == "2025-03-29"
+    assert span["setting_start"] == "2027-06-02"
+    assert span["end"] == "2030-04-17"         # final exit, not the 2029 first entry
+    # Agreement with the lifetime periods on a dip-free chart too.
+    jd2 = ephemeris.to_julian_day(datetime(2026, 6, 1, 0, 0))
+    span2 = transits.saturn_moon_span(0, jd2)  # Moon Aries; Saturn in Pisces
+    assert span2 is not None
+    lt = transits.sade_sati_lifetime(0, jd2 - 40 * 365.25, jd2)
+    cur = next(p for p in lt["periods"] if p["status"] == "current")
+    for key in ("start", "peak_start", "setting_start", "end"):
+        assert span2[key] == cur[key], (key, span2[key], cur[key])

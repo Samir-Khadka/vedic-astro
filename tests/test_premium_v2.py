@@ -198,19 +198,21 @@ def test_deep_report_language_parity():
 # ---------------------------------------------------------------------------
 def test_sade_sati_span_dates_golden():
     # Sample Moon is Scorpio (7). At 2013-01-15 Saturn is in Libra:
-    # documented sidereal ingresses — into Libra 2012-08-04, into
-    # Scorpio 2014-11-02, into Sagittarius 2017-01-26, into Capricorn
+    # documented sidereal ingresses — into Libra 2011-11-15 (the FIRST
+    # entry; Saturn dipped back to Virgo and re-entered 2012-08-04, so
+    # the patro span starts at the first entry), into Scorpio
+    # 2014-11-02, into Sagittarius 2017-01-26, into Capricorn
     # 2020-01-24 (the end of the span).
     from astro import ephemeris
     jd = ephemeris.to_julian_day(datetime(2013, 1, 15, 12, 0, tzinfo=ZoneInfo("Asia/Kathmandu")))
     span = transits.saturn_moon_span(7, jd)
-    assert span == {"start": "2012-08-04", "peak_start": "2014-11-02",
+    assert span == {"start": "2011-11-15", "peak_start": "2014-11-02",
                     "setting_start": "2017-01-26", "end": "2020-01-24"}
     b = engine.compute_kundali(SAMPLE, now=datetime(2013, 1, 15, 12, 0,
                                                     tzinfo=ZoneInfo("Asia/Kathmandu")))
     detail = b["deep_report"]["transit_phala"]["sade_sati_detail"]
     assert detail is not None
-    assert "2012-08-04" in detail["en"] and "2020-01-24" in detail["en"]
+    assert "2011-11-15" in detail["en"] and "2020-01-24" in detail["en"]
 
 
 def test_double_transit_activation():
