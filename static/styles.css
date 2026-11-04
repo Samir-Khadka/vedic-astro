@@ -796,6 +796,14 @@ html[lang="ne"] .strip-item .k, html[lang="ne"] .lucky-item .k { letter-spacing:
 .cr-toc { columns: 2; column-gap: 32px; margin: 8px 0 0; padding-left: 22px; }
 .cr-toc li { margin: 3px 0; break-inside: avoid; }
 .cr-toc a { color: var(--violet); }
+.cr-model-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-width: 0; }
+.cr-model-row label { font-weight: 600; }
+.cr-model-row select { min-width: 0; max-width: 100%; }
+/* Book model: larger readable type on screen, and a centred cover-style
+   title page; print rules keep each section whole on the page. */
+#complete-report.cr-model-book .cr-section { font-size: 1.12rem; line-height: 1.75; }
+#complete-report.cr-model-book #cr-title .cr-title-block { text-align: center; }
+#complete-report.cr-model-book #cr-title .cr-person { font-size: 1.7rem; }
 .cr-section { min-width: 0; scroll-margin-top: 12px; }
 .cr-section h3 { margin-top: 0; }
 .cr-subhead { margin: 18px 0 6px; color: var(--violet); }
@@ -830,6 +838,10 @@ html[lang="ne"] .strip-item .k, html[lang="ne"] .lucky-item .k { letter-spacing:
   body.printing-report main > section:not(#complete-report) { display: none !important; }
   body.printing-report #complete-report { display: block !important; }
   body.printing-report #complete-report-print-btn { display: none !important; }
+  body.printing-report .cr-model-row { display: none !important; }
   body.printing-report .cr-section, body.printing-report .cr-card { break-inside: avoid; box-shadow: none !important; background: #fff !important; }
+  body.printing-report #complete-report.cr-model-book .cr-section { break-inside: avoid; page-break-inside: avoid; }
+  body.printing-report #complete-report.cr-model-book .cr-section h3,
+  body.printing-report #complete-report.cr-model-book .cr-section h4 { break-after: avoid; page-break-after: avoid; }
   body.printing-report .table-scroll { overflow: visible; }
 }
