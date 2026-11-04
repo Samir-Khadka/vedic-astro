@@ -720,6 +720,25 @@ html[lang="ne"] .strip-item .k, html[lang="ne"] .lucky-item .k { letter-spacing:
 .cal-planet-table td { padding: 3px 14px 3px 0; font-size: 14px; }
 .cal-planet-table td:first-child { font-weight: 700; }
 .cal-marker { display: inline-block; background: rgba(201,162,39,.22); color: #7a5b00; border-radius: 20px; padding: 0 6px; margin: 2px 2px 0 0; font-size: 11px; }
+/* Modern + traditional combined (calendar area only): warm ivory
+   paper cells with antique gold borders; festival badges violet,
+   public-holiday badges deep red with white text (patro readers
+   expect holidays to stand out); generous rounded cards, clear
+   hierarchy, hover + selected states. Badges wrap inside the cell
+   at every width, including 360px. */
+.cal-grid { background: rgba(253, 248, 236, .55); border: 1px solid rgba(201,162,39,.35); border-radius: 16px; padding: 10px; }
+.cal-cell { background: #fdf8ec; border: 1px solid rgba(201,162,39,.45); border-radius: 12px; box-shadow: 0 1px 2px rgba(60, 40, 0, .06); }
+.cal-cell:hover { border-color: var(--gold); box-shadow: 0 3px 10px rgba(201,162,39,.25); }
+.cal-cell.cal-selected { border: 2px solid var(--violet); box-shadow: 0 0 0 2px rgba(124,58,237,.2); }
+.cal-fest-wrap { display: block; margin-top: 4px; overflow-wrap: anywhere; }
+.cal-festival { display: inline-block; background: rgba(124,58,237,.16); color: #4c1d95; border: 1px solid rgba(124,58,237,.35); border-radius: 20px; padding: 0 6px; margin: 2px 2px 0 0; font-size: 11px; font-weight: 600; }
+.cal-holiday { display: inline-block; background: #a31621; color: #fff; border: 1px solid #7d1019; border-radius: 20px; padding: 0 6px; margin: 2px 2px 0 0; font-size: 11px; font-weight: 700; }
+.cal-legend { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; padding: 10px 12px; background: #fdf8ec; border: 1px solid rgba(201,162,39,.45); border-radius: 12px; }
+.cal-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
+.cal-legend .cal-marker, .cal-legend .cal-festival, .cal-legend .cal-holiday { margin: 0; }
+.cal-detail { background: #fdf8ec; border: 1px solid rgba(201,162,39,.5); }
+.cal-fest-row { margin: 6px 0; }
+.cal-holiday-flag { display: inline-block; background: #a31621; color: #fff; border-radius: 20px; padding: 0 7px; font-size: 11px; font-weight: 700; white-space: nowrap; }
 .saved-row { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(124,58,237,.12); }
 .saved-row span { flex: 1; }
 .sud-svg { width: 100%; max-width: 420px; display: block; margin: 12px auto; }
@@ -728,7 +747,7 @@ html[lang="ne"] .strip-item .k, html[lang="ne"] .lucky-item .k { letter-spacing:
 .sub-title { margin-top: 22px; }
 .cal-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 @media (max-width: 880px) { .bs-fields { grid-template-columns: 1fr; } }
-@media (max-width: 880px) { .cal-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; } .cal-cell { padding: 5px 3px; } .cal-cell .cal-day-num { font-size: 19px; } .cal-counter { font-size: 10px; } .cal-limb { font-size: 9px; line-height: 1.3; } .cal-marker { font-size: 9px; padding: 0 3px; } .cal-today-label { font-size: 8px; padding: 0 3px; } .cal-weekday { font-size: 11px; } .cal-title { font-size: 18px; } }
+@media (max-width: 880px) { .cal-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; padding: 4px; } .cal-cell { padding: 5px 3px; } .cal-cell .cal-day-num { font-size: 19px; } .cal-counter { font-size: 10px; } .cal-limb { font-size: 9px; line-height: 1.3; } .cal-marker { font-size: 9px; padding: 0 3px; } .cal-festival, .cal-holiday { font-size: 9px; padding: 0 3px; } .cal-today-label { font-size: 8px; padding: 0 3px; } .cal-weekday { font-size: 11px; } .cal-title { font-size: 18px; } .cal-legend { padding: 6px 8px; gap: 6px; } .cal-legend-item { font-size: 10px; } }
 
 /* ============ Floating 3D book showcase ============ */
 .book-showcase { display: flex; gap: 34px; align-items: center; justify-content: center; flex-wrap: wrap; padding: 30px 0 10px; }

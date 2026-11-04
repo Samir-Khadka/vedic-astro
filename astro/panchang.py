@@ -198,9 +198,11 @@ def month_panchang(year: int, month: int, lat: float, lon: float, tz_name: str) 
 
     Markers are computed, not looked up: Ekadashi (tithi 11/26),
     Purnima (15), Amavasya (30), and Sankranti (the Sun's sign
-    changes vs the previous day). Festival dates that depend on
-    regional calendars (Dashain, Tihar, etc.) are NOT guessed here —
-    only these astronomical markers are shown.
+    changes vs the previous day). Nepali festivals and public
+    holidays are NOT in these markers — they are added as a
+    separate additive `festivals` list per day by
+    astro.festivals.attach_festivals (called from main.py), so
+    this function's shape stays unchanged.
     """
     from datetime import timedelta
 

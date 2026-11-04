@@ -26,7 +26,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
-from astro import bs_calendar as bs_calendar_module, engine, geocode, life_questions as life_questions_module, panchang as panchang_module, pdf as pdf_module, places as places_module, prashna as prashna_module
+from astro import bs_calendar as bs_calendar_module, engine, festivals as festivals_module, geocode, life_questions as life_questions_module, panchang as panchang_module, pdf as pdf_module, places as places_module, prashna as prashna_module
 
 BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
@@ -465,6 +465,11 @@ def panchang_detail(
         raise HTTPException(status_code=400, detail=str(e))
     result = panchang_module.day_detail(day, place["lat"], place["lon"], place["tz"])
     result["place"] = place
+    # Additive: festivals/holidays for this day (computed from the
+    # same sunrise tithi + lunar-cycle rule as the month grids).
+    result["festivals"] = festivals_module.festivals_for_day(
+        day, place["lat"], place["lon"], place["tz"],
+        sunrise_tithi=result["tithi_index"], sun_sign=result["sun_sign"])
     return result
 
 
@@ -565,6 +570,11 @@ def panchang_month(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     result["place"] = place
+    # Additive: a `festivals` list per day (month_panchang's own
+    # shape is untouched); computed from the already-computed
+    # per-day tithi/sun-sign, plus a short lookback for rules that
+    # depend on neighbouring days.
+    festivals_module.attach_festivals(result["days"], place["lat"], place["lon"], place["tz"])
     return result
 
 
@@ -622,7 +632,8 @@ def bs_month(
             "sun_sign": sun_sign, "markers": markers,
         })
     return {"bs_year": bs_year, "bs_month": bs_month, "month_length": month_length,
-            "place": place, "days": days}
+            "place": place, "days": festivals_module.attach_festivals(
+                days, place["lat"], place["lon"], place["tz"])}
 
 
 @app.get("/api/bs-month-length")
