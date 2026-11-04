@@ -100,7 +100,7 @@ const I18N = {
     err_incomplete:"The chart data came back incomplete, so the chart itself could not be drawn. Please try again.",
     chart_caption_d1:"Rashi chart (D1) — Nepali janma-patri style", chart_caption_d9:"Navamsa chart (D9)", chart_caption_d10:"Dashamsa chart (D10)",
     chart_caption_pair:"Lagna (D1) + Navamsa (D9) — the traditional kundali pair; D10 below for career",
-    chart_lagna:"Lagna", chart_navamsa:"Navamsa", chart_d1_sub:"Rashi · D1", chart_d9_sub:"D9 · strength of planets",
+    chart_lagna:"Lagna", chart_navamsa:"Navamsa", chart_d1_sub:"Rashi · D1", chart_d9_sub:"D9 · strength of planets", chart_dashamsa:"Dashamsa", chart_d10_sub:"D10 · career chart",
     varga_more:"More vargas — Dashamsa (D10), career chart", birth_panchang_title:"Panchang at birth", vara:"Weekday",
     glance_lagna:"Lagna (Ascendant)", glance_moon:"Moon sign", glance_sun:"Sun sign", glance_lagna_lord:"Lagna lord", pada_word:"Pada",
     sarva:"Sarvashtakavarga",
@@ -314,7 +314,7 @@ const I18N = {
     err_incomplete:"कुण्डली डाटा अपूर्ण आयो, त्यसैले चार्ट कोर्न सकिएन। फेरि प्रयास गर्नुहोस्।",
     chart_caption_d1:"राशि कुण्डली (D1) — नेपाली जन्मपत्री शैली", chart_caption_d9:"नवांश कुण्डली (D9)", chart_caption_d10:"दशमांश कुण्डली (D10)",
     chart_caption_pair:"लग्न (D1) + नवांश (D9) — परम्परागत कुण्डली जोडी; करियरका लागि D10 तल",
-    chart_lagna:"लग्न", chart_navamsa:"नवांश", chart_d1_sub:"राशि · D1", chart_d9_sub:"D9 · ग्रह बल",
+    chart_lagna:"लग्न", chart_navamsa:"नवांश", chart_d1_sub:"राशि · D1", chart_d9_sub:"D9 · ग्रह बल", chart_dashamsa:"दशांश", chart_d10_sub:"D10 · करियर कुण्डली",
     varga_more:"थप वर्गहरू — दशमांश (D10), करियर कुण्डली", birth_panchang_title:"जन्म पञ्चाङ्ग", vara:"वार",
     glance_lagna:"लग्न", glance_moon:"चन्द्र राशि", glance_sun:"सूर्य राशि", glance_lagna_lord:"लग्न स्वामी", pada_word:"पद",
     sarva:"सर्वाष्टकवर्ग",
@@ -953,12 +953,17 @@ function diamondSVG(chartMap, opts) {
     });
   });
   if (patra) {
-    /* Double red outer border + Om emblem in a red circle at the centre,
-       as in the printed patri. */
+    /* Double red outer border + Ganesha emblem in a red circle at the
+       centre, as in the printed patri (the emblem image is clipped to
+       the circle; the Om text underneath is only a fallback if the
+       image fails to load). */
+    const clipId = `ganesha-clip-${opts.captionShort || "D1"}`;
+    svg += `<defs><clipPath id="${clipId}"><circle cx="200" cy="200" r="52"/></clipPath></defs>`;
     svg += `<rect class="patra-border" x="2" y="2" width="396" height="396"/>`;
     svg += `<rect class="patra-border-inner" x="8" y="8" width="384" height="384"/>`;
     svg += `<circle class="patra-om-circle" cx="200" cy="200" r="52"/>`;
     svg += `<text class="patra-om" x="200" y="216">ॐ</text>`;
+    svg += `<image href="/static/ganesha-emblem.png" x="142" y="142" width="116" height="116" clip-path="url(#${clipId})" preserveAspectRatio="xMidYMid meet"/>`;
   } else if (opts.captionShort) {
     /* The centre of a North-Indian chart is traditionally left for the
        chart's identity — label it (D1/D9/D10) instead of leaving a blank
@@ -1039,12 +1044,36 @@ function drawChartInto(el, chartMap, varga) {
 
 /* Traditional kundali view: Lagna (D1) + Navamsa (D9) side by side,
    Dashamsa (D10) one tap below — the layout the popular kundali sites use. */
+/* Traditional chart titles for the patri style, as printed above the
+   reference charts: Rashi (Lagna Kundali), Navamsa (Dharma Varga),
+   Dashamsa (Karma Varga). Other styles keep the plain Lagna/Navamsa/
+   Dashamsa headings (restored from the saved originals). */
+const PATRA_TITLES = ["राशि चार्ट (लग्न कुण्डली)", "नवांश चार्ट (धर्म वर्ग)", "दशांश चार्ट (कर्म वर्ग)"];
 function renderChartPair() {
   const b = STATE.bundle;
   if (!b) return;
   drawChartInto(document.getElementById("chart-d1"), b.charts["D1"], "D1");
   drawChartInto(document.getElementById("chart-d9"), b.charts["D9"], "D9");
   drawChartInto(document.getElementById("chart-d10"), b.charts["D10"], "D10");
+  document.querySelectorAll(".chart-one .chart-name").forEach((h, i) => {
+    const main = h.querySelector("span:first-child");
+    const sub = h.querySelector(".chart-sub");
+    if (!main) return;
+    if (STATE.chartStyle === "nepali" && PATRA_TITLES[i]) {
+      if (main.dataset.orig === undefined) {
+        main.dataset.orig = main.textContent;
+        if (sub) sub.dataset.orig = sub.textContent;
+      }
+      main.textContent = PATRA_TITLES[i];
+      if (sub) sub.textContent = "";
+    } else if (main.dataset.orig !== undefined && PATRA_TITLES.includes(main.textContent)) {
+      /* Leaving the patri style: restore the plain heading. (When the
+         language changes, applyLang rewrites these spans itself, so the
+         saved original is only used to undo a patri title.) */
+      main.textContent = main.dataset.orig;
+      if (sub) sub.textContent = sub.dataset.orig || "";
+    }
+  });
   const cap = document.getElementById("chart-caption");
   cap.textContent = STATE.chartStyle === "south" ? t("chart_caption_south") : t("chart_caption_pair");
 }
