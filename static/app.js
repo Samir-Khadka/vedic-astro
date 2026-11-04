@@ -872,11 +872,10 @@ document.getElementById("birth-form").addEventListener("submit", async (ev) => {
 
 /* ---------------- Kundali charts (SVG) -------------------------------
    Three styles, one geometry family tree:
-   * "nepali" (default) — the authentic Nepali janma-patri presentation:
-     North-Indian fixed-house diamond, Lagna top-centre, houses counted
-     counterclockwise, sign name + number in every cell, and each planet
-     written WITH its degree-in-sign, the way Nepali apps (Mero Jyotish)
-     and printed patris show it.
+   * "nepali" (default) — the traditional printed janma-patri: red
+     double border, sign numbers in Devanagari at the house corners,
+     full planet names (सूर्य, चन्द्र, मंगल…) with no degrees, and an
+     Om emblem in a red circle at the centre.
    * "north" — the same diamond, compact software style (abbreviations
      only, no degrees).
    * "south" — South-Indian fixed-sign square grid: signs never move,
@@ -904,11 +903,20 @@ const ABBR_NE = { Sun: "सू", Moon: "चं", Mars: "मं", Mercury: "ब�
 const SIGN_ANCHORS = ["middle", "start", "start", "start", "start", "start",
                       "middle", "end", "end", "end", "end", "end"];
 
+/* Full planet names for the traditional patri chart (the screenshot
+   style: सूर्य, चन्द्र, मंगल… — never abbreviations). */
+const PLANET_FULL_NE = { Sun: "सूर्य", Moon: "चन्द्र", Mars: "मंगल", Mercury: "बुध", Jupiter: "गुरु", Venus: "शुक्र", Saturn: "शनि", Rahu: "राहु", Ketu: "केतु" };
+
 /* opts: {degrees: {body: degreeInSign}, lagnaDegree, retro: Set, style} */
 function diamondSVG(chartMap, opts) {
   const lagnaSign = chartMap["Lagna"];
-  const withDeg = opts.style === "nepali";
-  let svg = `<svg class="kundali-svg${withDeg ? " nepali" : ""}" viewBox="0 0 400 400" role="img" aria-label="Kundali chart">`;
+  /* "nepali" is the traditional patri style from the reference chart:
+     red double border, Devanagari (in Nepali mode) sign numbers at the
+     house corners, full planet names with no degrees, and an Om emblem
+     in a red circle at the centre — the way a printed Nepali janma-patri
+     looks. The compact "north" style keeps abbreviations + degrees. */
+  const patra = opts.style === "nepali";
+  let svg = `<svg class="kundali-svg${patra ? " nepali patra" : ""}" viewBox="0 0 400 400" role="img" aria-label="Kundali chart">`;
   HOUSE_REGIONS.forEach((region, idx) => {
     const house = idx + 1;
     const sign = (lagnaSign + house - 1) % 12;
@@ -916,26 +924,47 @@ function diamondSVG(chartMap, opts) {
     const isLagna = house === 1;
     svg += `<polygon class="house-poly${isLagna ? " lagna-house" : ""}" points="${region.poly}"/>`;
     const anchor = SIGN_ANCHORS[idx];
-    svg += `<text class="sign-name" style="text-anchor:${anchor}" x="${region.sign[0]}" y="${region.sign[1]}">${signName(sign)}</text>`;
-    svg += `<text class="sign-num" style="text-anchor:${anchor}" x="${region.sign[0]}" y="${region.sign[1] + 12}">${locNum(sign + 1)}</text>`;
-    if (isLagna) {
-      const degTxt = withDeg && opts.lagnaDegree != null ? " " + locNum(Math.floor(opts.lagnaDegree)) + "°" : "";
-      svg += `<text class="lagna-txt" x="${region.label[0]}" y="${region.label[1] - 16}">${LANG === "ne" ? "लग्न" : "Lagna"}${degTxt}</text>`;
+    if (patra) {
+      /* Sign number only, at the house corner, like the printed patri. */
+      svg += `<text class="sign-num-patra" style="text-anchor:${anchor}" x="${region.sign[0]}" y="${region.sign[1]}">${locNum(sign + 1)}</text>`;
+    } else {
+      svg += `<text class="sign-name" style="text-anchor:${anchor}" x="${region.sign[0]}" y="${region.sign[1]}">${signName(sign)}</text>`;
+      svg += `<text class="sign-num" style="text-anchor:${anchor}" x="${region.sign[0]}" y="${region.sign[1] + 12}">${locNum(sign + 1)}</text>`;
+    }
+    if (isLagna && !patra) {
+      svg += `<text class="lagna-txt" x="${region.label[0]}" y="${region.label[1] - 16}">${LANG === "ne" ? "लग्न" : "Lagna"}</text>`;
     }
     const labelOf = (b) => {
+      if (patra) return LANG === "ne" ? PLANET_FULL_NE[b] : b;
+      /* Degrees live in the planetary table; the chart itself stays
+         clean in both styles, as in the printed patri. */
       let s = (LANG === "ne" ? ABBR_NE[b] : ABBR[b]);
       if (opts.retro && opts.retro.has(b)) s += "ᴿ";
-      if (withDeg && opts.degrees && opts.degrees[b] != null) s += " " + locNum(Math.floor(opts.degrees[b])) + "°";
       return s;
     };
     const labels = bodies.map(labelOf);
-    const perLine = withDeg ? 2 : 3;
+    /* Patri houses hold at most three full names; wrap one per line so
+       long Devanagari names never collide. */
+    const perLine = patra ? 1 : 3;
     const lines = [];
     for (let i = 0; i < labels.length; i += perLine) lines.push(labels.slice(i, i + perLine).join(" "));
     lines.forEach((line, li) => {
-      svg += `<text class="planet-txt" x="${region.label[0]}" y="${region.label[1] + li * 15}">${line}</text>`;
+      svg += `<text class="planet-txt${patra ? " patra-planet" : ""}" x="${region.label[0]}" y="${region.label[1] + li * 17}">${line}</text>`;
     });
   });
+  if (patra) {
+    /* Double red outer border + Om emblem in a red circle at the centre,
+       as in the printed patri. */
+    svg += `<rect class="patra-border" x="2" y="2" width="396" height="396"/>`;
+    svg += `<rect class="patra-border-inner" x="8" y="8" width="384" height="384"/>`;
+    svg += `<circle class="patra-om-circle" cx="200" cy="200" r="52"/>`;
+    svg += `<text class="patra-om" x="200" y="216">ॐ</text>`;
+  } else if (opts.captionShort) {
+    /* The centre of a North-Indian chart is traditionally left for the
+       chart's identity — label it (D1/D9/D10) instead of leaving a blank
+       hole in the middle of the kundali. */
+    svg += `<text class="centre-txt" x="200" y="206">${opts.captionShort}</text>`;
+  }
   svg += "</svg>";
   return svg;
 }
