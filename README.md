@@ -32,7 +32,8 @@ Kundali matching, daily panchang and PDF export. Fully bilingual:
   Muntha, year lord) for 3 years, remedies (life/lucky/fortune gemstones,
   Rudraksha, beej mantra, dosha remedies) and lucky attributes.
 - **PDF export** — the full premium report as a downloadable PDF
-  (WeasyPrint; reportlab fallback).
+  (WeasyPrint; fpdf2 + vendored Noto Sans Devanagari fallback, so the
+  PDF stays in Nepali or English even without Pango).
 - **Mobile & installable** — layouts are verified at 360 px width (no
   sideways scrolling; tables scroll inside their own wrappers), the
   section nav stays reachable on phones, and a manifest + service
@@ -52,7 +53,10 @@ Kundali matching, daily panchang and PDF export. Fully bilingual:
   first ploughing. Each day shows Choghadiya, Hora, Rahu Kaal, Abhijit
   and a per-factor score with reasons (see "How Muhurta scoring works"
   below), plus personalised Chandra Bala, Panchaka, elected-Lagna and
-  dasha-suitability checks when birth details are given.
+  dasha-suitability checks when birth details are given. A month view
+  shows a whole calendar month coloured by day grade; clicking a day
+  shows its full detail, reusing the same activity, facing, place and
+  personalised checks.
 - **KP Prashna (horary)** — pick a number 1–249 and cast the chart of
   the moment, with ruling planets and cuspal sub-lords.
 - **Life Questions library** — 26 curated chart-reading guides in
@@ -76,8 +80,11 @@ python3 -m venv .venv
 ```
 
 WeasyPrint needs the usual system libraries (Pango etc.) for the best PDF
-output incl. Devanagari; without them the app automatically falls back to a
-reportlab-generated English PDF.
+output incl. Devanagari; without them the app automatically falls back to
+an fpdf2 PDF using the vendored Noto Sans Devanagari fonts in
+`data/fonts/` (with uharfbuzz shaping), so the PDF stays in the requested
+language. Only if those fonts are unavailable does it degrade to the
+English-only reportlab path.
 
 ## Deployment
 
@@ -106,6 +113,7 @@ every pull request.
 | `GET /api/horoscope?sign=&span=&date=` | Moon-sign horoscope |
 | `GET /api/panchang-month?year=&month=&place_id=` | month panchang |
 | `GET /api/tz?lat=&lon=` | offline timezone lookup |
+| `GET /api/bs?date=` or `?bs=` | Bikram Sambat ↔ AD conversion (BS 2000–2090 table, out-of-range → 400) |
 | `GET /health` | service status |
 
 ## How Muhurta scoring works
@@ -122,11 +130,12 @@ from factors shown to the user, with points:
   (Grahapravesh uses the facing-specific list when a facing is chosen)
 - Tara Bala, when a birth nakshatra is given: favourable taras
   2/4/6/8/9: **+2**; unfavourable: **−2**
-- Abhijit on Wednesday and the Grahapravesh lunar-month rule are
-  **flagged at 0 points**, not scored: the lunar month is documented
-  (Vaishakh, Jyeshtha, Magh, Phalguna for a new house) but not scored
-  yet, because the panchang module does not yet compute the lunar month
-  — no month score is invented.
+- Grahapravesh lunar month (Amanta convention, named from the sidereal
+  Sun sign at Purnima): Vaishakh, Jyeshtha, Magh or Phalguna: **+2**;
+  any other lunar month: **−2**. The panchang response reports the
+  month and its convention, so a Krishna-paksha date's one-month
+  difference under Purnimanta is visible, not hidden.
+- Abhijit on Wednesday is **flagged at 0 points**, not scored.
 
 Day grades: **Excellent ≥ 4, Good ≥ 2, Average ≥ 0, otherwise Avoid.**
 The personalised **election score** adds Chandra Bala, Panchaka, elected
