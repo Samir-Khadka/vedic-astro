@@ -348,13 +348,31 @@ legend { padding: 0 8px; color: var(--violet); font-weight: 600; }
 .ad-line { margin: 8px 0 2px; color: var(--violet); }
 
 @media (max-width: 880px) {
-  .results-grid, .pred-grid, .chapter-grid, .match-cols { grid-template-columns: 1fr; }
-  .lk-grid { grid-template-columns: repeat(3, 1fr); }
-  .strip-grid { grid-template-columns: repeat(3, 1fr); }
-  .glance-strip { grid-template-columns: repeat(2, 1fr); }
-  .lucky-strip, .gem-grid { grid-template-columns: repeat(2, 1fr); }
+  /* minmax(0, 1fr) + min-width: 0: grid items default to
+     min-width: auto, i.e. their content's min-content width. A wide
+     table (planet/KP/Ashtakavarga, 600-740px of nowrap cells) inside
+     one card then stretched the whole single-column grid past 360px
+     viewports (measured document width 804px). With min-width: 0 the
+     card shrinks to the viewport and the table scrolls inside its
+     existing .table-scroll wrapper instead. */
+  .results-grid, .pred-grid, .chapter-grid, .match-cols { grid-template-columns: minmax(0, 1fr); }
+  .results-grid > *, .pred-grid > *, .chapter-grid > *, .match-cols > * { min-width: 0; }
+  /* Keep the primary nav on mobile instead of hiding it: a
+     horizontally scrollable row under the brand, so section jumps
+     stay reachable on small screens. */
+  .main-nav { display: flex; flex-wrap: nowrap; overflow-x: auto; order: 3; flex-basis: 100%; gap: 4px; padding-bottom: 2px; }
+  .main-nav a { flex: 0 0 auto; font-size: 14px; padding: 6px 10px; }
+  .lk-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .strip-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .glance-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lucky-strip, .gem-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cal-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  /* Calendar cells hold long unbroken words (Chaturdashi, Uttara
+     Phalguni); without this their min-content width (~89px) pushed
+     the 4-column grid past the viewport (measured 423px page width
+     at 360px). Long words now wrap inside the cell. */
+  .cal-cell { min-width: 0; overflow-wrap: anywhere; }
   .field-row { grid-template-columns: 1fr; }
-  .main-nav { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -621,7 +639,7 @@ html[lang="ne"] .strip-item .k, html[lang="ne"] .lucky-item .k { letter-spacing:
 .sud-glyph { font-size: 15px; fill: var(--ink); }
 .sud-label { font-size: 10px; fill: var(--violet); }
 .sub-title { margin-top: 22px; }
-@media (max-width: 880px) { .cal-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 880px) { .cal-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
 /* ============ Floating 3D book showcase ============ */
 .book-showcase { display: flex; gap: 34px; align-items: center; justify-content: center; flex-wrap: wrap; padding: 30px 0 10px; }

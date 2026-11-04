@@ -33,6 +33,11 @@ Kundali matching, daily panchang and PDF export. Fully bilingual:
   Rudraksha, beej mantra, dosha remedies) and lucky attributes.
 - **PDF export** — the full premium report as a downloadable PDF
   (WeasyPrint; reportlab fallback).
+- **Mobile & installable** — layouts are verified at 360 px width (no
+  sideways scrolling; tables scroll inside their own wrappers), the
+  section nav stays reachable on phones, and a manifest + service
+  worker make the app installable with a cached static shell. Chart
+  computation stays server-side, so API calls are never cached.
 - **Kundali matching** — Ashtakoota Guna Milan (36 points) with full
   koota-by-koota breakdown, Manglik comparison and bilingual verdict.
 - **Panchang** — tithi, nakshatra, yoga, karana, vaara at sunrise, with
