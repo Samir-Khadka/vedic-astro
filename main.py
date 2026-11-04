@@ -456,4 +456,11 @@ def index():
     return FileResponse(STATIC / "index.html")
 
 
+@app.get("/sw.js")
+def service_worker():
+    # Served from the root so the worker's scope covers the whole app
+    # (a worker under /static/ could only control /static/*).
+    return FileResponse(STATIC / "sw.js", media_type="application/javascript")
+
+
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
