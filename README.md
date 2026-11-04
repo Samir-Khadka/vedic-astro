@@ -117,11 +117,12 @@ from factors shown to the user, with points:
   (Grahapravesh uses the facing-specific list when a facing is chosen)
 - Tara Bala, when a birth nakshatra is given: favourable taras
   2/4/6/8/9: **+2**; unfavourable: **−2**
-- Abhijit on Wednesday and the Grahapravesh lunar-month rule are
-  **flagged at 0 points**, not scored: the lunar month is documented
-  (Vaishakh, Jyeshtha, Magh, Phalguna for a new house) but not scored
-  yet, because the panchang module does not yet compute the lunar month
-  — no month score is invented.
+- Grahapravesh lunar month (Amanta convention, named from the sidereal
+  Sun sign at Purnima): Vaishakh, Jyeshtha, Magh or Phalguna: **+2**;
+  any other lunar month: **−2**. The panchang response reports the
+  month and its convention, so a Krishna-paksha date's one-month
+  difference under Purnimanta is visible, not hidden.
+- Abhijit on Wednesday is **flagged at 0 points**, not scored.
 
 Day grades: **Excellent ≥ 4, Good ≥ 2, Average ≥ 0, otherwise Avoid.**
 The personalised **election score** adds Chandra Bala, Panchaka, elected
