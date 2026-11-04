@@ -5,7 +5,7 @@
  * never cached and the app shell alone does not work offline. When a
  * fetch fails, the page's own error handling applies, unchanged.
  */
-const CACHE = "vedic-astro-static-v7";
+const CACHE = "vedic-astro-static-v8";
 const ASSETS = [
   "/",
   "/static/styles.css",
@@ -17,10 +17,19 @@ const ASSETS = [
   "/static/ai_astrologer.js",
   "/static/coords.js",
   "/static/scene3d.js",
+  "/static/sw-update.js",
   "/static/manifest.webmanifest",
   "/static/icon-192.png",
   "/static/icon-512.png",
 ];
+
+self.addEventListener("message", (event) => {
+  // Sent by the update prompt (static/sw-update.js) when the user taps
+  // Refresh while a new worker is waiting: let it take over at once.
+  // (The install handler also calls skipWaiting, so this is the path for
+  // a worker that reached "waiting" before activating.)
+  if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
+});
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
