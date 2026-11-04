@@ -39,6 +39,26 @@ Kundali matching, daily panchang and PDF export. Fully bilingual:
   sunrise/sunset, for any date and place.
 - **Places** — built-in gazetteer of 51 cities (Nepal, India and world
   majors) or raw latitude/longitude/timezone input.
+- **Muhurta Finder** — auspicious timing for 15 activities in English
+  and Nepali: marriage, travel, business/trade, house construction,
+  education, starting a job, buying a vehicle, naming, house entry
+  (Grahapravesh, with east/west/north/south facing), shop inauguration,
+  bride's entry, bride/groom selection, vehicle ceremony, planting and
+  first ploughing. Each day shows Choghadiya, Hora, Rahu Kaal, Abhijit
+  and a per-factor score with reasons (see "How Muhurta scoring works"
+  below), plus personalised Chandra Bala, Panchaka, elected-Lagna and
+  dasha-suitability checks when birth details are given.
+- **KP Prashna (horary)** — pick a number 1–249 and cast the chart of
+  the moment, with ruling planets and cuspal sub-lords.
+- **Life Questions library** — 26 curated chart-reading guides in
+  English and Nepali (marriage, education, career, travel, children,
+  property, vehicle, health, general caution and litigation), each with
+  prime/supporting/negating houses, significator, what to check and a
+  timing note. Sensitive topics are included only as traditional
+  probability indications, not guaranteed outcomes, with medical/legal
+  disclaimers (see the library's disclaimer).
+- **Lal Kitab & Numerology** — Lal Kitab remedies/planetary notes and
+  a numerology profile, alongside the main chart.
 
 ## Run it
 
@@ -63,7 +83,41 @@ reportlab-generated English PDF.
 | `GET /api/panchang?date=&place_id=` | daily panchang |
 | `GET /api/places?q=` | gazetteer search |
 | `GET /api/report.pdf?dob=&tob=&place_id=&lang=` | premium report PDF |
+| `GET /api/muhurta?activity=&facing=&date_from=&date_to=&place_id=` | Muhurta Finder day scores and best days (facing: any/east/west/north/south, for Grahapravesh) |
+| `POST /api/prashna` | `{number (1–249), question?, place_id}` → KP horary chart |
+| `GET /api/life-questions?category=` | Life Questions library (EN+NE); `GET /api/life-questions/{id}` for one question |
+| `GET /api/horoscope?sign=&span=&date=` | Moon-sign horoscope |
+| `GET /api/panchang-month?year=&month=&place_id=` | month panchang |
+| `GET /api/tz?lat=&lon=` | offline timezone lookup |
 | `GET /health` | service status |
+
+## How Muhurta scoring works
+
+Each civil day gets a **day score** for the chosen activity, built only
+from factors shown to the user, with points:
+
+- Weekday not allowed for the activity: **−2**
+- Tithi on the activity's preferred list: **+1**; not on it: **−2**
+  (activities without an explicit tithi list use the generic class
+  instead: Rikta tithis 4/9/14/19/24/29: **−2**;
+  Nanda/Jaya/Purna tithis: **+1**)
+- Moon in a preferred nakshatra for the activity: **+2**; otherwise **0**
+  (Grahapravesh uses the facing-specific list when a facing is chosen)
+- Tara Bala, when a birth nakshatra is given: favourable taras
+  2/4/6/8/9: **+2**; unfavourable: **−2**
+- Abhijit on Wednesday and the Grahapravesh lunar-month rule are
+  **flagged at 0 points**, not scored: the lunar month is documented
+  (Vaishakh, Jyeshtha, Magh, Phalguna for a new house) but not scored
+  yet, because the panchang module does not yet compute the lunar month
+  — no month score is invented.
+
+Day grades: **Excellent ≥ 4, Good ≥ 2, Average ≥ 0, otherwise Avoid.**
+The personalised **election score** adds Chandra Bala, Panchaka, elected
+Lagna strength and dasha suitability on top of the day score, with its
+own grades (Excellent ≥ 6, Good ≥ 3, Average ≥ 0, otherwise Avoid).
+`best` ranks by day score; `best_election` ranks by election score.
+This is classical guidance with transparent reasons, not a pandit's
+full election — lists vary slightly between traditions.
 
 ## Tests
 
