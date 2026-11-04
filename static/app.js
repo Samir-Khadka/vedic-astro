@@ -169,7 +169,7 @@ const I18N = {
     saved_hint:"Stored only in this browser — no account needed. A share link opens the same chart on any device.",
     share_btn:"Copy share link", share_copied:"Link copied!", saved_empty:"No saved charts yet.",
     cr_btn:"Complete Kundali Report", cr_title:"Complete Kundali Report", cr_sub:"All 31 sections in the traditional order — positions, charts, vargas, balas, dashas, Varshphal, predictions, doshas, Ratna-Mantra and Yantra.",
-    cr_loading:"Building the complete report…", cr_error:"Could not build the complete report. Please try again.", cr_print:"Print / Save as PDF", cr_contents:"Contents",
+    cr_loading:"Building the complete report…", cr_error:"Could not build the complete report. Please try again.", cr_print:"Print / Save as PDF", cr_download:"Download PDF", cr_contents:"Contents",
     cr_model:"Report model", cr_model_detailed:"Detailed — all 31 sections", cr_model_basic:"Basic — quick reading", cr_model_book:"Book — all 31 sections, book style",
     cr_th_planet:"Planet", cr_th_sign:"Sign", cr_th_degree:"Degree", cr_th_nakshatra:"Nakshatra", cr_th_house:"House", cr_th_start:"Start", cr_th_end:"End", cr_th_years:"Years",
     cr_th_lord:"Lord", cr_th_result:"Result", cr_th_strength:"Strength", cr_th_reading:"Reading", cr_th_cusp:"Cusp", cr_th_aspects:"Aspects", cr_th_name:"Name", cr_th_value:"Value",
@@ -389,7 +389,7 @@ const I18N = {
     saved_hint:"यही ब्राउजरमा मात्र राखिन्छ — कुनै खाता चाहिँदैन। साझा लिङ्कले कुनै पनि यन्त्रमा उही कुण्डली खोल्छ।",
     share_btn:"साझा लिङ्क कपी गर्नुहोस्", share_copied:"लिङ्क कपी भयो!", saved_empty:"अहिलेसम्म कुनै सुरक्षित कुण्डली छैन।",
     cr_btn:"पूर्ण कुण्डली प्रतिवेदन", cr_title:"पूर्ण कुण्डली प्रतिवेदन", cr_sub:"परम्परागत क्रममा सबै ३१ खण्ड — स्थिति, चार्ट, वर्ग, बल, दशा, वर्षफल, भविष्यवाणी, दोष, रत्न-मन्त्र र यन्त्र।",
-    cr_loading:"पूर्ण प्रतिवेदन बनाइँदैछ…", cr_error:"पूर्ण प्रतिवेदन बनाउन सकिएन। कृपया फेरि प्रयास गर्नुहोस्।", cr_print:"छाप्नुहोस् / PDF बनाउनुहोस्", cr_contents:"सूची",
+    cr_loading:"पूर्ण प्रतिवेदन बनाइँदैछ…", cr_error:"पूर्ण प्रतिवेदन बनाउन सकिएन। कृपया फेरि प्रयास गर्नुहोस्।", cr_print:"छाप्नुहोस् / PDF बनाउनुहोस्", cr_download:"PDF डाउनलोड गर्नुहोस्", cr_contents:"सूची",
     cr_model:"रिपोर्ट मोडेल", cr_model_detailed:"विस्तृत — सबै ३१ खण्ड", cr_model_basic:"आधारभूत — छोटो पठन", cr_model_book:"पुस्तक — सबै ३१ खण्ड, पुस्तक शैली",
     cr_th_planet:"ग्रह", cr_th_sign:"राशि", cr_th_degree:"डिग्री", cr_th_nakshatra:"नक्षत्र", cr_th_house:"भाव", cr_th_start:"सुरु", cr_th_end:"समाप्ति", cr_th_years:"वर्ष",
     cr_th_lord:"स्वामी", cr_th_result:"परिणाम", cr_th_strength:"बल", cr_th_reading:"पठन", cr_th_cusp:"सन्धि", cr_th_aspects:"दृष्टि", cr_th_name:"नाम", cr_th_value:"मान",
@@ -863,6 +863,12 @@ document.getElementById("birth-form").addEventListener("submit", async (ev) => {
     errEl.hidden = true;
     STATE.bundle = bundle;
     STATE.birthPayload = payload;
+    /* Expose the last chart payload so the Life Questions page can
+       answer from it, and notify it (pending-question auto-answer). */
+    window.vedicLastBirthPayload = payload;
+    if (window.dispatchEvent) {
+      window.dispatchEvent(new CustomEvent("vedic-chart-computed", { detail: payload }));
+    }
     saveCurrentChart();
     /* Unhide BEFORE rendering: a partial render (with per-section notes)
        is still a chart, and must not be hidden behind a generic error. */
@@ -3225,6 +3231,25 @@ document.getElementById("complete-report-model").addEventListener("change", (e) 
      and keep the chosen model across language toggles. */
   STATE.completeReportModel = (e.target && e.target.value) || "detailed";
   if (STATE.completeReport) renderCompleteReport(STATE.completeReport, true);
+});
+document.getElementById("complete-report-download-btn").addEventListener("click", () => {
+  /* Real download: GET /api/complete-report.pdf with the current
+     chart's birth parameters, the UI language, and the selected
+     print model (detailed/basic/book). */
+  const payload = STATE.birthPayload;
+  if (!payload) return;
+  const qs = new URLSearchParams();
+  ["dob", "tob", "place_id", "place_name", "lat", "lon", "tz", "name", "ayanamsa", "house_system"].forEach((k) => {
+    if (payload[k] !== undefined && payload[k] !== null && payload[k] !== "") qs.set(k, payload[k]);
+  });
+  qs.set("lang", LANG === "ne" ? "ne" : "en");
+  qs.set("model", STATE.completeReportModel || "detailed");
+  const a = document.createElement("a");
+  a.href = "/api/complete-report.pdf?" + qs.toString();
+  a.download = "vedic-complete-report.pdf";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 });
 document.getElementById("complete-report-print-btn").addEventListener("click", () => {
   /* Print stylesheet hides everything except #complete-report while
