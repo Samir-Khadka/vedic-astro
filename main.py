@@ -313,6 +313,76 @@ def life_question_answer(question_id: str, body: dict):
         detail="provide either a 'birth' chart payload or a 'prashna' payload")
 
 
+@app.post("/api/life-areas")
+def life_areas(body: BirthInput):
+    """Life Areas: the whole chart read area by area (8 areas, EN+NE).
+    Accepts the same payload as /api/kundali. See astro/life_areas.py."""
+    from astro import life_areas as life_areas_module
+
+    try:
+        bundle = engine.compute_kundali(_payload(body))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"areas": life_areas_module.analyse(bundle)}
+
+
+@app.post("/api/ask-astrologer")
+def ask_astrologer(body: dict):
+    """AI Astrologer: answer a plain-language question from a real chart.
+
+    Body: {"question": str (required, non-empty),
+           "birth": <BirthInput dict> | None,
+           "prashna_number": int (1-249) | None,
+           "place": place dict (place_id or lat/lon/tz) | None,
+           "lang": "en"|"ne" (default "en")}.
+    Exactly one chart source is required: birth wins if present, else
+    a prashna chart is cast for the current moment. No external service
+    or LLM is ever called; see astro/ai_astrologer.py. 400 on any bad
+    payload, missing source, or unresolvable place."""
+    from datetime import datetime
+
+    from pydantic import ValidationError
+
+    from astro import ai_astrologer as ai_astrologer_module
+
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="body must be an object")
+    question = body.get("question")
+    if not isinstance(question, str) or not question.strip():
+        raise HTTPException(status_code=400, detail="question must be a non-empty string")
+    lang = body.get("lang", "en")
+    if lang not in ("en", "ne"):
+        raise HTTPException(status_code=400, detail="lang must be 'en' or 'ne'")
+    try:
+        if body.get("birth") is not None:
+            birth = BirthInput.model_validate(body["birth"])
+            bundle = engine.compute_kundali(_payload(birth))
+            answer = ai_astrologer_module.build_answer(question, bundle, lang)
+            answer["source"] = "birth"
+        elif body.get("prashna_number") is not None:
+            number = body["prashna_number"]
+            if not isinstance(number, int) or isinstance(number, bool) or not 1 <= number <= 249:
+                raise HTTPException(status_code=400, detail="prashna_number must be an integer between 1 and 249")
+            place_dict = body.get("place")
+            if not isinstance(place_dict, dict):
+                raise HTTPException(status_code=400, detail="prashna mode requires a place (place_id or lat/lon/tz)")
+            place = engine.resolve_place(place_dict)
+            moment = datetime.now(ZoneInfo(place["tz"]))
+            horary = prashna_module.horary(number, place, moment, question)
+            answer = ai_astrologer_module.build_answer(question, horary, lang)
+            answer["source"] = "prashna"
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="provide either a 'birth' chart payload or a 'prashna_number' with a place")
+    except HTTPException:
+        raise
+    except (ValidationError, ValueError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    answer["question"] = question
+    return answer
+
+
 @app.get("/api/places")
 def places(q: str = Query(default="", max_length=200)):
     local = places_module.search_places(q)

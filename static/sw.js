@@ -5,13 +5,14 @@
  * never cached and the app shell alone does not work offline. When a
  * fetch fails, the page's own error handling applies, unchanged.
  */
-const CACHE = "vedic-astro-static-v1";
+const CACHE = "vedic-astro-static-v2";
 const ASSETS = [
   "/",
   "/static/styles.css",
   "/static/app.js",
   "/static/share.js",
   "/static/life_questions.js",
+  "/static/ai_astrologer.js",
   "/static/coords.js",
   "/static/scene3d.js",
   "/static/manifest.webmanifest",

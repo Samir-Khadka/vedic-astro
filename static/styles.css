@@ -853,6 +853,21 @@ html[lang="ne"] .strip-item .k, html[lang="ne"] .lucky-item .k { letter-spacing:
 .lq-band-mixed h4 { color: #b85f06; }
 .lq-band-unfavourable h4 { color: #a93226; }
 .lq-band-unclear h4 { color: #6b5a44; }
+/* AI Astrologer chat + Life Areas. */
+.ai-chat { display: flex; flex-direction: column; gap: 12px; max-height: 520px; overflow-y: auto; margin: 12px 0; }
+.ai-msg { padding: 12px 14px; border-radius: 14px; background: var(--glass); border: 1px solid var(--glass-border); }
+.ai-msg.ai-user { background: rgba(224, 123, 10, 0.12); }
+.ai-msg h4 { margin: 0 0 8px; font-family: var(--font-display); font-size: 18px; color: var(--ink); }
+.ai-msg h5 { margin: 14px 0 6px; font-size: 15px; color: var(--ink); }
+.ai-msg ul { margin: 6px 0 6px 18px; }
+.ai-table { width: 100%; border-collapse: collapse; }
+.ai-table th, .ai-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--glass-border); vertical-align: top; }
+.ai-area-card { margin: 12px 0; }
+.ai-area-head { width: 100%; display: flex; justify-content: space-between; background: none; border: none; cursor: pointer; font-size: 17px; color: var(--ink); padding: 0; text-align: left; }
+.ai-area-body { margin-top: 10px; }
+#ai-suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+#ai-input { flex: 1; min-width: 0; }
+
 .lq-answer table { width: 100%; border-collapse: collapse; margin: 8px 0; }
 .lq-answer th, .lq-answer td { border: 0.5pt solid #d9b98a; padding: 4px 6px; text-align: left; }
 .lq-answer th { background: #fbeed7; color: #7a3c06; }
