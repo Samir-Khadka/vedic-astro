@@ -45,6 +45,25 @@
     });
   }
 
+  function rulingHTML(q) {
+    var r = q.ruling;
+    if (!r) return "";
+    var L = lang();
+    var head = L === "ne" ? "परम्परागत निर्णय" : "Traditional ruling";
+    if (r.source === "pending") {
+      return "<h4>" + head + "</h4><p>" + esc(t(r, "note")) + "</p>";
+    }
+    var out = "<h4>" + head + "</h4>" +
+      "<p><strong>" + (L === "ne" ? "पढ्ने विधि: " : "How to read: ") + "</strong>" + esc(t(r, "method")) + "</p>" +
+      "<p><strong>" + (L === "ne" ? "अनुकूल सङ्केत: " : "Favourable: ") + "</strong>" + esc(t(r, "favourable")) + "</p>" +
+      "<p><strong>" + (L === "ne" ? "प्रतिकूल सङ्केत: " : "Unfavourable: ") + "</strong>" + esc(t(r, "unfavourable")) + "</p>";
+    if (r.timing_en || r.timing_ne) {
+      out += "<p><strong>" + (L === "ne" ? "समय: " : "Timing: ") + "</strong>" + esc(t(r, "timing")) + "</p>";
+    }
+    out += '<p class="results-meta">' + (L === "ne" ? "स्रोत: " : "Source: ") + esc(t(r, "source_label")) + "</p>";
+    return out;
+  }
+
   function renderDetail(id) {
     var q = all.find(function (x) { return x.id === id; });
     if (!q || !detailEl) return;
@@ -58,6 +77,7 @@
       (L === "ne" ? "कारक: " : "Significator: ") + esc(t(q, "significator")) + "</p>" +
       "<p>" + esc(t(q, "what_to_check")) + "</p>" +
       "<p>" + esc(t(q, "timing_note")) + "</p>" +
+      rulingHTML(q) +
       '<p class="results-meta">' + esc(t(q, "disclaimer")) + "</p>" +
       '<div class="field-row">' +
       '<button type="button" class="btn btn-gold" id="lq-kundali-btn">' + (L === "ne" ? "मेरो कुण्डली जाँच्नुहोस्" : "Check my chart") + "</button> " +

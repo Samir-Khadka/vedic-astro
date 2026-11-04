@@ -23,6 +23,8 @@ matter on its own.
 
 from __future__ import annotations
 
+from astro.horary_rulings import get_ruling
+
 DISCLAIMER_EN = (
     "Guidance only, not a guaranteed outcome. "
     "Health entries are not medical advice — see a clinician. "
@@ -395,6 +397,10 @@ def to_public(q):
         "what_to_check_ne": q["what_to_check_ne"],
         "timing_note_en": q["timing_note_en"],
         "timing_note_ne": q["timing_note_ne"],
+        # Full traditional ruling (method, favourable/unfavourable
+        # indications, timing, documented source). Additive only: every
+        # field above is unchanged.
+        "ruling": get_ruling(q["id"]),
         "disclaimer_en": DISCLAIMER_EN,
         "disclaimer_ne": DISCLAIMER_NE,
     }
