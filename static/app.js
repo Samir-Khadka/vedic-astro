@@ -157,6 +157,8 @@ const I18N = {
     u_from:"From", u_to:"To (max 31 days)", u_activity:"Activity",
     u_nakshatra:"Birth nakshatra (optional, for Tara Bala)",
     muhurta_submit:"Find best days", muhurta_best:"Best days", muhurta_detail:"Day detail",
+    muhurta_month_view:"Month view", muhurta_month:"Month", muhurta_show_month:"Show month calendar",
+    muhurta_month_hint:"One calendar month at a glance, coloured by day grade. Click a day to see its detail in the finder result above. Uses the same activity, facing and place as the finder above.",
     act_marriage:"Marriage", act_travel:"Travel", act_business:"Business / trade", act_house:"House construction",
     act_education:"Education", act_job:"Starting a job", act_vehicle:"Buying a vehicle", act_naming:"Naming ceremony",
     act_grahapravesh:"House entry", act_shop_opening:"Shop inauguration", act_bride_entry:"Bride's entry", act_partner_selection:"Bride/groom selection", act_vehicle_ceremony:"Vehicle ceremony", act_planting:"Planting", act_first_ploughing:"First ploughing",
@@ -367,6 +369,8 @@ const I18N = {
     u_from:"देखि", u_to:"सम्म (अधिकतम ३१ दिन)", u_activity:"काम",
     u_nakshatra:"जन्म नक्षत्र (ऐच्छिक, ताराबलका लागि)",
     muhurta_submit:"उत्तम दिन खोज्नुहोस्", muhurta_best:"उत्तम दिनहरू", muhurta_detail:"दिनको विवरण",
+    muhurta_month_view:"महिना दृश्य", muhurta_month:"महिना", muhurta_show_month:"महिनाको पात्रो देखाउनुहोस्",
+    muhurta_month_hint:"एक महिनालाई दिनको श्रेणीअनुसार रङ्गसहित एकै नजरमा। दिनमा क्लिक गर्दा माथिको खोजकर्ता परिणाममा त्यसको विवरण देखिन्छ। माथिको खोजकर्ताकै काम, मुख र स्थान प्रयोग हुन्छ।",
     act_marriage:"विवाह", act_travel:"यात्रा", act_business:"व्यापार", act_house:"गृह निर्माण",
     act_education:"शिक्षा", act_job:"नोकरी सुरु", act_vehicle:"वाहन खरिद", act_naming:"नामकरण",
     act_grahapravesh:"गृहप्रवेश", act_shop_opening:"पसल उद्घाटन", act_bride_entry:"नववधू प्रवेश", act_partner_selection:"वर / कन्या वरण", act_vehicle_ceremony:"वाहन पूजा", act_planting:"वृक्षरोपण", act_first_ploughing:"हलो जोत्ने",
@@ -2340,16 +2344,14 @@ if (muhurtaForm) {
   const activitySel = document.getElementById("u-activity");
   const syncFacing = () => { if (facingField) facingField.hidden = activitySel.value !== "grahapravesh"; };
   if (activitySel) { activitySel.addEventListener("change", syncFacing); syncFacing(); }
-  muhurtaForm.addEventListener("submit", async (ev) => {
-    ev.preventDefault();
-    const errEl = document.getElementById("muhurta-error"); errEl.hidden = true;
+  // Shared by the finder and the month view: same activity, facing,
+  // place and personalised params, only the date range differs. A
+  // calendar month is at most 31 days, so it fits /api/muhurta's
+  // existing 1–31 day limit with no backend change.
+  function buildMuhurtaParams(dateFrom, dateTo) {
     const place = resolvePlace("u-place");
     const activityVal = document.getElementById("u-activity").value;
-    const params = new URLSearchParams({
-      date_from: document.getElementById("u-from").value,
-      date_to: document.getElementById("u-to").value,
-      activity: activityVal,
-    });
+    const params = new URLSearchParams({ date_from: dateFrom, date_to: dateTo, activity: activityVal });
     if (activityVal === "grahapravesh") params.set("facing", document.getElementById("u-facing").value || "any");
     if (place && place.place_id) params.set("place_id", place.place_id);
     else if (place && place.lat != null) { params.set("lat", place.lat); params.set("lon", place.lon); if (place.tz) params.set("tz", place.tz); }
@@ -2365,19 +2367,73 @@ if (muhurtaForm) {
       if (bp.place_id) params.set("birth_place_id", bp.place_id);
       else { if (bp.lat != null) params.set("birth_lat", bp.lat); if (bp.lon != null) params.set("birth_lon", bp.lon); if (bp.tz) params.set("birth_tz", bp.tz); }
     }
+    return params;
+  }
+  function showMuhurtaResults(data) {
+    MUHURTA_DATA = data;
+    const bestList = MUHURTA_DATA.best_election || MUHURTA_DATA.best;
+    document.getElementById("muhurta-best").innerHTML = bestList.map((d) => `
+      <div class="pred-block"><h4>${d.date} — ${LANG === "ne" ? d.election_grade_ne : d.election_grade} (${t("election_score_word")} ${d.election_score})</h4><p>${d.election_factors.map((f) => bi(f)).join(" · ")}</p></div>`).join("");
+    const daySel = document.getElementById("muhurta-day");
+    daySel.innerHTML = MUHURTA_DATA.days.map((d) => `<option value="${d.date}">${d.date} (${LANG === "ne" ? d.grade_ne : d.grade})</option>`).join("");
+    daySel.onchange = () => renderMuhurtaDay(daySel.value);
+    renderMuhurtaDay(daySel.value);
+    document.getElementById("muhurta-result").hidden = false;
+    revealSection(document.getElementById("muhurta-result"));
+  }
+  muhurtaForm.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const errEl = document.getElementById("muhurta-error"); errEl.hidden = true;
     try {
+      const params = buildMuhurtaParams(document.getElementById("u-from").value, document.getElementById("u-to").value);
       const res = await fetch(`/api/muhurta?${params}`);
       if (!res.ok) throw new Error("bad");
-      MUHURTA_DATA = await res.json();
-      const bestList = MUHURTA_DATA.best_election || MUHURTA_DATA.best;
-      document.getElementById("muhurta-best").innerHTML = bestList.map((d) => `
-        <div class="pred-block"><h4>${d.date} — ${LANG === "ne" ? d.election_grade_ne : d.election_grade} (${t("election_score_word")} ${d.election_score})</h4><p>${d.election_factors.map((f) => bi(f)).join(" · ")}</p></div>`).join("");
-      const daySel = document.getElementById("muhurta-day");
-      daySel.innerHTML = MUHURTA_DATA.days.map((d) => `<option value="${d.date}">${d.date} (${LANG === "ne" ? d.grade_ne : d.grade})</option>`).join("");
-      daySel.onchange = () => renderMuhurtaDay(daySel.value);
-      renderMuhurtaDay(daySel.value);
-      document.getElementById("muhurta-result").hidden = false;
-      revealSection(document.getElementById("muhurta-result"));
+      showMuhurtaResults(await res.json());
+    } catch { errEl.textContent = t("err_server"); errEl.hidden = false; }
+  });
+  const monthInput = document.getElementById("muhurta-month");
+  if (monthInput) {
+    const now = new Date();
+    monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  }
+  const monthBtn = document.getElementById("muhurta-month-btn");
+  if (monthBtn) monthBtn.addEventListener("click", async () => {
+    const errEl = document.getElementById("muhurta-month-error"); errEl.hidden = true;
+    const val = monthInput && monthInput.value;
+    if (!val) { errEl.textContent = t("err_server"); errEl.hidden = false; return; }
+    const [y, m] = val.split("-").map(Number);
+    const first = `${val}-01`;
+    const lastDay = new Date(y, m, 0).getDate();
+    const last = `${val}-${String(lastDay).padStart(2, "0")}`;
+    try {
+      const params = buildMuhurtaParams(first, last);
+      const res = await fetch(`/api/muhurta?${params}`);
+      if (!res.ok) throw new Error("bad");
+      const data = await res.json();
+      showMuhurtaResults(data);
+      // Calendar grid, Sunday first (Nepali week), coloured by day grade.
+      const byDate = Object.fromEntries(data.days.map((d) => [d.date, d]));
+      const offset = new Date(y, m - 1, 1).getDay();
+      const gradeClass = (g) => ({ Excellent: "muh-excellent", Good: "muh-good", Average: "muh-average", Avoid: "muh-avoid" })[g] || "muh-average";
+      let cells = "";
+      for (let i = 0; i < offset; i++) cells += `<div class="muh-cell muh-blank"></div>`;
+      for (let day = 1; day <= lastDay; day++) {
+        const ds = `${val}-${String(day).padStart(2, "0")}`;
+        const d = byDate[ds];
+        if (!d) { cells += `<div class="muh-cell muh-blank"></div>`; continue; }
+        const grade = LANG === "ne" ? d.grade_ne : d.grade;
+        cells += `<button type="button" class="muh-cell ${gradeClass(d.grade)}" data-date="${ds}"><b>${day}</b><span>${grade}</span><small>${d.election_score}</small></button>`;
+      }
+      const grid = document.getElementById("muhurta-month-grid");
+      grid.innerHTML = cells;
+      grid.querySelectorAll(".muh-cell[data-date]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const daySel = document.getElementById("muhurta-day");
+          daySel.value = btn.dataset.date;
+          renderMuhurtaDay(btn.dataset.date);
+          document.getElementById("muhurta-day-detail").scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      });
     } catch { errEl.textContent = t("err_server"); errEl.hidden = false; }
   });
 }

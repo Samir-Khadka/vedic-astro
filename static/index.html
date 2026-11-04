@@ -751,6 +751,22 @@
       <select id="muhurta-day"></select>
       <div id="muhurta-day-detail"></div>
     </div>
+    <div class="glass card wide" id="muhurta-month-card">
+      <h3 data-i18n="muhurta_month_view">Month view</h3>
+      <p class="hint" data-i18n="muhurta_month_hint">One calendar month at a glance, coloured by day grade. Click a day to see its detail in the finder result above. Uses the same activity, facing and place as the finder above.</p>
+      <div class="field-row">
+        <div class="field">
+          <label for="muhurta-month" data-i18n="muhurta_month">Month</label>
+          <input id="muhurta-month" type="month">
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button type="button" class="btn btn-gold" id="muhurta-month-btn" data-i18n="muhurta_show_month">Show month calendar</button>
+        </div>
+      </div>
+      <div id="muhurta-month-grid" class="muh-cal" aria-label="Muhurta month calendar"></div>
+      <p class="form-error" id="muhurta-month-error" role="alert" hidden></p>
+    </div>
   </section>
 
   <section id="prashna" class="section">
