@@ -101,6 +101,7 @@ every pull request.
 | `GET /api/horoscope?sign=&span=&date=` | Moon-sign horoscope |
 | `GET /api/panchang-month?year=&month=&place_id=` | month panchang |
 | `GET /api/tz?lat=&lon=` | offline timezone lookup |
+| `GET /api/bs?date=` or `?bs=` | Bikram Sambat ↔ AD conversion (BS 2000–2090 table, out-of-range → 400) |
 | `GET /health` | service status |
 
 ## How Muhurta scoring works
