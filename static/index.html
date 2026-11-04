@@ -106,11 +106,12 @@
     <div class="strip-grid" id="panchang-grid">
       <p class="muted" data-i18n="loading">Loading…</p>
     </div>
-    <details class="month-cal" id="month-cal">
+    <details class="month-cal" id="month-cal" open>
       <summary data-i18n="month_cal_title">Month Calendar</summary>
       <div class="cal-controls">
         <button type="button" class="mini-btn" id="cal-prev" data-i18n="cal_prev">‹ Previous</button>
         <button type="button" class="mini-btn" id="cal-next" data-i18n="cal_next">Next ›</button>
+        <button type="button" class="mini-btn" id="cal-today" data-i18n="cal_today">Today</button>
         <div class="date-mode" role="group" aria-label="Calendar system">
           <button type="button" class="mini-btn date-mode-btn is-active" id="cal-mode-ad" data-i18n="cal_system_ad">AD</button>
           <button type="button" class="mini-btn date-mode-btn" id="cal-mode-bs" data-i18n="cal_system_bs">BS</button>
@@ -124,7 +125,10 @@
         <button type="button" class="mini-btn" id="cal-load" data-i18n="cal_load">Show month</button>
       </div>
       <p class="hint" data-i18n="cal_hint">Markers are astronomical only (Ekadashi, Purnima, Amavasya, Sankranti) — regional festival dates are not guessed.</p>
+      <p class="hint" data-i18n="cal_click_hint">Click any day for its full panchang detail.</p>
+      <div id="cal-title" class="cal-title"></div>
       <div id="cal-grid" class="cal-grid"></div>
+      <div id="cal-day-detail" class="cal-detail" hidden></div>
     </details>
   </section>
   </div>

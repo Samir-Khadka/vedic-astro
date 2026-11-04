@@ -139,15 +139,52 @@ def house_cusps(jd: float, lat: float, lon: float, system: str = "placidus") -> 
     return [c % 360.0 for c in cusps]
 
 
-def _rise_trans(jd_start: float, lat: float, lon: float, rsmi: int) -> float | None:
+def _rise_trans(jd_start: float, lat: float, lon: float, rsmi: int,
+                 body: int = None) -> float | None:
     _ensure_ayanamsa()
+    if body is None:
+        body = swe.SUN
     try:
-        ret, tret = swe.rise_trans(jd_start, swe.SUN, rsmi, (lon, lat, 0.0), 0.0, 0.0)
+        ret, tret = swe.rise_trans(jd_start, body, rsmi, (lon, lat, 0.0), 0.0, 0.0)
         if ret == 0:
             return tret[0]
     except swe.Error:
         pass
     return None
+
+
+def moon_rise_set(local_date: date, lat: float, lon: float, tz_name: str) -> tuple[datetime | None, datetime | None]:
+    """Moonrise and moonset falling inside `local_date` (civil day) at a place.
+
+    rise_trans returns the first event after its start JD, so the search
+    starts a day earlier and walks forward until both events inside the
+    civil day are found (or the window ends). A day with no moonrise
+    (possible: the Moon's rise interval exceeds 24h) yields None for it.
+    Disc-centre convention, like sunrise/sunset here.
+    """
+    tz = ZoneInfo(tz_name)
+    start = datetime.combine(local_date, time(0, 0), tzinfo=tz) - timedelta(days=1)
+    end = datetime.combine(local_date, time(0, 0), tzinfo=tz) + timedelta(days=1)
+    jd = to_julian_day(start)
+    rise = set_ = None
+    for _ in range(6):  # at most ~2 rises + ~2 sets in a 2-day window
+        jd_rise = _rise_trans(jd, lat, lon, swe.CALC_RISE | swe.BIT_DISC_CENTER, swe.MOON)
+        jd_set = _rise_trans(jd, lat, lon, swe.CALC_SET | swe.BIT_DISC_CENTER, swe.MOON)
+        nxt = min(x for x in (jd_rise, jd_set) if x is not None) if (jd_rise is not None or jd_set is not None) else None
+        if nxt is None:
+            break
+        local = jd_to_utc_datetime(nxt).astimezone(tz)
+        if local >= end:
+            break
+        if local.date() == local_date:
+            if jd_rise is not None and nxt == jd_rise:
+                rise = local
+            else:
+                set_ = local
+        jd = nxt + 1e-6
+        if rise is not None and set_ is not None:
+            break
+    return rise, set_
 
 
 def sunrise_sunset(local_date: date, lat: float, lon: float, tz_name: str) -> tuple[datetime | None, datetime | None]:

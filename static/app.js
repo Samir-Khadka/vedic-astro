@@ -115,6 +115,10 @@ const I18N = {
     date_year_ph:"Year", date_month_ph:"Month", date_day_ph:"Day",
     cal_system_ad:"AD", cal_system_bs:"BS",
     cal_prev:"‹ Previous", cal_next:"Next ›",
+    cal_today:"Today", cal_click_hint:"Click any day for its full panchang detail.",
+    moonrise:"Moonrise", moonset:"Moonset", ritu:"Ritu (season)", ayana:"Ayana",
+    moon_sign:"Moon sign", planets_title:"Planet positions (sidereal, at sunrise)",
+    trans_from:"from", next_day:"next day",
     err_server:"Something went wrong while computing. Please check the details and try again.",
     err_input:"The server could not use these details — please check the date, time and place, then try again.",
     err_timeout:"The server is taking too long to answer (it may be waking up after idling). Please try again in a moment.",
@@ -356,6 +360,10 @@ const I18N = {
     date_year_ph:"वर्ष", date_month_ph:"महिना", date_day_ph:"दिन",
     cal_system_ad:"ई.सं.", cal_system_bs:"वि.सं.",
     cal_prev:"‹ अघिल्लो", cal_next:"पछिल्लो ›",
+    cal_today:"आज", cal_click_hint:"कुनै दिनमा क्लिक गर्नुहोस् — त्यस दिनको पूरा पञ्चाङ्ग विवरण देखिन्छ।",
+    moonrise:"चन्द्रोदय", moonset:"चन्द्रास्त", ritu:"ऋतु", ayana:"अयन",
+    moon_sign:"चन्द्र राशि", planets_title:"ग्रह स्थिति (सूर्योदयको समय, निरयण)",
+    trans_from:"बाट", next_day:"अर्को दिन",
     err_server:"गणना गर्दा समस्या भयो। विवरण जाँचेर फेरि प्रयास गर्नुहोस्।",
     err_input:"सर्भरले यी विवरण प्रयोग गर्न सकेन — मिति, समय र स्थान जाँचेर फेरि प्रयास गर्नुहोस्।",
     err_timeout:"सर्भरबाट जवाफ आउन धेरै समय लाग्यो (सर्भर अलि बेर निष्क्रिय बसेर उठ्दै हुन सक्छ)। केही क्षणमा फेरि प्रयास गर्नुहोस्।",
@@ -2692,12 +2700,6 @@ function renderMuhurtaDay(dateStr) {
     (d.dasha_suitability ? `<p><b>Dasha:</b> ${planetName(d.dasha_suitability.mahadasha_lord)} (${d.dasha_suitability.verdict})</p>` : "");
 }
 
-/* Month calendar: AD grid (unchanged) + BS grid (Nepali calendar).
-   The AD grid keeps its exact existing rendering; the BS grid adds
-   Sunday-first weekday headers, BS day prominent with the AD date small
-   underneath, and a today highlight matched on the AD date. Clicking a
-   day does nothing in either mode — the AD grid has no click behavior
-   to mirror, so none is invented for BS. */
 const MONTH_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const MONTH_NE = ["जनवरी","फेब्रुअरी","मार्च","अप्रिल","मे","जुन","जुलाई","अगस्ट","सेप्टेम्बर","अक्टोबर","नोभेम्बर","डिसेम्बर"];
 const MONTH_SHORT_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -2712,7 +2714,7 @@ const BS_MONTHS_EN = ["Baisakh","Jestha","Ashadh","Shrawan","Bhadra","Ashwin",
 const BS_MONTHS_NE = ["बैशाख","जेठ","असार","श्रावण","भदौ","आश्विन",
   "कार्तिक","मंसिर","पौष","माघ","फाल्गुन","चैत्र"];
 let calSystem = "ad";
-let lastCal = null; // {system, data} — re-rendered on language toggle
+let lastCal = null; // {system, data, adBs} — re-rendered on language toggle
 function localTodayIso() {
   const n = new Date();
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
@@ -2741,30 +2743,157 @@ function buildCalSelects(centerYear) {
   if ([...ySel.options].some((o) => o.value === prevY)) ySel.value = prevY;
   if ([...mSel.options].some((o) => o.value === prevM)) mSel.value = prevM;
 }
-function renderCalGrid(system, cal) {
+/* Patro month calendar: ALWAYS a 7-column Sunday-first week grid, in
+   both AD and BS modes, at every viewport width. Cell hierarchy: the
+   month's own day number LARGE, the counterpart date smaller beneath
+   (BS under AD, AD under BS), then tithi · nakshatra, then the
+   computed-only astronomical markers. Clicking a day opens the full
+   day detail below the grid. */
+const WD_FULL_EN = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const WD_FULL_NE = ["आइतबार","सोमबार","मंगलबार","बुधबार","बिहिबार","शुक्रबार","शनिबार"];
+let lastDetail = null; // day-detail json — re-rendered on language toggle
+function calTodayLabel(dateIso) {
+  return dateIso === localTodayIso() ? ` <span class="cal-today-label">${t("cal_today")}</span>` : "";
+}
+function calMarkers(markers) {
+  return markers.map((m) => `<span class="cal-marker">${m}</span>`).join(" ");
+}
+function calLimb(d) {
+  const ti = LANG === "ne" ? TITHI_NE[d.tithi_index] : TITHI_EN[d.tithi_index];
+  const nk = LANG === "ne" ? NAK_NE[d.nakshatra_index] : NAK_EN[d.nakshatra_index];
+  return `<span class="cal-limb">${ti}<br>${nk}</span>`;
+}
+function renderCalGrid(system, cal, adBs) {
   const grid = document.getElementById("cal-grid");
   if (!grid) return;
-  if (system === "ad") {
-    grid.innerHTML = cal.days.map((d) => `
-      <div class="cal-cell"><b>${d.date.slice(-2)}</b> ${(LANG === "ne" ? TITHI_NE[d.tithi_index] : TITHI_EN[d.tithi_index])} · ${(LANG === "ne" ? NAK_NE[d.nakshatra_index] : NAK_EN[d.nakshatra_index])}
-      ${d.markers.map((m) => `<span class="cal-marker">${m}</span>`).join(" ")}</div>`).join("");
-    return;
-  }
-  const today = localTodayIso();
+  const titleEl = document.getElementById("cal-title");
   const wd = LANG === "ne" ? WD_SHORT_NE : WD_SHORT_EN;
   let html = wd.map((w) => `<div class="cal-weekday">${w}</div>`).join("");
-  if (cal.days.length) {
-    const offset = (cal.days[0].weekday + 1) % 7; // weekday Mon=0 -> Sunday-first offset
-    for (let i = 0; i < offset; i++) html += `<div class="cal-blank"></div>`;
+  const today = localTodayIso();
+  if (system === "ad") {
+    if (cal.days.length) {
+      const offset = (cal.days[0].weekday + 1) % 7; // weekday Mon=0 -> Sunday-first offset
+      for (let i = 0; i < offset; i++) html += `<div class="cal-blank"></div>`;
+    }
+    html += cal.days.map((d) => {
+      const dayNum = Number(d.date.slice(-2));
+      const bs = adBs && adBs[d.date];
+      const bsSmall = bs ? (LANG === "ne" ? `${nepNum(bs.bs_day)} ${BS_MONTHS_NE[bs.bs_month - 1]}` : `${bs.bs_day} ${BS_MONTHS_EN[bs.bs_month - 1]}`) : "";
+      return `<button type="button" class="cal-cell${d.date === today ? " cal-today" : ""}" data-date="${d.date}"><b class="cal-day-num">${LANG === "ne" ? nepNum(dayNum) : dayNum}</b>${bsSmall ? `<span class="cal-counter">${bsSmall}</span>` : ""}${calLimb(d)}${calMarkers(d.markers)}${calTodayLabel(d.date)}</button>`;
+    }).join("");
+    if (titleEl) {
+      const adTitle = LANG === "ne" ? `${MONTH_NE[cal.month - 1]} ${nepNum(cal.year)}` : `${MONTH_EN[cal.month - 1]} ${cal.year}`;
+      let bsTitle = "";
+      if (adBs && cal.days.length) {
+        const b1 = adBs[cal.days[0].date], b2 = adBs[cal.days[cal.days.length - 1].date];
+        if (b1 && b2) {
+          const fmt = (b) => LANG === "ne" ? `${BS_MONTHS_NE[b.bs_month - 1]} ${nepNum(b.bs_year)}` : `${BS_MONTHS_EN[b.bs_month - 1]} ${b.bs_year}`;
+          bsTitle = (b1.bs_year === b2.bs_year && b1.bs_month === b2.bs_month) ? fmt(b1) : `${fmt(b1)} – ${fmt(b2)}`;
+        }
+      }
+      titleEl.textContent = bsTitle ? `${adTitle} · ${bsTitle}` : adTitle;
+    }
+  } else {
+    if (cal.days.length) {
+      const offset = (cal.days[0].weekday + 1) % 7;
+      for (let i = 0; i < offset; i++) html += `<div class="cal-blank"></div>`;
+    }
+    html += cal.days.map((d) => {
+      const [ay, am, adn] = d.ad.split("-").map(Number);
+      const shortM = (LANG === "ne" ? MONTH_SHORT_NE : MONTH_SHORT_EN)[am - 1];
+      const adSmall = LANG === "ne" ? `${nepNum(adn)} ${shortM}` : `${adn} ${shortM}`;
+      return `<button type="button" class="cal-cell cal-bs-cell${d.ad === today ? " cal-today" : ""}" data-date="${d.ad}"><b class="cal-day-num">${LANG === "ne" ? nepNum(d.bs_day) : d.bs_day}</b><span class="cal-counter">${adSmall}</span>${calLimb(d)}${calMarkers(d.markers)}${calTodayLabel(d.ad)}</button>`;
+    }).join("");
+    if (titleEl) {
+      const bsTitle = LANG === "ne" ? `${BS_MONTHS_NE[cal.bs_month - 1]} ${nepNum(cal.bs_year)}` : `${BS_MONTHS_EN[cal.bs_month - 1]} ${cal.bs_year}`;
+      let adTitle = "";
+      if (cal.days.length) {
+        const f = cal.days[0].ad.split("-").map(Number), l = cal.days[cal.days.length - 1].ad.split("-").map(Number);
+        const fmt = (a) => LANG === "ne" ? `${nepNum(a[2])} ${MONTH_SHORT_NE[a[1] - 1]} ${nepNum(a[0])}` : `${a[2]} ${MONTH_SHORT_EN[a[1] - 1]} ${a[0]}`;
+        adTitle = (f[0] === l[0] && f[1] === l[1]) ? fmt(f) : `${fmt(f)} – ${fmt(l)}`;
+      }
+      titleEl.textContent = adTitle ? `${bsTitle} · ${adTitle}` : bsTitle;
+    }
   }
-  html += cal.days.map((d) => {
-    const [ay, am, adn] = d.ad.split("-").map(Number);
-    const shortM = (LANG === "ne" ? MONTH_SHORT_NE : MONTH_SHORT_EN)[am - 1];
-    const adSmall = LANG === "ne" ? `${nepNum(adn)} ${shortM}` : `${adn} ${shortM}`;
-    return `<div class="cal-cell cal-bs-cell${d.ad === today ? " cal-today" : ""}"><b>${LANG === "ne" ? nepNum(d.bs_day) : d.bs_day}</b><span class="cal-ad">${adSmall}</span> ${(LANG === "ne" ? TITHI_NE[d.tithi_index] : TITHI_EN[d.tithi_index])} · ${(LANG === "ne" ? NAK_NE[d.nakshatra_index] : NAK_EN[d.nakshatra_index])}
-      ${d.markers.map((m) => `<span class="cal-marker">${m}</span>`).join(" ")}</div>`;
-  }).join("");
   grid.innerHTML = html;
+}
+/* AD -> BS counterpart map for the AD grid, built from the existing
+   endpoints only (no backend change): the BS months overlapping the
+   AD month's first and last day, via /api/bs + /api/bs-month. */
+async function fetchAdBsMap(days) {
+  if (!days || !days.length) return null;
+  const map = {};
+  try {
+    const b1 = await (await fetch(`/api/bs?date=${days[0].date}`)).json();
+    const b2 = await (await fetch(`/api/bs?date=${days[days.length - 1].date}`)).json();
+    const keys = [...new Set([`${b1.year}-${b1.month}`, `${b2.year}-${b2.month}`])];
+    for (const key of keys) {
+      const [y, m] = key.split("-");
+      const res = await fetch(`/api/bs-month?bs_year=${y}&bs_month=${m}&${calPlaceParams()}`);
+      if (!res.ok) continue;
+      const bm = await res.json();
+      for (const d of bm.days) map[d.ad] = d;
+    }
+  } catch { /* counterpart dates stay blank on failure */ }
+  return Object.keys(map).length ? map : null;
+}
+function hms(iso) { return iso ? iso.slice(11, 19) : "—"; }
+function hm(iso) { return iso ? iso.slice(11, 16) : "—"; }
+function transText(transitions, nameFor) {
+  return transitions.map((tr) => {
+    const when = hm(tr.at) + (tr.next_day ? ` (${t("next_day")})` : "");
+    return `${when} ${t("trans_from")} ${nameFor(tr)}`;
+  }).join(" · ");
+}
+function tithiName(idx, paksha) {
+  const name = LANG === "ne" ? TITHI_NE[idx] : TITHI_EN[idx];
+  const pk = LANG === "ne" ? (paksha === "Shukla" ? "शुक्ल" : "कृष्ण") : paksha;
+  return `${pk} ${name}`;
+}
+async function showDayDetail(dateStr) {
+  const el = document.getElementById("cal-day-detail");
+  if (!el) return;
+  el.hidden = false;
+  el.innerHTML = `<p class="muted">${t("loading")}</p>`;
+  try {
+    const params = calPlaceParams();
+    const res = await fetch(`/api/panchang-detail?date=${dateStr}&${params}`);
+    if (!res.ok) throw new Error("bad");
+    lastDetail = await res.json();
+    renderDayDetail(lastDetail);
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch { el.innerHTML = `<p class="muted">${t("err_server")}</p>`; }
+}
+function renderDayDetail(d) {
+  const el = document.getElementById("cal-day-detail");
+  if (!el || !d) return;
+  const [y, m, day] = d.date.split("-").map(Number);
+  const wdName = (LANG === "ne" ? WD_FULL_NE : WD_FULL_EN)[(d.weekday + 1) % 7];
+  const adFmt = LANG === "ne" ? `${nepNum(day)} ${MONTH_NE[m - 1]} ${nepNum(y)}` : `${day} ${MONTH_EN[m - 1]} ${y}`;
+  const bsFmt = d.bs ? (LANG === "ne" ? d.bs.formatted_ne : d.bs.formatted_en) : "";
+  const paksha = d.paksha;
+  const row = (label, value) => `<p><b>${label}:</b> ${value}</p>`;
+  const tithiVal = tithiName(d.tithi_index, paksha) +
+    (d.tithi_transitions.length ? ` · ${transText(d.tithi_transitions, (tr) => tithiName(tr.to_index, tr.to_index < 15 ? "Shukla" : "Krishna"))}` : "");
+  const nakVal = (LANG === "ne" ? NAK_NE[d.nakshatra_index] : NAK_EN[d.nakshatra_index]) +
+    ` (${LANG === "ne" ? `पाद ${nepNum(d.nakshatra_pada)}` : `pada ${d.nakshatra_pada}`})` +
+    (d.nakshatra_transitions.length ? ` · ${transText(d.nakshatra_transitions, (tr) => LANG === "ne" ? NAK_NE[tr.to_index] : NAK_EN[tr.to_index])}` : "");
+  const yogaVal = (LANG === "ne" ? YOGA_NE[d.yoga_index] : YOGA_EN[d.yoga_index]) +
+    (d.yoga_transitions.length ? ` · ${transText(d.yoga_transitions, (tr) => LANG === "ne" ? YOGA_NE[tr.to_index] : YOGA_EN[tr.to_index])}` : "");
+  const karVal = (LANG === "ne" ? (KARANA_NE[d.karana] || d.karana) : d.karana) +
+    (d.karana_transitions.length ? ` · ${transText(d.karana_transitions, (tr) => LANG === "ne" ? (KARANA_NE[tr.to_name] || tr.to_name) : tr.to_name)}` : "");
+  const planetRows = d.planets.map((p) =>
+    `<tr><td>${planetName(p.name)}</td><td>${signName(p.sign)}</td><td>${p.dms}</td></tr>`).join("");
+  el.innerHTML = `<h3 class="cal-detail-title">${bsFmt ? `${bsFmt} · ` : ""}${wdName} · ${adFmt}</h3>` +
+    row(t("sunrise"), hms(d.sunrise)) + row(t("sunset"), hms(d.sunset)) +
+    (d.moonrise ? row(t("moonrise"), hms(d.moonrise)) : "") +
+    (d.moonset ? row(t("moonset"), hms(d.moonset)) : "") +
+    row(t("tithi"), tithiVal) + row(t("nakshatra"), nakVal) +
+    row(t("yoga"), yogaVal) + row(t("karana"), karVal) +
+    row(t("moon_sign"), signName(d.moon_sign)) +
+    row(t("ritu"), LANG === "ne" ? d.ritu_ne : d.ritu_en) +
+    row(t("ayana"), LANG === "ne" ? d.ayana_ne : d.ayana_en) +
+    `<h4>${t("planets_title")}</h4><table class="cal-planet-table"><tbody>${planetRows}</tbody></table>`;
 }
 function calPlaceParams() {
   const place = resolvePlace("c-place");
@@ -2780,6 +2909,9 @@ function calPlaceParams() {
 async function loadCal() {
   const ySel = document.getElementById("cal-year"), mSel = document.getElementById("cal-month");
   if (!ySel || !mSel) return;
+  const detailEl = document.getElementById("cal-day-detail");
+  if (detailEl) { detailEl.hidden = true; detailEl.innerHTML = ""; }
+  lastDetail = null;
   const params = calPlaceParams();
   if (calSystem === "ad") { params.set("year", ySel.value); params.set("month", mSel.value); }
   else { params.set("bs_year", ySel.value); params.set("bs_month", mSel.value); }
@@ -2788,8 +2920,10 @@ async function loadCal() {
     const res = await fetch(url);
     if (!res.ok) throw new Error("bad");
     const cal = await res.json();
-    lastCal = { system: calSystem, data: cal };
-    renderCalGrid(calSystem, cal);
+    let adBs = null;
+    if (calSystem === "ad") adBs = await fetchAdBsMap(cal.days);
+    lastCal = { system: calSystem, data: cal, adBs };
+    renderCalGrid(calSystem, cal, adBs);
   } catch { /* keep previous grid */ }
 }
 function setCalSystem(sys) {
@@ -2810,6 +2944,22 @@ function setCalSystem(sys) {
     loadCal();
   }
 }
+async function goToday() {
+  const ySel = document.getElementById("cal-year"), mSel = document.getElementById("cal-month");
+  if (!ySel || !mSel) return;
+  if (calSystem === "bs") {
+    try {
+      const body = await (await fetch("/api/bs")).json();
+      if (body) { buildCalSelects(); ySel.value = body.year; mSel.value = body.month; }
+    } catch { /* fall through to loadCal with current selects */ }
+  } else {
+    const now = new Date();
+    buildCalSelects(now.getFullYear());
+    ySel.value = now.getFullYear();
+    mSel.value = now.getMonth() + 1;
+  }
+  loadCal();
+}
 function stepCal(dir) {
   const ySel = document.getElementById("cal-year"), mSel = document.getElementById("cal-month");
   if (!ySel || !mSel || !ySel.value || !mSel.value) return;
@@ -2826,7 +2976,8 @@ function refreshCalLanguage() {
   const ySel = document.getElementById("cal-year");
   if (!ySel) return;
   buildCalSelects(calSystem === "ad" ? +ySel.value || undefined : undefined);
-  if (lastCal) renderCalGrid(lastCal.system, lastCal.data);
+  if (lastCal) renderCalGrid(lastCal.system, lastCal.data, lastCal.adBs);
+  if (lastDetail) renderDayDetail(lastDetail);
 }
 (function initCalendar() {
   const ySel = document.getElementById("cal-year"), mSel = document.getElementById("cal-month");
@@ -2835,11 +2986,22 @@ function refreshCalLanguage() {
   const now = new Date();
   ySel.value = now.getFullYear();
   mSel.value = now.getMonth() + 1;
+  const grid = document.getElementById("cal-grid");
+  if (grid) grid.addEventListener("click", (ev) => {
+    const btn = ev.target.closest("button[data-date]");
+    if (btn) showDayDetail(btn.dataset.date);
+  });
+  if (window.location.hash === "#panchang") loadCal();
+  window.addEventListener("hashchange", () => {
+    if (window.location.hash === "#panchang" && grid && !grid.hasChildNodes()) loadCal();
+  });
 })();
 const calBtn = document.getElementById("cal-load");
 if (calBtn) calBtn.addEventListener("click", loadCal);
 const calPrevBtn = document.getElementById("cal-prev");
 if (calPrevBtn) calPrevBtn.addEventListener("click", () => stepCal(-1));
+const calTodayBtn = document.getElementById("cal-today");
+if (calTodayBtn) calTodayBtn.addEventListener("click", goToday);
 const calNextBtn = document.getElementById("cal-next");
 if (calNextBtn) calNextBtn.addEventListener("click", () => stepCal(1));
 const calModeAd = document.getElementById("cal-mode-ad");
