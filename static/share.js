@@ -129,6 +129,47 @@ function importSavedCharts(text, existing, max) {
   return { charts: merged, skipped, error: null };
 }
 
+/* Saved-chart comparison (Phase 3 Part C2): pure rows for two kundali
+ * bundles, so the table is unit-testable without a DOM. Each row is
+ * {label, a, b, same} where a/b are display strings in the requested
+ * language and `same` marks an equal sign (or equal dasha lord) — the
+ * UI highlights those cells. Planets come from bundle.planets in the
+ * engine's order; missing data yields "—" rather than crashing. */
+const COMPARE_PLANETS = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"];
+
+function compareSignText(point, lang) {
+  if (!point) return "—";
+  const sign = lang === "ne" ? (point.sign_ne || point.sign_en) : (point.sign_en || point.sign_ne);
+  const nak = lang === "ne" ? (point.nakshatra_ne || point.nakshatra_en) : (point.nakshatra_en || point.nakshatra_ne);
+  return sign + (nak ? ` (${nak})` : "") + (point.house != null ? ` · H${point.house}` : "");
+}
+
+function planetByName(bundle, name) {
+  const list = (bundle && bundle.planets) || [];
+  return list.find((p) => p.planet === name) || null;
+}
+
+function chartComparisonRows(a, b, lang) {
+  const rows = [];
+  const push = (label, aText, bText, same) => rows.push({ label, a: aText, b: bText, same: !!same });
+  const lagA = a && a.lagna, lagB = b && b.lagna;
+  push("Lagna", compareSignText(lagA, lang), compareSignText(lagB, lang),
+       lagA && lagB && lagA.sign === lagB.sign);
+  for (const name of COMPARE_PLANETS) {
+    const pa = planetByName(a, name), pb = planetByName(b, name);
+    push(name, compareSignText(pa, lang), compareSignText(pb, lang),
+         pa && pb && pa.sign === pb.sign);
+  }
+  const curA = a && a.dasha && a.dasha.current, curB = b && b.dasha && b.dasha.current;
+  const mdA = curA && curA.mahadasha ? curA.mahadasha.lord : null;
+  const mdB = curB && curB.mahadasha ? curB.mahadasha.lord : null;
+  push("Mahadasha", mdA || "—", mdB || "—", mdA && mdA === mdB);
+  const adA = curA && curA.antardasha ? curA.antardasha.lord : null;
+  const adB = curB && curB.antardasha ? curB.antardasha.lord : null;
+  push("Antardasha", adA || "—", adB || "—", adA && adA === adB);
+  return rows;
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { shareParams, buildShareUrl, parseShareParams, chartKey, dedupeCharts, isValidChartPayload, normalizeSavedEntry, exportSavedCharts, importSavedCharts };
+  module.exports = { shareParams, buildShareUrl, parseShareParams, chartKey, dedupeCharts, isValidChartPayload, normalizeSavedEntry, exportSavedCharts, importSavedCharts, chartComparisonRows };
 }

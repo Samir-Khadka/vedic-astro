@@ -58,3 +58,26 @@ test("saved-chart export/import round-trip, with bad entries skipped", () => {
   const wrong = importSavedCharts(JSON.stringify({ format: "other", charts: [] }), []);
   assert.equal(wrong.error, "bad-format");
 });
+
+test("chartComparisonRows: lagna, planets, dasha, same-sign flags", () => {
+  const { chartComparisonRows } = require("../static/share.js");
+  const mk = (lagnaSign, moonSign, md, ad) => ({
+    lagna: { sign: lagnaSign, sign_en: "Sagittarius", sign_ne: "धनु", nakshatra_en: "Mula", nakshatra_ne: "मूल", house: null },
+    planets: [
+      { planet: "Sun", sign: 8, sign_en: "Sagittarius", sign_ne: "धनु", nakshatra_en: "Mula", nakshatra_ne: "मूल", house: 1 },
+      { planet: "Moon", sign: moonSign, sign_en: "Libra", sign_ne: "तुला", nakshatra_en: "Swati", nakshatra_ne: "स्वाती", house: 11 },
+    ],
+    dasha: { current: { mahadasha: { lord: md }, antardasha: { lord: ad } } },
+  });
+  const rows = chartComparisonRows(mk(8, 6, "Saturn", "Saturn"), mk(8, 3, "Saturn", "Jupiter"), "en");
+  const byLabel = Object.fromEntries(rows.map((r) => [r.label, r]));
+  assert.equal(byLabel.Lagna.same, true);
+  assert.equal(byLabel.Moon.same, false);
+  assert.equal(byLabel.Sun.same, true);
+  assert.equal(byLabel.Mars.a, "—"); // missing planet never crashes
+  assert.equal(byLabel.Mahadasha.same, true);
+  assert.equal(byLabel.Antardasha.same, false);
+  assert.equal(rows.length, 12); // Lagna + 9 planets + 2 dasha
+  const neRows = chartComparisonRows(mk(8, 6, "Saturn", "Saturn"), mk(8, 6, "Saturn", "Saturn"), "ne");
+  assert.match(neRows[0].a, /धनु/);
+});

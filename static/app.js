@@ -169,6 +169,8 @@ const I18N = {
     saved_hint:"Stored only in this browser — no account needed. A share link opens the same chart on any device.",
     share_btn:"Copy share link", share_copied:"Link copied!", saved_empty:"No saved charts yet.",
     saved_load:"Open", saved_delete:"Remove", saved_export:"Export as JSON", saved_import:"Import JSON", saved_imported:"Charts imported.", saved_import_bad:"That file is not a saved-charts JSON file.",
+    compare_title:"Compare two saved charts", compare_hint:"Pick two saved charts to see Lagna, planets and current dasha side by side. Matching signs are highlighted.",
+    compare_a:"Chart A", compare_b:"Chart B", compare_btn:"Compare", compare_need_two:"Pick two different saved charts to compare.", compare_same:"shared", compare_rows_word:"rows compared",
     chalit_title:"Bhava Chalit — houses by actual cusps",
     chalit_hint:"Sripathi method: each house is centred on its cusp. Planets marked shifted sit in a different Chalit house than their Rashi house.",
     th_rashi_house:"Rashi house", th_chalit_house:"Chalit house", th_shifted:"Shifted?",
@@ -381,6 +383,8 @@ const I18N = {
     saved_hint:"यही ब्राउजरमा मात्र राखिन्छ — कुनै खाता चाहिँदैन। साझा लिङ्कले कुनै पनि यन्त्रमा उही कुण्डली खोल्छ।",
     share_btn:"साझा लिङ्क कपी गर्नुहोस्", share_copied:"लिङ्क कपी भयो!", saved_empty:"अहिलेसम्म कुनै सुरक्षित कुण्डली छैन।",
     saved_load:"खोल्नुहोस्", saved_delete:"हटाउनुहोस्", saved_export:"JSON को रूपमा निर्यात गर्नुहोस्", saved_import:"JSON आयात गर्नुहोस्", saved_imported:"कुण्डलीहरू आयात गरियो।", saved_import_bad:"त्यो फाइल सुरक्षित कुण्डलीको JSON फाइल होइन।",
+    compare_title:"दुई सुरक्षित कुण्डली तुलना गर्नुहोस्", compare_hint:"लग्न, ग्रह र हालको दशा छेउछाउमा हेर्न दुई सुरक्षित कुण्डली छान्नुहोस्। मिल्ने राशिहरू उजागर गरिन्छ।",
+    compare_a:"कुण्डली A", compare_b:"कुण्डली B", compare_btn:"तुलना गर्नुहोस्", compare_need_two:"तुलना गर्न दुई फरक सुरक्षित कुण्डली छान्नुहोस्।", compare_same:"साझा", compare_rows_word:"पङ्क्ति तुलना गरियो",
     chalit_title:"भाव चलित — वास्तविक भावसीमाबाट घरहरू",
     chalit_hint:"श्रीपति विधि: प्रत्येक भाव आफ्नो कस्पमा केन्द्रित हुन्छ। 'सरेको' चिन्ह लागेका ग्रह राशि घरभन्दा फरक चलित घरमा छन्।",
     th_rashi_house:"राशि भाव", th_chalit_house:"चलित भाव", th_shifted:"सरेको?",
@@ -2218,6 +2222,53 @@ function renderSavedList() {
     const next = loadSavedCharts().filter((_, j) => j !== +b.dataset.del);
     localStorage.setItem(SAVED_KEY, JSON.stringify(next)); renderSavedList();
   }));
+  renderCompareSelects(charts);
+}
+
+/* Saved-chart comparison (Phase 3 Part C2): two saved payloads are
+ * computed fresh via /api/kundali (no server storage, same as the
+ * finder) and shown side by side with matching signs highlighted. */
+function savedLabel(c, i) {
+  return `${c.name ? `${c.name} — ` : ""}${c.dob} ${c.tob} · ${c.place_name || ""}`.trim() || `Chart ${i + 1}`;
+}
+function renderCompareSelects(charts) {
+  for (const id of ["compare-a", "compare-b"]) {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = charts.map((c, i) => `<option value="${i}">${esc(savedLabel(c, i))}</option>`).join("");
+    if (charts.length > 1) sel.value = id === "compare-b" ? "1" : (prev && +prev < charts.length ? prev : "0");
+  }
+  const btn = document.getElementById("compare-btn");
+  if (btn && !btn.dataset.wired) {
+    btn.dataset.wired = "1";
+    btn.addEventListener("click", async () => {
+      const errEl = document.getElementById("compare-error"); errEl.hidden = true;
+      const out = document.getElementById("compare-result");
+      const chartsNow = loadSavedCharts();
+      const ia = +document.getElementById("compare-a").value;
+      const ib = +document.getElementById("compare-b").value;
+      if (!chartsNow[ia] || !chartsNow[ib] || ia === ib) {
+        errEl.textContent = t("compare_need_two"); errEl.hidden = false; return;
+      }
+      const ea = chartsNow[ia], eb = chartsNow[ib];
+      const pa = ea.payload || ea, pb = eb.payload || eb;
+      out.innerHTML = `<p class="hint">${t("compare_btn")}…</p>`;
+      try {
+        const [ba, bb] = await Promise.all([
+          fetchKundaliWithRetry(pa), fetchKundaliWithRetry(pb),
+        ]);
+        if (typeof chartComparisonRows !== "function") throw new Error("no-helper");
+        const rows = chartComparisonRows(ba, bb, LANG);
+        const shared = rows.filter((r) => r.same).length;
+        const headA = esc(savedLabel(ea, ia)), headB = esc(savedLabel(eb, ib));
+        out.innerHTML = `<p class="hint">${shared} ${t("compare_same")} — ${rows.length} ${t("compare_rows_word")}</p>` +
+          `<div class="table-scroll"><table class="data-table"><thead><tr><th></th><th>${headA}</th><th>${headB}</th></tr></thead><tbody>` +
+          rows.map((r) => `<tr><th>${esc(r.label)}</th><td class="${r.same ? "cmp-same" : ""}">${esc(r.a)}</td><td class="${r.same ? "cmp-same" : ""}">${esc(r.b)}</td></tr>`).join("") +
+          `</tbody></table></div>`;
+      } catch { out.innerHTML = ""; errEl.textContent = t("err_server"); errEl.hidden = false; }
+    });
+  }
 }
 
 /* Saved-chart export/import (open JSON, Phase 2). Runs on the same

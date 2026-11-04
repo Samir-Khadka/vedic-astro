@@ -559,6 +559,10 @@ body.webgl-on .hero-ring { display: none; }
 }
 .kundali-svg { filter: drop-shadow(0 12px 30px rgba(42, 20, 69, 0.16)); }
 
+/* Saved-chart comparison */
+.compare-block { margin-top: 18px; border-top: 1px solid var(--hairline); padding-top: 14px; }
+.compare-block h4 { margin: 0 0 6px; font-family: var(--font-display); font-size: 17px; color: var(--ink); }
+.cmp-same { background: rgba(201, 162, 39, .16); font-weight: 600; }
 /* Muhurta month view — calendar grid coloured by day grade */
 .muh-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
 .muh-cell { border: 1px solid var(--hairline); border-radius: 10px; padding: 8px 4px; background: rgba(255,255,255,.65);
