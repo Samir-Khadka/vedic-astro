@@ -1,6 +1,6 @@
 "use strict";
 /* Vedic Astro — cinematic 3D hero scene (Three.js).
- * A slowly rotating zodiac ring / armillary with glyph sprites, a glowing
+ * A slowly rotating zodiac ring / armillary with sign-number sprites, a glowing
  * central sun, orbiting planets, a deep star particle field and nebula
  * glow sprites, with lerped mouse parallax.
  *
@@ -32,7 +32,20 @@
     ev.preventDefault(); teardown();
   });
 
-  const GLYPHS = ["♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"];
+  /* Vedic sign numbers, never Western glyphs: house order 1–12, Devanagari
+     digits in Nepali mode, Arabic digits in English — matching the printed
+     patri charts. Language is read from localStorage (the same key the
+     language toggle writes), so the wheel is correct on first paint and
+     rebuilds on every toggle via window.rebuildHeroWheel(). */
+  const WHEEL_NE_DIGITS = "०१२३४५६७८९";
+  function wheelLang() {
+    try { return localStorage.getItem("vedic-astro-lang") === "ne" ? "ne" : "en"; }
+    catch (e) { return "en"; }
+  }
+  function wheelLabel(i) {
+    const n = String(i + 1);
+    return wheelLang() === "ne" ? n.replace(/\d/g, (d) => WHEEL_NE_DIGITS[+d]) : n;
+  }
   /* Phase 5 — light stage: antique gold + royal violet on warm ivory */
   const GOLD = 0xb8860b, GOLD_HI = 0xc9a227, VIOLET = 0x7c3aed, DEEP = 0x5b21b6;
 
@@ -42,7 +55,7 @@
 
   const rig = new THREE.Group();          // parallax group
   scene.add(rig);
-  const wheel = new THREE.Group();        // zodiac ring + glyphs
+  const wheel = new THREE.Group();        // zodiac ring + sign numbers
   rig.add(wheel);
 
   /* ---- textures (canvas-generated, no external assets) ---- */
@@ -54,14 +67,14 @@
     g.fillStyle = grad; g.fillRect(0, 0, 256, 256);
     return new THREE.CanvasTexture(c);
   }
-  function glyphTexture(glyph) {
+  function numberTexture(label) {
     const c = document.createElement("canvas"); c.width = c.height = 160;
     const g = c.getContext("2d");
-    g.font = "104px 'Segoe UI Symbol','Noto Sans Symbols 2','Noto Sans',serif";
+    g.font = "104px 'Noto Sans Devanagari','Noto Sans',sans-serif";
     g.textAlign = "center"; g.textBaseline = "middle";
     g.shadowColor = "rgba(184,134,11,0.5)"; g.shadowBlur = 12;
     g.fillStyle = "#8a6508";
-    g.fillText(glyph, 80, 86); g.fillText(glyph, 80, 86);
+    g.fillText(label, 80, 86); g.fillText(label, 80, 86);
     return new THREE.CanvasTexture(c);
   }
 
@@ -111,7 +124,7 @@
   const stars = new THREE.Points(starGeo, starMat);
   scene.add(stars);
 
-  /* ---- zodiac wheel: rings + glyph sprites ---- */
+  /* ---- zodiac wheel: rings + sign-number sprites ---- */
   function ring(radius, tube, color, opacity) {
     const mesh = new THREE.Mesh(
       new THREE.TorusGeometry(radius, tube, 12, 180),
@@ -134,15 +147,29 @@
   wheel.add(new THREE.LineSegments(tickGeo,
     new THREE.LineBasicMaterial({ color: GOLD, transparent: true, opacity: 0.5 })));
 
-  GLYPHS.forEach((glyph, i) => {
-    const a = ((i * 30 + 90) * Math.PI) / 180; // Aries at top, wheel turns CCW visually
-    const sp = new THREE.Sprite(new THREE.SpriteMaterial({
-      map: glyphTexture(glyph), transparent: true, depthWrite: false,
-    }));
-    sp.position.set(Math.cos(a) * 3.15, Math.sin(a) * 3.15, 0);
-    sp.scale.set(0.62, 0.62, 1);
-    wheel.add(sp);
-  });
+  const wheelSprites = [];
+  function buildWheelLabels() {
+    for (const sp of wheelSprites) {
+      wheel.remove(sp);
+      if (sp.material.map) sp.material.map.dispose();
+      sp.material.dispose();
+    }
+    wheelSprites.length = 0;
+    for (let i = 0; i < 12; i++) {
+      const a = ((i * 30 + 90) * Math.PI) / 180; // sign 1 at top, wheel turns CCW visually
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: numberTexture(wheelLabel(i)), transparent: true, depthWrite: false,
+      }));
+      sp.position.set(Math.cos(a) * 3.15, Math.sin(a) * 3.15, 0);
+      sp.scale.set(0.62, 0.62, 1);
+      wheel.add(sp);
+      wheelSprites.push(sp);
+    }
+  }
+  buildWheelLabels();
+  /* Rebuilt by app.js's language toggle (applyLang) so the numbers never
+     go stale after a language change. */
+  window.rebuildHeroWheel = buildWheelLabels;
 
   /* ---- armillary rings (tilted, independent slow axes) ---- */
   const armillary = new THREE.Group();

@@ -5,7 +5,7 @@
  * never cached and the app shell alone does not work offline. When a
  * fetch fails, the page's own error handling applies, unchanged.
  */
-const CACHE = "vedic-astro-static-v3";
+const CACHE = "vedic-astro-static-v4";
 const ASSETS = [
   "/",
   "/static/styles.css",
