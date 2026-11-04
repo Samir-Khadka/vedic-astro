@@ -290,6 +290,7 @@ def muhurta(
     date_from: str = Query(default=None),
     date_to: str = Query(default=None),
     activity: str = "marriage",
+    facing: str = "any",
     place_id: str | None = None,
     lat: float | None = None,
     lon: float | None = None,
@@ -315,6 +316,8 @@ def muhurta(
 
     _validate_coords_tz(lat, lon, tz)
     _validate_coords_tz(birth_lat, birth_lon, birth_tz)
+    if facing not in ("any", "east", "west", "north", "south"):
+        raise HTTPException(status_code=400, detail=f"unknown facing: {facing}")
     try:
         place = engine.resolve_place({"place_id": place_id, "lat": lat, "lon": lon, "tz": tz})
         d_from = date.fromisoformat(date_from) if date_from else date.today()
@@ -332,7 +335,7 @@ def muhurta(
             if birth_moon_sign is None:
                 birth_moon_sign = natal_planets["Moon"]["sign"]
         result = muhurta_module.muhurta_range(
-            d_from, d_to, place["lat"], place["lon"], place["tz"], activity,
+            d_from, d_to, place["lat"], place["lon"], place["tz"], activity, facing,
             birth_nakshatra, birth_moon_sign, dasha_tree, natal_planets, natal_lagna)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
