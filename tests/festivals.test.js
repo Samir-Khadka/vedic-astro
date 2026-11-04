@@ -55,7 +55,7 @@ test("holiday chips are deep red, festival chips violet", () => {
   assert.ok(css.includes(".cal-festival"));
 });
 
-test("service worker cache is v7", () => {
-  assert.ok(sw.includes('vedic-astro-static-v7'));
+test("service worker cache is v8", () => {
+  assert.ok(sw.includes('vedic-astro-static-v8'));
   assert.ok(!sw.includes('vedic-astro-static-v6'));
 });

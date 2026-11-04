@@ -1076,15 +1076,6 @@
 <script src="/static/life_questions.js" defer></script>
 <script src="/static/ai_astrologer.js" defer></script>
 <script src="/static/router.js" defer></script>
-<script>
-  // Installability only: cache the static app shell so the app can be
-  // installed and loads fast on repeat visits. API calls are never
-  // cached (see sw.js), so charts always compute server-side.
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
-    });
-  }
-</script>
+<script src="/static/sw-update.js" defer></script>
 </body>
 </html>
