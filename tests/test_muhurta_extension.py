@@ -78,9 +78,10 @@ def test_new_activity_factors_are_bilingual():
     assert d["activity"] == "shop_opening"
     for f in d["factors"]:
         assert f["en"] and f["ne"]
-    # Grahapravesh must carry the lunar-month note, at 0 points, not a fake score.
+    # Grahapravesh now scores the lunar month (Phase 3 A1): Oct 26 2026
+    # is in Ashwin, which is not on the preferred list, so -2.
     g = muhurta_module.day_muhurta(date(2026, 10, 26), **KTM, activity="grahapravesh")
-    assert any("Lunar-month" in f["en"] and f["points"] == 0 for f in g["factors"])
+    assert any("Lunar month" in f["en"] and f["points"] == -2 for f in g["factors"])
 
 
 def test_muhurta_extension_endpoint():

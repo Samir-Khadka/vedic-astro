@@ -128,9 +128,8 @@ ACTIVITIES = {
     # --- Phase 1 extension (legacy Kundli Chakra ceremony types,
     # rewritten as rule lists, not copied data) ---
     # Legacy indices converted: nakshatra 1=Ashwini -> 0, tithi 1..30,
-    # weekday Sun-first 0=Sunday. Lunar-month rules are documented
-    # in the spec but NOT scored here: panchang_at does not yet
-    # compute the lunar month, so no month factor is invented.
+    # weekday Sun-first 0=Sunday. Lunar-month indices are 1-based
+    # (1=Chaitra) as computed by panchang_at (Amanta convention).
     "grahapravesh": {
         "en": "House entry", "ne": "गृहप्रवेश",
         "good_nakshatras": [3, 4, 11, 13, 16, 20, 25, 26],
@@ -144,6 +143,8 @@ ACTIVITIES = {
         "allowed_tithis": list(range(1, 30)),
         "lunar_months_en": "Vaishakh, Jyeshtha, Magh, Phalguna",
         "lunar_months_ne": "वैशाख, ज्येष्ठ, माघ, फाल्गुन",
+        # 1-based lunar-month indices: Vaishakha=2, Jyeshtha=3, Magha=11, Phalguna=12
+        "allowed_lunar_months": [2, 3, 11, 12],
     },
     "shop_opening": {
         "en": "Shop inauguration", "ne": "पसल उद्घाटन",
@@ -423,9 +424,18 @@ def day_muhurta(day: date, lat: float, lon: float, tz_name: str,
     else:
         factors.append({"en": f"Moon in {NAKSHATRAS_EN[nak]} — not on the preferred list for {act['en'].lower()}",
                         "ne": f"चन्द्र {NAKSHATRAS_NE[nak]} मा — {act['ne']} का लागि रुचाइएको सूचीमा छैन", "points": 0})
-    if activity == "grahapravesh" and "lunar_months_en" in act:
-        factors.append({"en": f"Lunar-month rule ({act['lunar_months_en']}) is documented but not scored yet — the panchang module does not yet compute the lunar month",
-                        "ne": f"चान्द्रमास नियम ({act['lunar_months_ne']}) दस्तावेज गरिएको छ तर अझै अङ्कन गरिएको छैन — पञ्चाङ्ग मोड्युलले अझै चान्द्रमास गणना गर्दैन", "points": 0})
+    if activity == "grahapravesh" and "allowed_lunar_months" in act:
+        lm_idx = p.get("lunar_month_index")
+        lm_en = p.get("lunar_month_en", "")
+        lm_ne = p.get("lunar_month_ne", "")
+        if lm_idx in act["allowed_lunar_months"]:
+            score += 2
+            factors.append({"en": f"Lunar month {lm_en} — on the preferred list for house entry",
+                            "ne": f"चान्द्रमास {lm_ne} — गृहप्रवेशका लागि रुचाइएको सूचीमा छ", "points": 2})
+        else:
+            score -= 2
+            factors.append({"en": f"Lunar month {lm_en} — not on the preferred list for house entry ({act['lunar_months_en']})",
+                            "ne": f"चान्द्रमास {lm_ne} — गृहप्रवेशका लागि रुचाइएको सूचीमा छैन ({act['lunar_months_ne']})", "points": -2})
     tara = None
     if birth_nakshatra is not None:
         tara = (nak - birth_nakshatra) % 9 + 1
