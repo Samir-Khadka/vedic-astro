@@ -519,6 +519,14 @@ def varshphal(ctx: dict, years_ahead: int = 3) -> list[dict]:
             "solar_return": ret_local.isoformat(),
             "is_day_return": is_day,
             "varsha_lagna": {"sign": v_lagna_sign, "sign_en": SIGNS_EN[v_lagna_sign], "sign_ne": SIGNS_NE[v_lagna_sign]},
+            # Annual-chart planet placements (Varshphal-Planet Position):
+            # sign + house counted from the Varsha Lagna, for the yearly chart.
+            "planets": [
+                {"planet": name, "sign": p["sign"], "sign_en": SIGNS_EN[p["sign"]],
+                 "sign_ne": SIGNS_NE[p["sign"]], "degree_in_sign": round(p["degree_in_sign"], 3),
+                 "house": house_of(p["sign"], v_lagna_sign)}
+                for name, p in ret_planets.items()
+            ],
             "muntha": {
                 "sign": muntha_sign, "sign_en": SIGNS_EN[muntha_sign], "sign_ne": SIGNS_NE[muntha_sign],
                 "house": muntha_house,

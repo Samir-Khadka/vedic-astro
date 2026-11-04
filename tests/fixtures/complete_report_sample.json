@@ -1,0 +1,976 @@
+{
+ "title": {
+  "name": "Sample",
+  "birth": {
+   "date": "1990-05-15",
+   "time": "08:30:00",
+   "bs_date": {
+    "year": 2047,
+    "month": 2,
+    "day": 1,
+    "month_en": "Jestha",
+    "month_ne": "जेठ",
+    "iso": "2047-02-01",
+    "formatted_en": "1 Jestha 2047",
+    "formatted_ne": "१ जेठ २०४७"
+   },
+   "place": {
+    "name": "Kathmandu",
+    "country": "Nepal",
+    "lat": 27.7172,
+    "lon": 85.324,
+    "tz": "Asia/Kathmandu"
+   },
+   "sunrise": "1990-05-15T05:15:56.598352+05:45",
+   "sunset": "1990-05-15T18:44:22.267300+05:45"
+  },
+  "disclaimer": {
+   "en": "Traditional astrological guidance, offered as probability — not as certain fact. For health questions consult a clinician, for legal or financial decisions consult a qualified professional.",
+   "ne": "परम्परागत ज्योतिषीय मार्गदर्शन सम्भावनाको रूपमा मात्र हो — निश्चित तथ्य होइन। स्वास्थ्यका प्रश्नका लागि चिकित्सकसँग, कानुनी वा आर्थिक निर्णयका लागि योग्य विज्ञसँग परामर्श गर्नुहोस्।"
+  }
+ },
+ "sections": [
+  {
+   "id": "title",
+   "title_en": "Title Page",
+   "title_ne": "शीर्षक पृष्ठ",
+   "available": true,
+   "data": {
+    "name": "Sample",
+    "birth": {
+     "date": "1990-05-15",
+     "time": "08:30:00",
+     "bs_date": {
+      "year": 2047,
+      "month": 2,
+      "day": 1,
+      "month_en": "Jestha",
+      "month_ne": "जेठ",
+      "iso": "2047-02-01",
+      "formatted_en": "1 Jestha 2047",
+      "formatted_ne": "१ जेठ २०४७"
+     },
+     "place": {
+      "name": "Kathmandu",
+      "country": "Nepal",
+      "lat": 27.7172,
+      "lon": 85.324,
+      "tz": "Asia/Kathmandu"
+     },
+     "sunrise": "1990-05-15T05:15:56.598352+05:45",
+     "sunset": "1990-05-15T18:44:22.267300+05:45"
+    },
+    "lagna": {
+     "longitude": 77.3322,
+     "sign": 2,
+     "sign_en": "Gemini",
+     "sign_ne": "मिथुन",
+     "degree_in_sign": 17.332,
+     "nakshatra": 5,
+     "nakshatra_en": "Ardra",
+     "nakshatra_ne": "आर्द्रा",
+     "pada": 4
+    },
+    "moon": {
+     "planet": "Moon",
+     "name_ne": "चन्द्र",
+     "longitude": 268.691,
+     "sign": 8,
+     "sign_en": "Sagittarius",
+     "sign_ne": "धनु",
+     "degree_in_sign": 28.691,
+     "nakshatra": 20,
+     "nakshatra_en": "Uttara Ashadha",
+     "nakshatra_ne": "उत्तराषाढा",
+     "pada": 1,
+     "retrograde": false,
+     "house": 7,
+     "dignity": "neutral",
+     "combust": false,
+     "kp": {
+      "sign_lord": "Jupiter",
+      "star_lord": "Sun",
+      "sub_lord": "Mars",
+      "sub_sub_lord": "Jupiter",
+      "house": 7
+     }
+    },
+    "moon_nakshatra": {
+     "en": "Uttara Ashadha",
+     "ne": "उत्तराषाढा",
+     "pada": 1
+    },
+    "ayanamsa": {
+     "key": "lahiri",
+     "name": "Lahiri (Chitrapaksha)"
+    },
+    "house_system": {
+     "key": "placidus",
+     "name": "Placidus"
+    },
+    "disclaimer": {
+     "en": "Traditional astrological guidance, offered as probability — not as certain fact. For health questions consult a clinician, for legal or financial decisions consult a qualified professional.",
+     "ne": "परम्परागत ज्योतिषीय मार्गदर्शन सम्भावनाको रूपमा मात्र हो — निश्चित तथ्य होइन। स्वास्थ्यका प्रश्नका लागि चिकित्सकसँग, कानुनी वा आर्थिक निर्णयका लागि योग्य विज्ञसँग परामर्श गर्नुहोस्।"
+    }
+   }
+  },
+  {
+   "id": "planet_position",
+   "title_en": "Planet Position",
+   "title_ne": "ग्रह स्थिति",
+   "available": true,
+   "data": {
+    "planets": [
+     {
+      "planet": "Sun",
+      "name_ne": "सूर्य",
+      "longitude": 30.2987,
+      "sign": 1,
+      "sign_en": "Taurus",
+      "sign_ne": "वृष",
+      "degree_in_sign": 0.299,
+      "nakshatra": 2,
+      "nakshatra_en": "Krittika",
+      "nakshatra_ne": "कृत्तिका",
+      "pada": 2,
+      "retrograde": false,
+      "house": 12,
+      "dignity": "neutral",
+      "combust": false,
+      "kp": {
+       "sign_lord": "Venus",
+       "star_lord": "Sun",
+       "sub_lord": "Rahu",
+       "sub_sub_lord": "Mercury",
+       "house": 11
+      }
+     },
+     {
+      "planet": "Moon",
+      "name_ne": "चन्द्र",
+      "longitude": 268.691,
+      "sign": 8,
+      "sign_en": "Sagittarius",
+      "sign_ne": "धनु",
+      "degree_in_sign": 28.691,
+      "nakshatra": 20,
+      "nakshatra_en": "Uttara Ashadha",
+      "nakshatra_ne": "उत्तराषाढा",
+      "pada": 1,
+      "retrograde": false,
+      "house": 7,
+      "dignity": "neutral",
+      "combust": false,
+      "kp": {
+       "sign_lord": "Jupiter",
+       "star_lord": "Sun",
+       "sub_lord": "Mars",
+       "sub_sub_lord": "Jupiter",
+       "house": 7
+      }
+     }
+    ],
+    "lagna": {
+     "longitude": 77.3322,
+     "sign": 2,
+     "sign_en": "Gemini",
+     "sign_ne": "मिथुन",
+     "degree_in_sign": 17.332,
+     "nakshatra": 5,
+     "nakshatra_en": "Ardra",
+     "nakshatra_ne": "आर्द्रा",
+     "pada": 4
+    }
+   }
+  },
+  {
+   "id": "sayan_charts",
+   "title_en": "Sayan Position-Charts",
+   "title_ne": "सायन स्थिति-चार्ट",
+   "available": true,
+   "data": {
+    "ayanamsa_value": 23.7225,
+    "positions": [
+     {
+      "planet": "Sun",
+      "planet_ne": "सूर्य",
+      "longitude": 54.0212,
+      "sign": 1,
+      "sign_en": "Taurus",
+      "sign_ne": "वृष",
+      "degree_in_sign": 24.021
+     },
+     {
+      "planet": "Moon",
+      "planet_ne": "चन्द्र",
+      "longitude": 292.4135,
+      "sign": 9,
+      "sign_en": "Capricorn",
+      "sign_ne": "मकर",
+      "degree_in_sign": 22.413
+     }
+    ]
+   }
+  },
+  {
+   "id": "moon_navamsa",
+   "title_en": "Moon and Navamsa Chart",
+   "title_ne": "चन्द्र र नवांश चार्ट",
+   "available": true,
+   "data": {
+    "d1": {
+     "Lagna": 2,
+     "Sun": 1,
+     "Moon": 8,
+     "Mars": 10,
+     "Mercury": 0,
+     "Jupiter": 2,
+     "Venus": 11,
+     "Saturn": 9,
+     "Rahu": 9,
+     "Ketu": 3
+    },
+    "d9": {
+     "Lagna": 11,
+     "Sun": 9,
+     "Moon": 8,
+     "Mars": 1,
+     "Mercury": 4,
+     "Jupiter": 10,
+     "Venus": 8,
+     "Saturn": 9,
+     "Rahu": 1,
+     "Ketu": 7
+    },
+    "moon": {
+     "planet": "Moon",
+     "name_ne": "चन्द्र",
+     "longitude": 268.691,
+     "sign": 8,
+     "sign_en": "Sagittarius",
+     "sign_ne": "धनु",
+     "degree_in_sign": 28.691,
+     "nakshatra": 20,
+     "nakshatra_en": "Uttara Ashadha",
+     "nakshatra_ne": "उत्तराषाढा",
+     "pada": 1,
+     "retrograde": false,
+     "house": 7,
+     "dignity": "neutral",
+     "combust": false,
+     "kp": {
+      "sign_lord": "Jupiter",
+      "star_lord": "Sun",
+      "sub_lord": "Mars",
+      "sub_sub_lord": "Jupiter",
+      "house": 7
+     }
+    },
+    "lagna": {
+     "longitude": 77.3322,
+     "sign": 2,
+     "sign_en": "Gemini",
+     "sign_ne": "मिथुन",
+     "degree_in_sign": 17.332,
+     "nakshatra": 5,
+     "nakshatra_en": "Ardra",
+     "nakshatra_ne": "आर्द्रा",
+     "pada": 4
+    }
+   }
+  },
+  {
+   "id": "vimshottari",
+   "title_en": "Vimshottari Dasha — Mahadasha, Antar, Pratyantar, Sookshma",
+   "title_ne": "विंशोत्तरी दशा — महादशा, अन्तर, प्रत्यन्तर, सूक्ष्म",
+   "available": true,
+   "data": {
+    "mahadashas": [
+     {
+      "lord": "Sun",
+      "start": "1989-06-16",
+      "end": "1995-06-17",
+      "years": 6.0,
+      "antardashas": [
+       {
+        "lord": "Sun",
+        "start": "1989-06-16",
+        "end": "1989-10-04",
+        "years": 0.3
+       },
+       {
+        "lord": "Moon",
+        "start": "1989-10-04",
+        "end": "1990-04-04",
+        "years": 0.5
+       },
+       {
+        "lord": "Mars",
+        "start": "1990-04-04",
+        "end": "1990-08-10",
+        "years": 0.35
+       },
+       {
+        "lord": "Rahu",
+        "start": "1990-08-10",
+        "end": "1991-07-05",
+        "years": 0.9
+       },
+       {
+        "lord": "Jupiter",
+        "start": "1991-07-05",
+        "end": "1992-04-22",
+        "years": 0.8
+       },
+       {
+        "lord": "Saturn",
+        "start": "1992-04-22",
+        "end": "1993-04-04",
+        "years": 0.95
+       },
+       {
+        "lord": "Mercury",
+        "start": "1993-04-04",
+        "end": "1994-02-09",
+        "years": 0.85
+       },
+       {
+        "lord": "Ketu",
+        "start": "1994-02-09",
+        "end": "1994-06-16",
+        "years": 0.35
+       },
+       {
+        "lord": "Venus",
+        "start": "1994-06-16",
+        "end": "1995-06-17",
+        "years": 1.0
+       }
+      ],
+      "display_start": "1990-05-15"
+     }
+    ],
+    "current": {
+     "mahadasha": {
+      "lord": "Rahu",
+      "start": "2012-06-16",
+      "end": "2030-06-16",
+      "years": 18.0
+     },
+     "antardasha": {
+      "lord": "Venus",
+      "start": "2024-01-04",
+      "end": "2027-01-03",
+      "years": 3.0
+     },
+     "pratyantardasha": {
+      "lord": "Ketu",
+      "start": "2026-10-31",
+      "end": "2027-01-03",
+      "years": 0.175
+     },
+     "sookshma": {
+      "lord": "Venus",
+      "start": "2026-11-04",
+      "end": "2026-11-15",
+      "years": 0.029
+     },
+     "prana": {
+      "lord": "Venus",
+      "start": "2026-11-04",
+      "end": "2026-11-06",
+      "years": 0.005
+     }
+    },
+    "balance_years": 5.089,
+    "dasha_pravesh": {
+     "dasha_start": "2012-06-16",
+     "lagna": {
+      "longitude": 189.758,
+      "sign": 6,
+      "sign_en": "Libra",
+      "sign_ne": "तुला"
+     },
+     "planets": [
+      {
+       "planet": "Sun",
+       "longitude": 61.59,
+       "sign": 2,
+       "sign_en": "Gemini",
+       "sign_ne": "मिथुन"
+      },
+      {
+       "planet": "Moon",
+       "longitude": 26.029,
+       "sign": 0,
+       "sign_en": "Aries",
+       "sign_ne": "मेष"
+      },
+      {
+       "planet": "Mars",
+       "longitude": 147.419,
+       "sign": 4,
+       "sign_en": "Leo",
+       "sign_ne": "सिंह"
+      },
+      {
+       "planet": "Mercury",
+       "longitude": 82.137,
+       "sign": 2,
+       "sign_en": "Gemini",
+       "sign_ne": "मिथुन"
+      },
+      {
+       "planet": "Jupiter",
+       "longitude": 37.02,
+       "sign": 1,
+       "sign_en": "Taurus",
+       "sign_ne": "वृष"
+      },
+      {
+       "planet": "Venus",
+       "longitude": 45.923,
+       "sign": 1,
+       "sign_en": "Taurus",
+       "sign_ne": "वृष"
+      },
+      {
+       "planet": "Saturn",
+       "longitude": 178.794,
+       "sign": 5,
+       "sign_en": "Virgo",
+       "sign_ne": "कन्या"
+      },
+      {
+       "planet": "Rahu",
+       "longitude": 221.028,
+       "sign": 7,
+       "sign_en": "Scorpio",
+       "sign_ne": "वृश्चिक"
+      },
+      {
+       "planet": "Ketu",
+       "longitude": 41.028,
+       "sign": 1,
+       "sign_en": "Taurus",
+       "sign_ne": "वृष"
+      }
+     ],
+     "note": "Dasha pravesh chakra: transits at the dasha-entry moment, read with the natal chart."
+    }
+   }
+  },
+  {
+   "id": "aaditya_lagnam",
+   "title_en": "Aaditya & Lagnam Dasha",
+   "title_ne": "आदित्य र लग्नम् दशा",
+   "available": false,
+   "data": {
+    "aaditya": null,
+    "lagnam": null
+   },
+   "note": {
+    "en": "Aaditya and Lagnam dashas are not computed by the engine yet; the section is reserved in the contents order.",
+    "ne": "आदित्य र लग्नम् दशा इन्जिनले अहिलेसम्म गणना गर्दैन; यो खण्ड सूचीको क्रममा सुरक्षित राखिएको छ।"
+   }
+  },
+  {
+   "id": "dasha_phala",
+   "title_en": "Dasha Phal",
+   "title_ne": "दशा फल",
+   "available": true,
+   "data": {
+    "dasha_phala": [
+     {
+      "lord": "Sun",
+      "start": "1989-06-16",
+      "end": "1995-06-17",
+      "summary": [
+       {
+        "en": "For this chart Sun rules the 3rd house (courage and siblings — a growth house (upachaya) that improves with time and effort). By nature it signifies the soul, father, authority, vitality and self-respect.",
+        "ne": "यस कुण्डलीमा सूर्य तेसो भाव (साहस र दाजुभाइ-दिदीबहिनी — समय र मेहनतसँगै बढ्ने उपचय भाव) को स्वामी हो। स्वभावतः यसले आत्मा, पिता, अधिकार, जीवनशक्ति र आत्मसम्मान जनाउँछ।"
+       },
+       {
+        "en": "Sun is placed in the 12th house (foreign lands and liberation) in Taurus, in Krittika nakshatra, pada 2; it is in an enemy's sign (Venus's), which hampers it; its dispositor Venus is placed in the 10th house, so Sun's results are routed through career and status.",
+        "ne": "सूर्य बाह्रौँ भावमा (विदेश र मुक्ति) वृष राशिमा, कृत्तिका नक्षत्रको पद 2 मा छ; यो शत्रुको राशिमा (शुक्रको) छ, जसले यसलाई बाधा पुर्याउँछ; यसको राशिस्वामी शुक्र दशौँ भावमा छ, त्यसैले सूर्यको फल पेशा र प्रतिष्ठा हुँदै आउँछ।"
+       },
+       {
+        "en": "In Shadbala Sun scores 6.55 rupas — rank 6 of 7, well above the minimum strength classical texts require of it; its Ishta Phala exceeds its Kashta Phala, so its results lean favourable.",
+        "ne": "षड्बलमा सूर्यले 6.55 रूपा पाएको छ — ७ मध्ये क्रम 6, शास्त्रले मागेको न्यूनतम बलभन्दा धेरै माथि; यसको इष्टफल कष्टफलभन्दा बढी छ, त्यसैले यसको फल अनुकूलतिर ढल्किन्छ।"
+       },
+       {
+        "en": "Through this Mahadasha the houses Sun activates — courage and siblings — and the house it occupies (foreign lands and liberation) move to the foreground of life; events cluster there, paced by the Antardashas below.",
+        "ne": "यस महादशाभरि सूर्यले शासन गर्ने भावहरू — साहस र दाजुभाइ-दिदीबहिनी — र यो बसेको भाव (विदेश र मुक्ति) जीवनको अग्रभागमा आउँछन्; घटनाहरू त्यहीँ केन्द्रित हुन्छन्, तलका अन्तर्दशाहरूको गतिमा।"
+       }
+      ]
+     }
+    ],
+    "deep_dive": null
+   },
+   "note": {
+    "en": "Dasha results are traditional probability guidance, not certainties.",
+    "ne": "दशा फल परम्परागत सम्भावना-आधारित मार्गदर्शन मात्र हो, निश्चितता होइन।"
+   }
+  },
+  {
+   "id": "varshphal",
+   "title_en": "Varshphal — Positions, Predictions & Charts",
+   "title_ne": "वर्षफल — स्थिति, भविष्यवाणी र चार्ट",
+   "available": true,
+   "data": {
+    "years": [
+     {
+      "year": 2026,
+      "age": 36,
+      "solar_return": "2026-05-15T14:02:45.060219+05:45",
+      "is_day_return": true,
+      "varsha_lagna": {
+       "sign": 4,
+       "sign_en": "Leo",
+       "sign_ne": "सिंह"
+      },
+      "planets": [
+       {
+        "planet": "Sun",
+        "sign": 1,
+        "sign_en": "Taurus",
+        "sign_ne": "वृष",
+        "degree_in_sign": 0.299,
+        "house": 10
+       },
+       {
+        "planet": "Moon",
+        "sign": 0,
+        "sign_en": "Aries",
+        "sign_ne": "मेष",
+        "degree_in_sign": 9.332,
+        "house": 9
+       }
+      ],
+      "muntha": {
+       "sign": 2,
+       "sign_en": "Gemini",
+       "sign_ne": "मिथुन",
+       "house": 11
+      },
+      "year_lord": "Sun",
+      "tajika": {
+       "pairs": [
+        {
+         "yoga": "Isharpha",
+         "yoga_ne": "ईसरफ",
+         "planets": [
+          "Mercury",
+          "Sun"
+         ],
+         "favourable": false,
+         "reading": {
+          "en": "Mercury (faster) separates from Sun — the chance signified by this pair slips away in the year.",
+          "ne": "Mercury (छिटो) Sun बाट टाढिन्छ — यस जोडीले देखाएको अवसर वर्षमा चिप्लिन्छ।"
+         }
+        }
+       ],
+       "patterns": [],
+       "favourable_count": 1,
+       "unfavourable_count": 8,
+       "orb_degrees": 8.0,
+       "method_note": {
+        "en": "Tajika aspects judged within a documented 8-degree orb (classical Deeptamsa varies by planet); seven visible grahas only.",
+        "ne": "ताजिक दृष्टि दस्तावेज गरिएको ८ डिग्रीको कक्षभित्र जाँचिएको छ (शास्त्रीय दीप्तांश ग्रहअनुसार फरक हुन्छ); सात दृश्य ग्रह मात्र।"
+       }
+      },
+      "sahams": {
+       "Punya": {
+        "longitude": 128.454,
+        "sign": 4,
+        "sign_en": "Leo",
+        "sign_ne": "सिंह",
+        "degree_in_sign": 8.454,
+        "lord": "Sun",
+        "lord_ne": "सूर्य",
+        "house": 1,
+        "house_theme": {
+         "en": "self and personality",
+         "ne": "आत्म र व्यक्तित्व"
+        },
+        "dignity": "own",
+        "strength": "strong",
+        "reading": {
+         "en": "Punya Saham (fortune and name) falls in Leo, in the 1st house of the annual chart — strong by its lord's dignity and placement.",
+         "ne": "Punya सहम (भाग्य र नाम) सिंह मा, वार्षिक कुण्डलीको पहिलो भावमा छ — स्वामीको बल र स्थितिअनुसार strong।"
+        }
+       }
+      },
+      "panchadhikari": {
+       "candidates": [
+        {
+         "officer": {
+          "en": "Natal Lagna lord",
+          "ne": "जन्म लग्न स्वामी"
+         },
+         "planet": "Mercury",
+         "planet_ne": "बुध",
+         "aspects_lagna": true,
+         "dignity": "neutral",
+         "house": 10,
+         "score": 17
+        },
+        {
+         "officer": {
+          "en": "Muntha lord",
+          "ne": "मुन्था स्वामी"
+         },
+         "planet": "Mercury",
+         "planet_ne": "बुध",
+         "aspects_lagna": true,
+         "dignity": "neutral",
+         "house": 10,
+         "score": 17
+        },
+        {
+         "officer": {
+          "en": "Varsha Lagna lord",
+          "ne": "वर्ष लग्न स्वामी"
+         },
+         "planet": "Sun",
+         "planet_ne": "सूर्य",
+         "aspects_lagna": true,
+         "dignity": "neutral",
+         "house": 10,
+         "score": 17
+        },
+        {
+         "officer": {
+          "en": "Dina-Ratri lord",
+          "ne": "दिन-रात्रि स्वामी"
+         },
+         "planet": "Venus",
+         "planet_ne": "शुक्र",
+         "aspects_lagna": true,
+         "dignity": "neutral",
+         "house": 11,
+         "score": 12
+        },
+        {
+         "officer": {
+          "en": "Triplicity lord",
+          "ne": "त्रिराशि स्वामी"
+         },
+         "planet": "Sun",
+         "planet_ne": "सूर्य",
+         "aspects_lagna": true,
+         "dignity": "neutral",
+         "house": 10,
+         "score": 17
+        }
+       ],
+       "year_lord": "Mercury",
+       "year_lord_ne": "बुध",
+       "year_lord_officer": {
+        "en": "Natal Lagna lord",
+        "ne": "जन्म लग्न स्वामी"
+       },
+       "fallback_to_muntha": false,
+       "reading": {
+        "en": "The Panchadhikari election makes Mercury the Year Lord (Natal Lagna lord, strongest of the officers aspecting the Varsha Lagna).",
+        "ne": "पञ्चाधिकारी निर्वाचनले बुध लाई वर्ष स्वामी बनाउँछ (जन्म लग्न स्वामी, वर्ष लग्नलाई दृष्टि दिने अधिकारीहरूमध्ये बलियो)।"
+       }
+      },
+      "reading": {
+       "en": "Annual Lagna Leo; year lord Sun is placed in the 10th house of the annual chart. Muntha is in the 11th house (gains and networks), focusing the year's experiences there. The year runs mainly under Rahu Mahadasha.",
+       "ne": "वार्षिक लग्न सिंह; वर्ष स्वामी सूर्य वार्षिक कुण्डलीको दशौँ भावमा छ। मुन्था एघारौँ भावमा (लाभ र सम्पर्क सञ्जाल) छ, जसले वर्षको अनुभव त्यहाँ केन्द्रित गर्छ। यो वर्ष मुख्यतः राहु महादशामा चल्छ।"
+      },
+      "chart": {
+       "Lagna": 4,
+       "Sun": 1,
+       "Moon": 0,
+       "Mars": 0,
+       "Mercury": 1,
+       "Jupiter": 2,
+       "Venus": 2,
+       "Saturn": 11,
+       "Rahu": 10,
+       "Ketu": 4
+      }
+     }
+    ],
+    "count": 1
+   },
+   "note": {
+    "en": "Annual predictions are traditional probability guidance.",
+    "ne": "वार्षिक भविष्यवाणी परम्परागत सम्भावना-आधारित मार्गदर्शन हो।"
+   }
+  },
+  {
+   "id": "ratna_mantra",
+   "title_en": "Ratna-Mantra — Introduction, Suggestion, Jaap & How to Wear",
+   "title_ne": "रत्न-मन्त्र — परिचय, सुझाव, जप र धारण विधि",
+   "available": true,
+   "data": {
+    "per_planet": [
+     {
+      "planet": "Sun",
+      "planet_ne": "सूर्य",
+      "introduction": {
+       "en": "Ratna-Mantra for Sun: the traditional gem, mantra and worship for strengthening this graha.",
+       "ne": "सूर्यको रत्न-मन्त्र: यस ग्रहलाई बलियो बनाउने परम्परागत रत्न, मन्त्र र पूजा।"
+      },
+      "suggestion": {
+       "en": "Wear Ruby set in Gold on the Ring finger, on a Sunday.",
+       "ne": "आइतबारका दिन सुनमा जडित माणिक कान्छी औंलामा धारण गर्नुहोस्।"
+      },
+      "gemstone": {
+       "en": "Ruby",
+       "ne": "माणिक"
+      },
+      "metal": {
+       "en": "Gold",
+       "ne": "सुन"
+      },
+      "finger": {
+       "en": "Ring finger",
+       "ne": "कान्छी औंला"
+      },
+      "day": {
+       "en": "Sunday",
+       "ne": "आइतबार"
+      },
+      "weight": "5 ratti",
+      "rudraksha": {
+       "en": "One Mukhi Rudraksha",
+       "ne": "एकमुखी रुद्राक्ष",
+       "mukhi": 1
+      },
+      "beej_mantra": {
+       "ne": "ॐ ह्रां ह्रीं ह्रौं सः सूर्याय नमः",
+       "transliteration": "Om Hram Hrim Hraum Sah Suryaya Namah"
+      },
+      "jaap_count": 7000,
+      "how_to_wear": {
+       "en": "Wear after purification and mantra recitation on the planet's weekday, as advised by a trusted astrologer; the stone should be natural and undamaged.",
+       "ne": "ग्रहको बारमा शुद्धीकरण र मन्त्र जपपछि, विश्वसनीय ज्योतिषीको सल्लाहमा धारण गर्नुहोस्; रत्न प्राकृतिक र क्षतिरहित हुनुपर्छ।"
+      }
+     }
+    ],
+    "remedies": {
+     "gemstones": [
+      {
+       "role": {
+        "en": "Life stone (Lagna lord)",
+        "ne": "जीवन रत्न (लग्न स्वामी)"
+       },
+       "for_planet": "Mercury",
+       "stone": {
+        "en": "Emerald",
+        "ne": "पन्ना"
+       },
+       "metal": {
+        "en": "Gold",
+        "ne": "सुन"
+       },
+       "finger": {
+        "en": "Little finger",
+        "ne": "कान्छी औंला"
+       },
+       "day": {
+        "en": "Wednesday",
+        "ne": "बुधबार"
+       },
+       "weight": "5 ratti"
+      },
+      {
+       "role": {
+        "en": "Lucky stone (Moon-sign lord)",
+        "ne": "भाग्य रत्न (चन्द्र राशि स्वामी)"
+       },
+       "for_planet": "Jupiter",
+       "stone": {
+        "en": "Yellow Sapphire",
+        "ne": "पुखराज"
+       },
+       "metal": {
+        "en": "Gold",
+        "ne": "सुन"
+       },
+       "finger": {
+        "en": "Index finger",
+        "ne": "चोर औंला"
+       },
+       "day": {
+        "en": "Thursday",
+        "ne": "बिहीबार"
+       },
+       "weight": "5 ratti"
+      },
+      {
+       "role": {
+        "en": "Fortune stone (9th lord)",
+        "ne": "भाग्येश रत्न (नवम भाव स्वामी)"
+       },
+       "for_planet": "Saturn",
+       "stone": {
+        "en": "Blue Sapphire",
+        "ne": "नीलम"
+       },
+       "metal": {
+        "en": "Silver/Panchdhatu",
+        "ne": "चाँदी/पञ्चधातु"
+       },
+       "finger": {
+        "en": "Middle finger",
+        "ne": "माझी औंला"
+       },
+       "day": {
+        "en": "Saturday",
+        "ne": "शनिबार"
+       },
+       "weight": "5 ratti"
+      }
+     ],
+     "weak_planet_support": [
+      {
+       "planet": "Mars",
+       "rupas": 5.21,
+       "rank": 7,
+       "rudraksha": {
+        "en": "Three Mukhi Rudraksha",
+        "ne": "तीनमुखी रुद्राक्ष"
+       },
+       "mantra_ne": "ॐ क्रां क्रीं क्रौं सः भौमाय नमः",
+       "mantra_transliteration": "Om Kram Krim Kraum Sah Bhaumaya Namah",
+       "note": {
+        "en": "Mars is among the two weakest planets by Shadbala (5.21 rupas, rank 7 of 7) and it rules the difficult house(s) 6 — so its gemstone is NOT advised; strengthen it by mantra and charity instead, which raise the planet without empowering the difficult houses.",
+        "ne": "मङ्गल षड्बलअनुसार दुई कमजोर ग्रहमध्ये एक हो (5.21 रूपा, ७ मध्ये क्रम 7) र यसले कठिन भाव 6 को शासन गर्छ — त्यसैले यसको रत्न सल्लाह दिइँदैन; यसलाई मन्त्र र दानले बलियो बनाउनुहोस्, जसले कठिन भावहरूलाई शक्ति नदिई ग्रहलाई उठाउँछ।"
+       }
+      },
+      {
+       "planet": "Sun",
+       "rupas": 6.55,
+       "rank": 6,
+       "rudraksha": {
+        "en": "One Mukhi Rudraksha",
+        "ne": "एकमुखी रुद्राक्ष"
+       },
+       "mantra_ne": "ॐ ह्रां ह्रीं ह्रौं सः सूर्याय नमः",
+       "mantra_transliteration": "Om Hram Hrim Hraum Sah Suryaya Namah",
+       "note": {
+        "en": "Sun is among the two weakest planets by Shadbala (6.55 rupas, rank 6 of 7). Mantra and the matching Rudraksha are the safe way to support it; a gemstone, if worn at all, belongs to a trial period under guidance.",
+        "ne": "सूर्य षड्बलअनुसार दुई कमजोर ग्रहमध्ये एक हो (6.55 रूपा, ७ मध्ये क्रम 6)। मन्त्र र मिल्दो रुद्राक्ष यसलाई साथ दिने सुरक्षित उपाय हुन्; रत्न लगाउने भए मार्गदर्शनमा परीक्षण अवधिका लागि मात्र।"
+       }
+      }
+     ],
+     "rudraksha": {
+      "for_planet": "Sun",
+      "recommendation": {
+       "en": "One Mukhi Rudraksha",
+       "ne": "एकमुखी रुद्राक्ष"
+      },
+      "reason": {
+       "en": "Sun is the most afflicted planet in this chart by the classical checks (debilitation, combustion, dusthana placement).",
+       "ne": "शास्त्रीय परीक्षणहरू (नीच, अस्त, दुष्टस्थान) अनुसार सूर्य यस कुण्डलीमा सबैभन्दा पीडित ग्रह हो।"
+      }
+     },
+     "mantra": {
+      "for_planet": "Sun",
+      "beej_ne": "ॐ ह्रां ह्रीं ह्रौं सः सूर्याय नमः",
+      "transliteration": "Om Hram Hrim Hraum Sah Suryaya Namah",
+      "instruction": {
+       "en": "Chant 108 times daily at sunrise for one full mandala (40 days).",
+       "ne": "४० दिन (एक मण्डल) सम्म दैनिक सूर्योदयमा १०८ पटक जप गर्नुहोस्।"
+      }
+     },
+     "dosha_remedies": [
+      {
+       "dosha": {
+        "en": "Pitra Dosha",
+        "ne": "पितृ दोष"
+       },
+       "items": [
+        {
+         "en": "Offer water and sesame (tarpan) to ancestors on Amavasya.",
+         "ne": "औंसीमा पितृहरूलाई जल र तिलको तर्पण दिनुहोस्।"
+        },
+        {
+         "en": "Feed crows, cows and the needy on Saturdays and during Pitru Paksha.",
+         "ne": "शनिबार र पितृ पक्षमा काग, गाई र गरिबलाई खाना खुवाउनुहोस्।"
+        },
+        {
+         "en": "Plant and nurture a Peepal tree.",
+         "ne": "पीपलको रूख रोपेर हेरचाह गर्नुहोस्।"
+        }
+       ]
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "yantra",
+   "title_en": "Yantra — Sun to Ketu",
+   "title_ne": "यन्त्र — सूर्यदेखि केतुसम्म",
+   "available": true,
+   "data": {
+    "per_planet": [
+     {
+      "planet": "Sun",
+      "planet_ne": "सूर्य",
+      "yantra_en": "Sun Yantra",
+      "yantra_ne": "सूर्य यन्त्र",
+      "number": 1,
+      "day": {
+       "en": "Sunday",
+       "ne": "आइतबार"
+      },
+      "metal": {
+       "en": "Gold",
+       "ne": "सुन"
+      },
+      "beej_mantra": {
+       "ne": "ॐ ह्रां ह्रीं ह्रौं सः सूर्याय नमः",
+       "transliteration": "Om Hram Hrim Hraum Sah Suryaya Namah"
+      },
+      "guidance": {
+       "en": "Traditionally energised on the planet's weekday with its beej mantra and kept in the place of worship. Guidance only.",
+       "ne": "परम्परागत रूपमा ग्रहको बारमा बीज मन्त्रसहित ऊर्जावान बनाइ पूजा स्थानमा राखिन्छ। यो मार्गदर्शन मात्र हो।"
+      }
+     },
+     {
+      "planet": "Moon",
+      "planet_ne": "चन्द्र",
+      "yantra_en": "Moon Yantra",
+      "yantra_ne": "चन्द्र यन्त्र",
+      "number": 2,
+      "day": {
+       "en": "Monday",
+       "ne": "सोमबार"
+      },
+      "metal": {
+       "en": "Silver",
+       "ne": "चाँदी"
+      },
+      "beej_mantra": {
+       "ne": "ॐ श्रां श्रीं श्रौं सः चन्द्रमसे नमः",
+       "transliteration": "Om Shram Shrim Shraum Sah Chandramase Namah"
+      },
+      "guidance": {
+       "en": "Traditionally energised on the planet's weekday with its beej mantra and kept in the place of worship. Guidance only.",
+       "ne": "परम्परागत रूपमा ग्रहको बारमा बीज मन्त्रसहित ऊर्जावान बनाइ पूजा स्थानमा राखिन्छ। यो मार्गदर्शन मात्र हो।"
+      }
+     }
+    ]
+   }
+  }
+ ],
+ "section_ids": [
+  "title",
+  "planet_position",
+  "sayan_charts",
+  "moon_navamsa",
+  "vimshottari",
+  "aaditya_lagnam",
+  "dasha_phala",
+  "varshphal",
+  "ratna_mantra",
+  "yantra"
+ ]
+}

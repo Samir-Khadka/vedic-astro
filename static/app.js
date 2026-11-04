@@ -168,6 +168,11 @@ const I18N = {
     saved_title:"Saved Charts",
     saved_hint:"Stored only in this browser — no account needed. A share link opens the same chart on any device.",
     share_btn:"Copy share link", share_copied:"Link copied!", saved_empty:"No saved charts yet.",
+    cr_btn:"Complete Kundali Report", cr_title:"Complete Kundali Report", cr_sub:"All 31 sections in the traditional order — positions, charts, vargas, balas, dashas, Varshphal, predictions, doshas, Ratna-Mantra and Yantra.",
+    cr_loading:"Building the complete report…", cr_error:"Could not build the complete report. Please try again.", cr_print:"Print / Save as PDF", cr_contents:"Contents",
+    cr_th_planet:"Planet", cr_th_sign:"Sign", cr_th_degree:"Degree", cr_th_nakshatra:"Nakshatra", cr_th_house:"House", cr_th_start:"Start", cr_th_end:"End", cr_th_years:"Years",
+    cr_th_lord:"Lord", cr_th_result:"Result", cr_th_strength:"Strength", cr_th_reading:"Reading", cr_th_cusp:"Cusp", cr_th_aspects:"Aspects", cr_th_name:"Name", cr_th_value:"Value",
+    cr_coming_soon:"Not yet computed", cr_year:"Year", cr_age:"Age", cr_varsha_lagna:"Varsha Lagna", cr_muntha:"Muntha", cr_year_lord:"Year Lord",
     saved_load:"Open", saved_delete:"Remove", saved_export:"Export as JSON", saved_import:"Import JSON", saved_imported:"Charts imported.", saved_import_bad:"That file is not a saved-charts JSON file.",
     compare_title:"Compare two saved charts", compare_hint:"Pick two saved charts to see Lagna, planets and current dasha side by side. Matching signs are highlighted.",
     compare_a:"Chart A", compare_b:"Chart B", compare_btn:"Compare", compare_need_two:"Pick two different saved charts to compare.", compare_same:"shared", compare_rows_word:"rows compared",
@@ -382,6 +387,11 @@ const I18N = {
     saved_title:"सुरक्षित कुण्डलीहरू",
     saved_hint:"यही ब्राउजरमा मात्र राखिन्छ — कुनै खाता चाहिँदैन। साझा लिङ्कले कुनै पनि यन्त्रमा उही कुण्डली खोल्छ।",
     share_btn:"साझा लिङ्क कपी गर्नुहोस्", share_copied:"लिङ्क कपी भयो!", saved_empty:"अहिलेसम्म कुनै सुरक्षित कुण्डली छैन।",
+    cr_btn:"पूर्ण कुण्डली प्रतिवेदन", cr_title:"पूर्ण कुण्डली प्रतिवेदन", cr_sub:"परम्परागत क्रममा सबै ३१ खण्ड — स्थिति, चार्ट, वर्ग, बल, दशा, वर्षफल, भविष्यवाणी, दोष, रत्न-मन्त्र र यन्त्र।",
+    cr_loading:"पूर्ण प्रतिवेदन बनाइँदैछ…", cr_error:"पूर्ण प्रतिवेदन बनाउन सकिएन। कृपया फेरि प्रयास गर्नुहोस्।", cr_print:"छाप्नुहोस् / PDF बनाउनुहोस्", cr_contents:"सूची",
+    cr_th_planet:"ग्रह", cr_th_sign:"राशि", cr_th_degree:"डिग्री", cr_th_nakshatra:"नक्षत्र", cr_th_house:"भाव", cr_th_start:"सुरु", cr_th_end:"समाप्ति", cr_th_years:"वर्ष",
+    cr_th_lord:"स्वामी", cr_th_result:"परिणाम", cr_th_strength:"बल", cr_th_reading:"पठन", cr_th_cusp:"सन्धि", cr_th_aspects:"दृष्टि", cr_th_name:"नाम", cr_th_value:"मान",
+    cr_coming_soon:"अहिलेसम्म गणना भएको छैन", cr_year:"वर्ष", cr_age:"उमेर", cr_varsha_lagna:"वर्ष लग्न", cr_muntha:"मुन्था", cr_year_lord:"वर्ष स्वामी",
     saved_load:"खोल्नुहोस्", saved_delete:"हटाउनुहोस्", saved_export:"JSON को रूपमा निर्यात गर्नुहोस्", saved_import:"JSON आयात गर्नुहोस्", saved_imported:"कुण्डलीहरू आयात गरियो।", saved_import_bad:"त्यो फाइल सुरक्षित कुण्डलीको JSON फाइल होइन।",
     compare_title:"दुई सुरक्षित कुण्डली तुलना गर्नुहोस्", compare_hint:"लग्न, ग्रह र हालको दशा छेउछाउमा हेर्न दुई सुरक्षित कुण्डली छान्नुहोस्। मिल्ने राशिहरू उजागर गरिन्छ।",
     compare_a:"कुण्डली A", compare_b:"कुण्डली B", compare_btn:"तुलना गर्नुहोस्", compare_need_two:"तुलना गर्न दुई फरक सुरक्षित कुण्डली छान्नुहोस्।", compare_same:"साझा", compare_rows_word:"पङ्क्ति तुलना गरियो",
@@ -536,6 +546,7 @@ function applyLang() {
   if (STATE.bundle) renderBundle();
   if (STATE.match) renderMatch();
   if (STATE.prashna) renderPrashna();
+  if (STATE.completeReport) renderCompleteReport(STATE.completeReport, true);
 }
 document.getElementById("lang-en").addEventListener("click", () => { LANG = "en"; localStorage.setItem("vedic-astro-lang", LANG); applyLang(); });
 document.getElementById("lang-ne").addEventListener("click", () => { LANG = "ne"; localStorage.setItem("vedic-astro-lang", LANG); applyLang(); });
@@ -2797,3 +2808,397 @@ try {
     setTimeout(() => intro.remove(), 2400);
   }
 } catch (e) { /* CSS animation hides it anyway */ }
+
+/* ---------------- Complete Kundali Report ----------------
+   Renders POST /api/complete-report (30 sections in the legacy
+   table-of-contents order) into #complete-report. All helpers are pure
+   string builders over the section data, so they are unit-testable and
+   never throw on missing keys: unknown or absent data renders as "—"
+   or is skipped, and unavailable sections show their honest note. */
+const CR_PLANETS = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"];
+const CR_CHAPTER_NE = { personality: "व्यक्तित्व", career: "पेशा", finance: "आर्थिक", marriage: "विवाह", health: "स्वास्थ्य", education: "शिक्षा", family: "परिवार", foreign: "विदेश" };
+function crTitle(sec) {
+  return LANG === "ne" ? (sec.title_ne || sec.title_en || sec.id) : (sec.title_en || sec.title_ne || sec.id);
+}
+function crBi(x) { return (x && typeof x === "object") ? bi(x) : (x == null ? "" : String(x)); }
+function crP(list) {
+  return (Array.isArray(list) ? list : []).map((x) => { const s = crBi(x); return s ? `<p>${esc(s)}</p>` : ""; }).join("");
+}
+function crDeg(n) { return (n == null || n === "") ? "—" : `${Number(n).toFixed(2)}°`; }
+function crSign(s) { return (s == null) ? "—" : signName(s); }
+function crPlanet(p) { return planetName(p) || p || "—"; }
+function crJoin(arr, fn) { return (Array.isArray(arr) ? arr : []).map(fn).join(", ") || "—"; }
+function crTable(headers, rows) {
+  if (!rows) return "";
+  return `<div class="table-scroll"><table class="data-table"><thead><tr>${headers.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function crKV(pairs) {
+  const rows = pairs.filter((p) => p[1] !== undefined && p[1] !== null && p[1] !== "").map((p) =>
+    `<tr><th>${esc(p[0])}</th><td>${esc(String(p[1]))}</td></tr>`).join("");
+  return rows ? `<table class="data-table cr-kv"><tbody>${rows}</tbody></table>` : "";
+}
+function crNote(sec) {
+  return sec.note ? `<p class="cr-note">${esc(crBi(sec.note))}</p>` : "";
+}
+function crSub(head, inner) { return inner ? `<h4 class="cr-subhead">${esc(head)}</h4>${inner}` : ""; }
+function crSignRow(vargaMap, bodies) {
+  return bodies.map((b) => `<td>${vargaMap && vargaMap[b] != null ? esc(crSign(vargaMap[b])) : "—"}</td>`).join("");
+}
+
+function crSectionHTML(sec) {
+  const d = sec.data || {};
+  if (!sec.available) return `<p class="cr-note">${esc(t("cr_coming_soon"))}${sec.note ? ` — ${esc(crBi(sec.note))}` : ""}</p>`;
+  switch (sec.id) {
+    case "title": {
+      const b = d.birth || {}, pl = b.place || {}, lg = d.lagna || {}, mn = d.moon_nakshatra || {};
+      const bs = b.bs_date || {};
+      return `<div class="cr-title-block"><h3 class="cr-person">${esc(d.name || "")}</h3>`
+        + crKV([[LANG === "ne" ? "जन्म मिति" : "Birth date", `${b.date || "—"}${b.time ? `, ${b.time}` : ""}`],
+          [LANG === "ne" ? "विक्रम संवत्" : "Bikram Sambat", bs.formatted_en ? (LANG === "ne" ? bs.formatted_ne : bs.formatted_en) : "—"],
+          [LANG === "ne" ? "जन्म स्थान" : "Birth place", pl.name ? `${pl.name}${pl.country ? `, ${pl.country}` : ""}` : "—"],
+          [LANG === "ne" ? "लग्न" : "Lagna", lg.sign_en ? `${crSign(lg.sign)} · ${crDeg(lg.degree_in_sign)}` : "—"],
+          [LANG === "ne" ? "चन्द्र नक्षत्र" : "Moon nakshatra", mn.en ? `${crBi(mn)}${mn.pada ? `, ${LANG === "ne" ? "पद" : "pada"} ${mn.pada}` : ""}` : "—"],
+          [LANG === "ne" ? "अयनांश" : "Ayanamsa", (d.ayanamsa && d.ayanamsa.name) || "—"]])
+        + `<p class="cr-disclaimer">${esc(crBi(d.disclaimer))}</p></div>`;
+    }
+    case "planet_position": {
+      const lg = d.lagna || {};
+      const lagnaRow = lg.sign != null ? `<tr><td>${LANG === "ne" ? "लग्न" : "Lagna"}</td><td>${esc(crSign(lg.sign))}</td><td>${crDeg(lg.degree_in_sign)}</td><td>${esc(crBi({ en: lg.nakshatra_en, ne: lg.nakshatra_ne }))}</td><td>${lg.pada || "—"}</td><td>1</td><td>—</td></tr>` : "";
+      const rows = (d.planets || []).map((p) => `<tr><td>${esc(crPlanet(p.planet))}</td><td>${esc(crSign(p.sign))}</td><td>${crDeg(p.degree_in_sign)}</td><td>${esc(crBi({ en: p.nakshatra_en, ne: p.nakshatra_ne }))}</td><td>${p.pada || "—"}</td><td>${p.house || "—"}</td><td>${esc([p.retrograde ? (LANG === "ne" ? "वक्री" : "Retro") : "", p.dignity || ""].filter(Boolean).join(" · ") || "—")}</td></tr>`).join("");
+      return crTable([t("cr_th_planet"), t("cr_th_sign"), t("cr_th_degree"), t("cr_th_nakshatra"), LANG === "ne" ? "पद" : "Pada", t("cr_th_house"), LANG === "ne" ? "स्थिति" : "State"], lagnaRow + rows);
+    }
+    case "birth_details": {
+      const b = d.birth || {}, pl = b.place || {}, pc = d.panchang_at_birth || {}, nl = d.name_letters || {};
+      const bs = b.bs_date || {};
+      return crKV([[LANG === "ne" ? "जन्म मिति" : "Birth date", b.date || "—"], [LANG === "ne" ? "समय" : "Time", b.time || "—"],
+        [LANG === "ne" ? "विक्रम संवत्" : "Bikram Sambat", bs.formatted_en ? (LANG === "ne" ? bs.formatted_ne : bs.formatted_en) : "—"],
+        [LANG === "ne" ? "स्थान" : "Place", pl.name ? `${pl.name}${pl.country ? `, ${pl.country}` : ""} (${pl.lat}, ${pl.lon})` : "—"],
+        [LANG === "ne" ? "समय क्षेत्र" : "Timezone", pl.tz || "—"],
+        [LANG === "ne" ? "सूर्योदय" : "Sunrise", b.sunrise ? b.sunrise.slice(11, 19) : "—"],
+        [LANG === "ne" ? "सूर्यास्त" : "Sunset", b.sunset ? b.sunset.slice(11, 19) : "—"],
+        [LANG === "ne" ? "पक्ष" : "Paksha", pc.paksha || "—"],
+        [LANG === "ne" ? "चन्द्र महिना" : "Lunar month", crBi({ en: pc.lunar_month_en, ne: pc.lunar_month_ne }) || "—"],
+        [LANG === "ne" ? "करण" : "Karana", pc.karana || "—"],
+        [LANG === "ne" ? "बार" : "Weekday", pc.weekday != null ? (LANG === "ne" ? WEEKDAY_NE[pc.weekday] : WEEKDAY_EN[pc.weekday]) : "—"],
+        [LANG === "ne" ? "नामाक्षर" : "Name syllable", nl.syllable_en ? `${crBi({ en: nl.syllable_en, ne: nl.syllable_ne })} (${LANG === "ne" ? "पद" : "pada"} ${nl.pada || ""})` : "—"]]);
+    }
+    case "sayan_charts": {
+      const rows = (d.positions || []).map((p) => `<tr><td>${esc(crPlanet(p.planet))}</td><td>${p.longitude != null ? Number(p.longitude).toFixed(4) + "°" : "—"}</td><td>${esc(crSign(p.sign))}</td><td>${crDeg(p.degree_in_sign)}</td></tr>`).join("");
+      return `<p class="cr-note">${LANG === "ne" ? "अयनांश" : "Ayanamsa"}: ${d.ayanamsa_value != null ? Number(d.ayanamsa_value).toFixed(4) + "°" : "—"}</p>`
+        + crTable([t("cr_th_planet"), LANG === "ne" ? "सायन देशान्तर" : "Tropical longitude", t("cr_th_sign"), t("cr_th_degree")], rows);
+    }
+    case "moon_navamsa": {
+      const m = d.moon || {}, lg = d.lagna || {};
+      return `<p>${esc(LANG === "ne" ? `चन्द्रमा ${crSign(m.sign)} मा, ${crBi({ en: m.nakshatra_en, ne: m.nakshatra_ne })} नक्षत्रको पद ${m.pada || ""} मा, ${m.house || ""} भावमा छ। लग्न ${crSign(lg.sign)} हो।` : `Moon is in ${crSign(m.sign)}, ${m.nakshatra_en || ""} nakshatra pada ${m.pada || ""}, house ${m.house || ""}. Lagna is ${crSign(lg.sign)}.`)} </p>`
+        + `<div class="cr-charts"><div class="cr-chart-box"><h4 class="cr-chart-name">${esc(crTitle({ title_en: "Rashi Chart (Lagna Kundali)", title_ne: "राशि चार्ट (लग्न कुण्डली)" }))}</h4><div class="cr-chart" id="cr-chart-d1"></div></div>`
+        + `<div class="cr-chart-box"><h4 class="cr-chart-name">${esc(crTitle({ title_en: "Navamsa Chart (Dharma Varga)", title_ne: "नवांश चार्ट (धर्म वर्ग)" }))}</h4><div class="cr-chart" id="cr-chart-d9"></div></div></div>`;
+    }
+    case "chalit_bhava": {
+      const cuspRows = (d.house_cusps || []).map((c) => `<tr><td>${c.cusp}</td><td>${esc(crSign(c.sign))}</td><td>${crDeg(c.degree_in_sign)}</td></tr>`).join("");
+      const bc = d.bhava_chalit || {}, houses = bc.houses || {};
+      const chRows = CR_PLANETS.map((p) => { const h = houses[p]; return h ? `<tr><td>${esc(crPlanet(p))}</td><td>${h.rashi_house}</td><td>${h.chalit_house}</td><td>${esc(crSign(h.sign))}</td><td>${h.shifted ? (LANG === "ne" ? "सरेको" : "Shifted") : "—"}</td></tr>` : ""; }).join("");
+      return crSub(LANG === "ne" ? "भाव सन्धि" : "House cusps", crTable([t("cr_th_cusp"), t("cr_th_sign"), t("cr_th_degree")], cuspRows))
+        + crSub(LANG === "ne" ? "चलित भाव" : "Chalit houses", crTable([t("cr_th_planet"), LANG === "ne" ? "राशि भाव" : "Rashi house", LANG === "ne" ? "चलित भाव" : "Chalit house", t("cr_th_sign"), LANG === "ne" ? "टिप्पणी" : "Note"], chRows));
+    }
+    case "shodash_varga": {
+      const bodies = ["Lagna"].concat(CR_PLANETS);
+      const partTable = (part) => {
+        const rows = Object.entries(part || {}).map(([v, m]) => `<tr><td>${esc(v)}</td>${crSignRow(m, bodies)}</tr>`).join("");
+        return crTable([LANG === "ne" ? "वर्ग" : "Varga"].concat(bodies.map((b) => (LANG === "ne" ? PLANET_NE[b] : b))), rows);
+      };
+      return crSub(LANG === "ne" ? "षोडश वर्ग १" : "Shodash Varga 1", partTable(d.part_1))
+        + crSub(LANG === "ne" ? "षोडश वर्ग २" : "Shodash Varga 2", partTable(d.part_2));
+    }
+    case "shodash_varga_table": {
+      const vargas = d.vargas || [];
+      const rows = (d.rows || []).map((r) => `<tr><td>${esc(crPlanet(r.planet))}</td>${vargas.map((v) => `<td>${r.signs && r.signs[v] != null ? esc(signColHeader(r.signs[v])) : "—"}</td>`).join("")}</tr>`).join("");
+      return crTable([t("cr_th_planet")].concat(vargas), rows);
+    }
+    case "karaka_avastha_tara": {
+      const k = d.karakas || {};
+      const karakaRows = Object.entries(k).map(([role, p]) => `<tr><td>${esc(role)}</td><td>${esc(crPlanet(p))}</td></tr>`).join("");
+      const av = d.avasthas || {}, avRows = (av.planets || []).map((p) => `<tr><td>${esc(crPlanet(p.planet))}</td><td>${esc(crBi({ en: p.balaadi, ne: p.balaadi_ne }))}</td><td>${esc(crBi({ en: p.jagratadi, ne: p.jagratadi_ne }))}</td><td>${esc(crBi(p.reading))}</td></tr>`).join("");
+      const nt = d.nava_tara || {};
+      const taraRows = (nt.taras || []).map((x) => `<tr><td>${esc(crBi({ en: x.nakshatra_en, ne: x.nakshatra_ne }))}</td><td>${esc(crBi({ en: x.tara_en, ne: x.tara_ne }))}</td><td>${esc(x.verdict || "")}</td></tr>`).join("");
+      const tb = d.tarabala_today, cb = d.chandrabala_today;
+      return crSub(LANG === "ne" ? "कारक" : "Karakas", crTable([LANG === "ne" ? "भूमिका" : "Role", t("cr_th_planet")], karakaRows))
+        + crSub(LANG === "ne" ? "अवस्था" : "Avasthas", crTable([t("cr_th_planet"), LANG === "ne" ? "बलादि" : "Balaadi", LANG === "ne" ? "जाग्रतादि" : "Jagratadi", t("cr_th_reading")], avRows))
+        + crSub(LANG === "ne" ? "नव तारा" : "Nava Tara", `<p>${esc(LANG === "ne" ? `जन्म नक्षत्र: ${crBi({ en: nt.natal_nakshatra_en, ne: nt.natal_nakshatra_ne })}` : `Birth nakshatra: ${nt.natal_nakshatra_en || ""}`)}</p>` + crTable([t("cr_th_nakshatra"), LANG === "ne" ? "तारा" : "Tara", LANG === "ne" ? "निर्णय" : "Verdict"], taraRows))
+        + (tb ? `<p>${esc(LANG === "ne" ? `आजको ताराबल: ${crBi({ en: tb.tara_en, ne: tb.tara_ne })} (${tb.verdict || ""})` : `Tarabala today: ${tb.tara_en || ""} (${tb.verdict || ""})`)}</p>` : "")
+        + (cb ? `<p>${esc(LANG === "ne" ? `आजको चन्द्रबल: ${cb.position || ""}औँ स्थान (${cb.verdict || ""})` : `Chandrabala today: ${cb.position || ""}th from Moon (${cb.verdict || ""})`)}</p>` : "");
+    }
+    case "sudarshan": {
+      const s = d.sudarshana || {}, rings = s.rings || {};
+      const rows = Object.entries(s.planets || {}).map(([p, v]) => `<tr><td>${esc(crPlanet(p))}</td><td>${esc(crSign(v.sign))}</td><td>${v.lagna_house}</td><td>${v.moon_house}</td><td>${v.sun_house}</td><td>${esc(v.agreement || "")}</td></tr>`).join("");
+      return `<p>${esc(LANG === "ne" ? `लग्न राशि: ${crSign(rings.lagna)}, चन्द्र राशि: ${crSign(rings.moon)}, सूर्य राशि: ${crSign(rings.sun)}` : `Lagna sign: ${crSign(rings.lagna)}, Moon sign: ${crSign(rings.moon)}, Sun sign: ${crSign(rings.sun)}`)}</p>`
+        + crTable([t("cr_th_planet"), t("cr_th_sign"), LANG === "ne" ? "लग्न भाव" : "Lagna house", LANG === "ne" ? "चन्द्र भाव" : "Moon house", LANG === "ne" ? "सूर्य भाव" : "Sun house", LANG === "ne" ? "सहमति" : "Agreement"], rows)
+        + ((s.confirmed || []).length ? `<p>${esc(LANG === "ne" ? "पुष्टि भएका: " : "Confirmed: ")}${esc((s.confirmed || []).map(crPlanet).join(", "))}</p>` : "");
+    }
+    case "aspects_planets": {
+      const rows = (d.aspects || []).map((a) => `<tr><td>${esc(crPlanet(a.planet))}</td><td>${esc(crJoin(a.aspected_signs, (x) => crSign(x.sign)))}</td><td>${esc((a.aspected_houses || []).join(", ") || "—")}</td><td>${esc(crJoin(a.aspected_planets, crPlanet))}</td></tr>`).join("");
+      return crTable([t("cr_th_planet"), LANG === "ne" ? "दृष्ट राशिहरू" : "Aspected signs", LANG === "ne" ? "दृष्ट भावहरू" : "Aspected houses", LANG === "ne" ? "दृष्ट ग्रहहरू" : "Aspected planets"], rows);
+    }
+    case "aspects_bhava": {
+      const rows = (d.houses || []).map((h) => `<tr><td>${h.house}</td><td>${esc(crSign(h.sign))}</td><td>${esc(crJoin(h.aspecting_planets, crPlanet))}</td></tr>`).join("");
+      return crTable([t("cr_th_house"), t("cr_th_sign"), LANG === "ne" ? "दृष्टि दिने ग्रहहरू" : "Aspecting planets"], rows);
+    }
+    case "aspects_cusps": {
+      const rows = (d.cusps || []).map((c) => `<tr><td>${c.cusp}</td><td>${esc(crSign(c.sign))}</td><td>${crDeg(c.degree_in_sign)}</td><td>${esc(crJoin(c.aspecting_planets, crPlanet))}</td></tr>`).join("");
+      return crTable([t("cr_th_cusp"), t("cr_th_sign"), t("cr_th_degree"), LANG === "ne" ? "दृष्टि दिने ग्रहहरू" : "Aspecting planets"], rows);
+    }
+    default:
+      return crSectionHTML2(sec);
+  }
+}
+
+function crSectionHTML2(sec) {
+  const d = sec.data || {};
+  switch (sec.id) {
+    case "upagrahas_arudha": {
+      const up = d.upagrahas || {};
+      const upRows = Object.entries(up).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(crSign(v.sign))}</td><td>${crDeg(v.degree_in_sign)}</td></tr>`).join("");
+      const lagnaLine = (label, v) => v ? `<p>${esc(label)}: ${esc(crSign(v.sign))}${v.house_from_lagna ? ` (${LANG === "ne" ? "लग्नबाट" : "from Lagna"} ${v.house_from_lagna})` : ""}${v.lord ? `, ${LANG === "ne" ? "स्वामी" : "lord"} ${crPlanet(v.lord)}` : ""}</p>` : "";
+      const cl = d.classical_lagnas || {};
+      const clRows = Object.entries(cl).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(crSign(v.sign))}</td><td>${crDeg(v.degree_in_sign)}</td></tr>`).join("");
+      const ap = d.arudha_padas || {}, apRows = (ap.padas || []).map((p) => `<tr><td>${p.house}</td><td>${esc(p.label || "")}</td><td>${esc(crSign(p.arudha_sign))}</td></tr>`).join("");
+      return crSub(LANG === "ne" ? "उपग्रह" : "Upagrahas", crTable([t("cr_th_name"), t("cr_th_sign"), t("cr_th_degree")], upRows))
+        + lagnaLine(LANG === "ne" ? "आरूढ लग्न" : "Arudha Lagna", d.arudha_lagna)
+        + lagnaLine(LANG === "ne" ? "उपपद" : "Upapada", d.upapada)
+        + lagnaLine(LANG === "ne" ? "चन्द्र लग्न" : "Chandra Lagna", d.chandra_lagna)
+        + crSub(LANG === "ne" ? "शास्त्रीय लग्नहरू" : "Classical lagnas", crTable([t("cr_th_name"), t("cr_th_sign"), t("cr_th_degree")], clRows))
+        + crSub(LANG === "ne" ? "आरूढ पदहरू" : "Arudha padas", crTable([t("cr_th_house"), LANG === "ne" ? "चिह्न" : "Label", t("cr_th_sign")], apRows));
+    }
+    case "vimsopak_bala": {
+      const v = d.vimshopaka || {};
+      const rows = Object.entries(v).map(([p, x]) => `<tr><td>${esc(crPlanet(p))}</td><td>${x.shadvarga ?? "—"}</td><td>${x.saptavarga ?? "—"}</td><td>${x.shodashavarga ?? "—"}</td></tr>`).join("");
+      return crTable([t("cr_th_planet"), LANG === "ne" ? "षड्वर्ग" : "Shadvarga", LANG === "ne" ? "सप्तवर्ग" : "Saptavarga", LANG === "ne" ? "षोडशवर्ग" : "Shodashavarga"], rows);
+    }
+    case "ashtakavarga": {
+      const per = d.per_planet || {};
+      const signHeads = Array.from({ length: 12 }, (_, i) => signColHeader(i));
+      const rows = Object.entries(per).map(([p, arr]) => {
+        const total = Array.isArray(arr) ? arr.reduce((a, b) => a + (Number(b) || 0), 0) : 0;
+        return `<tr><td>${esc(p === "Sarvashtakavarga" ? (LANG === "ne" ? "सर्वाष्टकवर्ग" : "Sarvashtakavarga") : crPlanet(p))}</td>${(Array.isArray(arr) ? arr : []).map((v) => `<td>${v}</td>`).join("")}<td><b>${total}</b></td></tr>`;
+      }).join("");
+      const sp = d.shodhya_pindas || {};
+      const spRows = Object.entries(sp).map(([p, x]) => `<tr><td>${esc(crPlanet(p))}</td><td>${x.rasi_pinda ?? "—"}</td><td>${x.graha_pinda ?? "—"}</td><td>${x.shodhya_pinda ?? "—"}</td></tr>`).join("");
+      const go = d.gochar_reading || {}, days = go.days || [];
+      const goRows = days.slice(0, 30).map((x) => `<tr><td>${esc(x.date || "")}</td><td>${esc(crBi({ en: x.moon_sign_en, ne: x.moon_sign_ne }))}</td><td>${x.sav ?? "—"}</td><td>${esc(x.verdict || "")}</td></tr>`).join("");
+      return crSub(LANG === "ne" ? "अष्टकवर्ग बिन्दु" : "Ashtakavarga bindus", crTable([t("cr_th_planet")].concat(signHeads, [LANG === "ne" ? "जम्मा" : "Total"]), rows))
+        + crSub(LANG === "ne" ? "शोध्य पिण्ड" : "Shodhya pindas", crTable([t("cr_th_planet"), LANG === "ne" ? "राशि पिण्ड" : "Rasi pinda", LANG === "ne" ? "ग्रह पिण्ड" : "Graha pinda", LANG === "ne" ? "शोध्य पिण्ड" : "Shodhya pinda"], spRows))
+        + crSub(LANG === "ne" ? "गोचर पठन (३० दिन)" : "Gochar reading (30 days)", crTable([LANG === "ne" ? "मिति" : "Date", LANG === "ne" ? "चन्द्र राशि" : "Moon sign", LANG === "ne" ? "सर्वाष्टक" : "SAV", LANG === "ne" ? "निर्णय" : "Verdict"], goRows));
+    }
+    case "shad_bhava_bala": {
+      const sb = (d.shadbala || {}).planets || {};
+      const rows = Object.entries(sb).map(([p, x]) => `<tr><td>${esc(crPlanet(p))}</td><td>${x.rupas ?? "—"}</td><td>${x.rank ?? "—"}</td><td>${x.ratio ?? "—"}</td><td>${x.ishta ?? "—"}</td><td>${x.kashta ?? "—"}</td></tr>`).join("");
+      const bbRows = (Array.isArray(d.bhava_bala) ? d.bhava_bala : []).map((h) => `<tr><td>${h.house}</td><td>${esc(crSign(h.sign))}</td><td>${esc(crPlanet(h.lord))}</td><td>${h.total_rupas ?? "—"}</td></tr>`).join("");
+      return crSub(LANG === "ne" ? "षड्बल" : "Shadbala", crTable([t("cr_th_planet"), LANG === "ne" ? "रूपा" : "Rupas", LANG === "ne" ? "क्रम" : "Rank", LANG === "ne" ? "अनुपात" : "Ratio", LANG === "ne" ? "इष्ट" : "Ishta", LANG === "ne" ? "कष्ट" : "Kashta"], rows))
+        + crSub(LANG === "ne" ? "भाव बल" : "Bhava Bala", crTable([t("cr_th_house"), t("cr_th_sign"), t("cr_th_lord"), LANG === "ne" ? "कुल रूपा" : "Total rupas"], bbRows))
+        + `<p class="cr-note">${esc(crBi(d.bhava_bala_note))}</p>`;
+    }
+    case "sarvato_bhadra": {
+      const s = d.sarvatobhadra || {}, np = s.natal_points || {};
+      const rows = (s.planets || []).map((p) => `<tr><td>${esc(crPlanet(p.planet))}</td><td>${esc(p.nakshatra_28 || "")}</td><td>${esc((p.vedha_hits || []).join(", ") || "—")}</td><td>${esc(p.nature || "")}</td></tr>`).join("");
+      const sum = s.summary || {};
+      const sumLines = Object.entries(sum).map(([k, v]) => {
+        const ben = (v.benefic || []).map(crPlanet).join(", ") || "—", mal = (v.malefic || []).map(crPlanet).join(", ") || "—";
+        return `<p>${esc(k)} — ${esc(LANG === "ne" ? "शुभ" : "benefic")}: ${esc(ben)}; ${esc(LANG === "ne" ? "अशुभ" : "malefic")}: ${esc(mal)}</p>`;
+      }).join("");
+      return `<p>${esc(LANG === "ne" ? `जन्म नक्षत्र (२८): ${np.janma_nakshatra_28 || ""}, तिथि समूह: ${np.tithi_group || ""}` : `Janma nakshatra (28): ${np.janma_nakshatra_28 || ""}, tithi group: ${np.tithi_group || ""}`)}</p>`
+        + crTable([t("cr_th_planet"), LANG === "ne" ? "नक्षत्र (२८)" : "Nakshatra (28)", LANG === "ne" ? "वेध" : "Vedha", LANG === "ne" ? "प्रकृति" : "Nature"], rows)
+        + sumLines + (s.note ? `<p class="cr-note">${esc(s.note)}</p>` : "");
+    }
+    case "vimshottari": {
+      const cur = d.current || {}, md = cur.mahadasha || {}, ad = cur.antardasha || {}, pd = cur.pratyantardasha || {};
+      const rows = (d.mahadashas || []).map((m) => {
+        const ads = (m.antardashas || []).map((a) => `${crPlanet(a.lord)} (${a.start} – ${a.end})`).join(", ");
+        const isCur = md.lord && m.lord === md.lord;
+        return `<tr${isCur ? ' class="is-current"' : ""}><td>${esc(crPlanet(m.lord))}</td><td>${esc(m.display_start || m.start || "")}</td><td>${esc(m.end || "")}</td><td>${m.years ?? "—"}</td><td>${esc(ads)}</td></tr>`;
+      }).join("");
+      return `<p>${esc(LANG === "ne" ? `हाल: ${crPlanet(md.lord)} महादशा, ${crPlanet(ad.lord)} अन्तर्दशा, ${crPlanet(pd.lord)} प्रत्यन्तरदशा` : `Current: ${md.lord || ""} Mahadasha, ${ad.lord || ""} Antardasha, ${pd.lord || ""} Pratyantardasha`)}</p>`
+        + (d.balance_years != null ? `<p>${esc(LANG === "ne" ? `जन्ममा बाँकी महादशा: ${d.balance_years} वर्ष` : `Balance at birth: ${d.balance_years} years`)}</p>` : "")
+        + crTable([t("cr_th_lord"), t("cr_th_start"), t("cr_th_end"), t("cr_th_years"), LANG === "ne" ? "अन्तर्दशाहरू" : "Antardashas"], rows);
+    }
+    case "yogini": {
+      const rows = ((d.yogini || {}).periods || []).map((p) => `<tr><td>${esc(p.name || "")}</td><td>${esc(crPlanet(p.planet))}</td><td>${esc(p.start || "")}</td><td>${esc(p.end || "")}</td><td>${p.years ?? "—"}</td></tr>`).join("");
+      return crTable([t("cr_th_name"), t("cr_th_planet"), t("cr_th_start"), t("cr_th_end"), t("cr_th_years")], rows);
+    }
+    case "dasha_phala": {
+      const blocks = (d.dasha_phala || []).map((x) => `<div class="cr-block"><h4>${esc(crPlanet(x.lord))} (${esc(x.start || "")} – ${esc(x.end || "")})</h4>${crP(x.summary)}</div>`).join("");
+      const deep = (d.deep_dive || []).map((x) => `<div class="cr-block"><h4>${esc(crPlanet(x.lord))} (${esc(x.start || "")} – ${esc(x.end || "")})</h4>${crP(x.summary)}</div>`).join("");
+      return blocks + crSub(LANG === "ne" ? "विस्तृत दशा फल" : "Detailed dasha phala", deep);
+    }
+    case "varshphal": {
+      const years = d.years || [];
+      return years.map((y, yi) => {
+        const vl = y.varsha_lagna || {}, mu = y.muntha || {};
+        const prow = (y.planets || []).map((p) => `<tr><td>${esc(crPlanet(p.planet))}</td><td>${esc(crSign(p.sign))}</td><td>${crDeg(p.degree_in_sign)}</td><td>${p.house ?? "—"}</td></tr>`).join("");
+        const tj = y.tajika || {}, pairs = (tj.pairs || []).map((p) => `<li>${esc((p.planets || []).map(crPlanet).join(" – "))}: ${esc(crBi({ en: p.yoga, ne: p.yoga_ne }))} — ${esc(crBi(p.reading))}</li>`).join("");
+        const sah = y.sahams || {};
+        const sahRows = Object.entries(sah).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(crSign(v.sign))}</td><td>${v.house ?? "—"}</td><td>${esc(v.strength || "")}</td></tr>`).join("");
+        const pd = y.panchadhikari || {};
+        return `<div class="cr-block"><h4>${esc(t("cr_year"))} ${y.year} (${esc(t("cr_age"))} ${y.age})</h4>`
+          + crKV([[t("cr_varsha_lagna"), vl.sign_en ? `${crSign(vl.sign)}` : "—"], [t("cr_muntha"), mu.sign_en ? `${crSign(mu.sign)} (${LANG === "ne" ? "भाव" : "house"} ${mu.house})` : "—"],
+            [t("cr_year_lord"), y.year_lord ? crPlanet(y.year_lord) : (pd.year_lord ? crPlanet(pd.year_lord) : "—")],
+            [LANG === "ne" ? "सौर्य पुनरागमन" : "Solar return", y.solar_return ? y.solar_return.slice(0, 10) : "—"]])
+          + (y.reading ? `<p>${esc(crBi(y.reading))}</p>` : "")
+          + `<div class="cr-chart-box"><div class="cr-chart" id="cr-chart-v${y.year}"></div></div>`
+          + crTable([t("cr_th_planet"), t("cr_th_sign"), t("cr_th_degree"), t("cr_th_house")], prow)
+          + (pairs ? `<h5>${esc(LANG === "ne" ? "ताजिक योग" : "Tajika yogas")}</h5><ul class="cr-list">${pairs}</ul>` : "")
+          + crSub(LANG === "ne" ? "सहम" : "Sahams", crTable([t("cr_th_name"), t("cr_th_sign"), t("cr_th_house"), t("cr_th_strength")], sahRows))
+          + `</div>`;
+      }).join("");
+    }
+    case "general_predictions": {
+      const ch = d.chapters || {};
+      const chBlocks = Object.entries(ch).map(([k, list]) => {
+        const head = LANG === "ne" ? (CR_CHAPTER_NE[k] || k) : (k.charAt(0).toUpperCase() + k.slice(1));
+        return `<div class="cr-block"><h4>${esc(head)}</h4>${crP(list)}</div>`;
+      }).join("");
+      const pred = d.predictions || {};
+      const predBlocks = Object.entries(pred).map(([k, list]) => `<div class="cr-block"><h4>${esc(k.replace(/_/g, " "))}</h4>${crP(list)}</div>`).join("");
+      const fav = (d.favourable_periods || []).map((f) => `<div class="cr-block"><h4>${esc(String(f.year || ""))} — ${esc(crPlanet(f.mahadasha))} / ${esc(crPlanet(f.antardasha))}</h4>${crP(f.summary ? [f.summary] : [])}</div>`).join("");
+      return chBlocks + predBlocks
+        + crSub(LANG === "ne" ? "अनुकूल अवधि" : "Favourable periods", fav)
+        + crSub(LANG === "ne" ? "आगामी वर्ष" : "Year ahead", crP(d.year_ahead));
+    }
+    case "effects_of_planets": {
+      const pc = d.planet_chapters || {};
+      const pcBlocks = Object.entries(pc).map(([p, list]) => `<div class="cr-block"><h4>${esc(crPlanet(p))}</h4>${crP(list)}</div>`).join("");
+      const hcBlocks = (Array.isArray(d.house_chapters) ? d.house_chapters : []).map((h) => `<div class="cr-block"><h4>${esc(LANG === "ne" ? `${h.house} भाव (${crSign(h.sign)}, स्वामी ${crPlanet(h.lord)})` : `House ${h.house} (${crSign(h.sign)}, lord ${crPlanet(h.lord)})`)}</h4>${crP(h.facts)}</div>`).join("");
+      const dc = d.divisional_chapters || {};
+      const dcBlocks = Object.entries(dc).map(([v, x]) => `<div class="cr-block"><h4>${esc(crBi(x.title))} (${esc(v)})</h4>${crP(x.facts)}</div>`).join("");
+      return pcBlocks + hcBlocks + dcBlocks;
+    }
+    case "nakshatra_phal": {
+      const mn = d.moon_nakshatra || {}, id = d.ishta_devta || {}, nt = d.nava_tara || {}, nl = d.name_letters || {};
+      return crKV([[LANG === "ne" ? "चन्द्र नक्षत्र" : "Moon nakshatra", mn.en ? `${crBi(mn)}${mn.pada ? `, ${LANG === "ne" ? "पद" : "pada"} ${mn.pada}` : ""}` : "—"],
+        [LANG === "ne" ? "इष्ट देवता" : "Ishta Devta", id.deity_en ? `${crBi({ en: id.deity_en, ne: id.deity_ne })} (${esc(crBi({ en: id.method, ne: id.method }))})` : "—"],
+        [LANG === "ne" ? "नामाक्षर" : "Name syllable", nl.syllable_en ? crBi({ en: nl.syllable_en, ne: nl.syllable_ne }) : "—"],
+        [LANG === "ne" ? "जन्म नक्षत्र" : "Birth nakshatra", crBi({ en: nt.natal_nakshatra_en, ne: nt.natal_nakshatra_ne }) || "—"]])
+        + (id.note ? `<p class="cr-note">${esc(id.note)}</p>` : "");
+    }
+    case "sade_sati": {
+      const cur = d.current || {}, lt = d.lifetime || {};
+      const curLine = LANG === "ne"
+        ? `हाल साढे साती ${cur.active ? "सक्रिय" : "सक्रिय छैन"}${cur.dhaiya ? " (ढैय्या सक्रिय)" : ""}।`
+        : `Sade-Sati currently ${cur.active ? "active" : "not active"}${cur.dhaiya ? " (Dhaiya active)" : ""}.`;
+      const rows = (lt.periods || []).map((p) => `<tr><td>${esc(p.status || "")}</td><td>${esc(p.setting_start || p.start || "")}</td><td>${esc(p.peak_start || "")}</td><td>${esc(p.end || "")}</td></tr>`).join("");
+      const rem = (d.remedies || []).map((r) => `<div class="cr-block"><h4>${esc(crBi(r.dosha))}</h4><ul class="cr-list">${(r.items || []).map((x) => `<li>${esc(crBi(x))}</li>`).join("")}</ul></div>`).join("");
+      return `<p>${esc(curLine)}</p>`
+        + crSub(LANG === "ne" ? "जीवनभरका अवधि" : "Lifetime periods", crTable([LANG === "ne" ? "स्थिति" : "Status", LANG === "ne" ? "सुरु (चन्द्र−१)" : "Rising", LANG === "ne" ? "शिखर" : "Peak", LANG === "ne" ? "समाप्ति" : "Ends"], rows))
+        + crSub(LANG === "ne" ? "उपाय" : "Remedies", rem);
+    }
+    case "manglik": {
+      const m = d.manglik || {};
+      return crKV([[LANG === "ne" ? "माङ्गलिक" : "Manglik", m.present ? (LANG === "ne" ? "छ" : "Present") : (LANG === "ne" ? "छैन" : "Absent")],
+        [LANG === "ne" ? "बल" : "Strength", m.strength || "—"],
+        [LANG === "ne" ? "लग्नबाट" : "From Lagna", m.from_lagna ? (LANG === "ne" ? "हो" : "Yes") : (LANG === "ne" ? "होइन" : "No")],
+        [LANG === "ne" ? "चन्द्रमाबाट" : "From Moon", m.from_moon ? (LANG === "ne" ? "हो" : "Yes") : (LANG === "ne" ? "होइन" : "No")],
+        [LANG === "ne" ? "शुक्रबाट" : "From Venus", m.from_venus ? (LANG === "ne" ? "हो" : "Yes") : (LANG === "ne" ? "होइन" : "No")]])
+        + ((m.cancellations || []).length ? `<p>${esc(LANG === "ne" ? "परिहार: " : "Cancellations: ")}${esc(m.cancellations.join("; "))}</p>` : "");
+    }
+    case "kaalsarp": {
+      const k = d.kaal_sarp || {};
+      return crKV([[LANG === "ne" ? "कालसर्प योग" : "Kaalsarp Yoga", k.present ? (LANG === "ne" ? "छ" : "Present") : (LANG === "ne" ? "छैन" : "Absent")],
+        [LANG === "ne" ? "प्रकार" : "Type", k.type || "—"],
+        [LANG === "ne" ? "राहु भाव" : "Rahu house", k.rahu_house ?? "—"]]);
+    }
+    case "ratna_mantra": {
+      const cards = (d.per_planet || []).map((p) => {
+        const g = p.gemstone || {}, mt = p.metal || {}, f = p.finger || {}, dy = p.day || {}, rk = p.rudraksha || {}, bm = p.beej_mantra || {};
+        return `<div class="cr-card"><h4>${esc(crPlanet(p.planet))}</h4><p>${esc(crBi(p.introduction))}</p><p>${esc(crBi(p.suggestion))}</p>`
+          + crKV([[LANG === "ne" ? "रत्न" : "Gemstone", crBi(g)], [LANG === "ne" ? "धातु" : "Metal", crBi(mt)], [LANG === "ne" ? "औंला" : "Finger", crBi(f)], [LANG === "ne" ? "बार" : "Day", crBi(dy)],
+            [LANG === "ne" ? "तौल" : "Weight", p.weight || "—"], [LANG === "ne" ? "रुद्राक्ष" : "Rudraksha", crBi(rk)],
+            [LANG === "ne" ? "जप संख्या" : "Jaap count", p.jaap_count != null ? String(p.jaap_count) : "—"]])
+          + `<p class="cr-mantra">${esc(bm.ne || "")}<br><span class="cr-translit">${esc(bm.transliteration || "")}</span></p>`
+          + `<p>${esc(crBi(p.how_to_wear))}</p></div>`;
+      }).join("");
+      return `<div class="cr-grid">${cards}</div>`;
+    }
+    case "yantra": {
+      /* Names, numbers, weekday, metal and mantra only — never a
+         magic-square grid, which varies by tradition. */
+      const cards = (d.per_planet || []).map((p) => {
+        const dy = p.day || {}, mt = p.metal || {}, bm = p.beej_mantra || {};
+        return `<div class="cr-card"><h4>${esc(LANG === "ne" ? p.yantra_ne : p.yantra_en)}</h4>`
+          + crKV([[LANG === "ne" ? "संख्या" : "Number", p.number ?? "—"], [LANG === "ne" ? "बार" : "Day", crBi(dy)], [LANG === "ne" ? "धातु" : "Metal", crBi(mt)]])
+          + `<p class="cr-mantra">${esc(bm.ne || "")}<br><span class="cr-translit">${esc(bm.transliteration || "")}</span></p>`
+          + `<p>${esc(crBi(p.guidance))}</p></div>`;
+      }).join("");
+      return `<div class="cr-grid">${cards}</div>`;
+    }
+    default:
+      return `<p class="cr-note">${esc(t("cr_coming_soon"))}</p>`;
+  }
+}
+
+function crReportHTML(report) {
+  const secs = (report && report.sections) || [];
+  const toc = secs.map((sec) => `<li><a href="#cr-${esc(sec.id)}">${esc(crTitle(sec))}</a></li>`).join("");
+  const body = secs.map((sec, i) => {
+    const note = (sec.available && sec.note) ? `<p class="cr-note">${esc(crBi(sec.note))}</p>` : "";
+    return `<article class="glass card wide cr-section" id="cr-${esc(sec.id)}"><h3>${i + 1}. ${esc(crTitle(sec))}</h3>${note}${crSectionHTML(sec)}</article>`;
+  }).join("");
+  return { toc, body };
+}
+function renderCompleteReport(report, skipScroll) {
+  if (!report) return false;
+  STATE.completeReport = report;
+  const tocEl = document.getElementById("complete-report-toc");
+  const bodyEl = document.getElementById("complete-report-body");
+  if (!tocEl || !bodyEl) return false;
+  const { toc, body } = crReportHTML(report);
+  tocEl.innerHTML = toc;
+  bodyEl.innerHTML = body;
+  /* Charts reuse the existing patri renderer (never a second one):
+     D1/D9 from moon_navamsa, one annual chart per Varshphal year. */
+  const byId = (id) => (report.sections || []).find((s) => s.id === id) || {};
+  const mn = byId("moon_navamsa").data || {};
+  drawChartInto(document.getElementById("cr-chart-d1"), mn.d1, "D1");
+  drawChartInto(document.getElementById("cr-chart-d9"), mn.d9, "D9");
+  const vy = byId("varshphal").data || {};
+  (vy.years || []).forEach((y) => drawChartInto(document.getElementById(`cr-chart-v${y.year}`), y.chart, `V${y.year}`));
+  const sec = document.getElementById("complete-report");
+  if (sec) sec.hidden = false;
+  if (!skipScroll && sec && sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth" });
+  return true;
+}
+async function loadCompleteReport() {
+  const btn = document.getElementById("complete-report-btn");
+  const payload = STATE.birthPayload;
+  if (!payload) return;
+  const key = JSON.stringify(payload);
+  if (STATE.completeReport && STATE.completeReportFor === key) {
+    const sec = document.getElementById("complete-report");
+    if (sec) { sec.hidden = false; if (sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth" }); }
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = t("cr_loading"); }
+  try {
+    const res = await fetch("/api/complete-report", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: key,
+    });
+    if (!res.ok) throw new Error("http");
+    const report = await res.json();
+    STATE.completeReportFor = key;
+    renderCompleteReport(report);
+    if (btn) btn.textContent = t("cr_btn");
+  } catch (e) {
+    if (btn) btn.textContent = t("cr_error");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+document.getElementById("complete-report-btn").addEventListener("click", loadCompleteReport);
+document.getElementById("complete-report-print-btn").addEventListener("click", () => {
+  /* Print stylesheet hides everything except #complete-report while
+     this class is on; it is removed right after printing. */
+  if (document.body) document.body.classList.add("printing-report");
+  const done = () => {
+    if (document.body) document.body.classList.remove("printing-report");
+    if (window.removeEventListener) window.removeEventListener("afterprint", done);
+  };
+  if (window.addEventListener) window.addEventListener("afterprint", done);
+  if (window.print) window.print();
+});
