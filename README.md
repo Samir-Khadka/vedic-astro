@@ -74,6 +74,18 @@ WeasyPrint needs the usual system libraries (Pango etc.) for the best PDF
 output incl. Devanagari; without them the app automatically falls back to a
 reportlab-generated English PDF.
 
+## Deployment
+
+The live site runs on Render. `render.yaml` is the Blueprint for it
+(Python web service, `uvicorn main:app --host 0.0.0.0 --port $PORT`,
+health check at `/health`): connect it in the Render dashboard
+("New + > Blueprint") to make the deployment reproducible instead of
+dashboard-only. The health endpoint answers both GET and HEAD — the
+free UptimeRobot checks use HEAD, and a GET-only route used to return
+405 and show the service as falsely Down. GitHub Actions (`.github/workflows/ci.yml`)
+runs the Python and JavaScript test suites on every push to main and
+every pull request.
+
 ## API
 
 | Endpoint | Description |
