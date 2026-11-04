@@ -153,3 +153,46 @@ def test_prashna_invalid_number():
         "tz": "Asia/Kathmandu",
     })
     assert r.status_code == 422
+
+
+def test_kundali_rejects_oversized_name():
+    # Unbounded free-text fields let one request park megabytes in the
+    # compute/PDF path and the localStorage share payload.
+    r = client.post("/api/kundali", json={**SAMPLE, "name": "x" * 5000})
+    assert r.status_code == 422
+    r2 = client.post("/api/kundali", json={**SAMPLE, "place_name": "y" * 5000,
+                                          "lat": 27.7, "lon": 85.3, "tz": "Asia/Kathmandu"})
+    assert r2.status_code == 422
+
+
+def test_prashna_rejects_oversized_question():
+    r = client.post("/api/prashna", json={"number": 42, "question": "q" * 5000,
+                                          "place_id": "kathmandu"})
+    assert r.status_code == 422
+
+
+def test_places_rejects_oversized_query():
+    r = client.get("/api/places", params={"q": "k" * 500})
+    assert r.status_code == 422
+
+
+def test_security_headers_present():
+    r = client.get("/health")
+    assert r.headers["X-Content-Type-Options"] == "nosniff"
+    assert r.headers["X-Frame-Options"] == "SAMEORIGIN"
+    assert r.headers["Referrer-Policy"] == "strict-origin-when-cross-origin"
+
+
+def test_rate_limit_trips_on_heavy_endpoints(monkeypatch):
+    import main as main_module
+    monkeypatch.setenv("VEDIC_RL_LIMIT", "2")
+    main_module._RL_BUCKETS.clear()
+    payload = {**SAMPLE}
+    assert client.post("/api/kundali", json=payload).status_code == 200
+    assert client.post("/api/kundali", json=payload).status_code == 200
+    r = client.post("/api/kundali", json=payload)
+    assert r.status_code == 429
+    assert r.json()["detail"].startswith("rate limit")
+    # /health is exempt and still answers.
+    assert client.get("/health").status_code == 200
+    main_module._RL_BUCKETS.clear()

@@ -1,6 +1,15 @@
 "use strict";
 /* Vedic Astro frontend — vanilla JS SPA. All rendering from /api JSON. */
 
+/* HTML-escape user-controlled strings before innerHTML interpolation.
+   Used for saved-chart names / place labels (self-typed or from a share
+   link's query params) so a crafted share URL cannot inject markup. */
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
 /* ---------------- i18n ---------------- */
 const SIGNS_EN = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"];
 const SIGNS_NE = ["मेष","वृष","मिथुन","कर्कट","सिंह","कन्या","तुला","वृश्चिक","धनु","मकर","कुम्भ","मीन"];
@@ -2190,7 +2199,7 @@ function renderSavedList() {
   if (!list) return;
   const charts = loadSavedCharts();
   list.innerHTML = charts.length ? charts.map((c, i) => `
-    <div class="saved-row"><span>${c.name ? `${c.name} — ` : ""}${c.dob} ${c.tob} · ${c.place_name || ""}</span>
+    <div class="saved-row"><span>${c.name ? `${esc(c.name)} — ` : ""}${esc(c.dob)} ${esc(c.tob)} · ${esc(c.place_name || "")}</span>
     <button type="button" class="mini-btn" data-load="${i}">${t("saved_load")}</button>
     <button type="button" class="mini-btn" data-del="${i}">${t("saved_delete")}</button></div>`).join("")
     : `<p class="hint">${t("saved_empty")}</p>`;

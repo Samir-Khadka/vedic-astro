@@ -14,14 +14,17 @@ The static single-page frontend is served from /static and /.
 """
 from __future__ import annotations
 
+import os
+import time
+from collections import deque
 from datetime import date
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import FastAPI, HTTPException, Query, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from astro import engine, geocode, panchang as panchang_module, pdf as pdf_module, places as places_module, prashna as prashna_module
 
@@ -31,12 +34,74 @@ STATIC = BASE / "static"
 app = FastAPI(title="Vedic Astro", version="1.0.0")
 
 
+# --- Security: rate limiting + response headers --------------------------
+# The heavy compute endpoints are unauthenticated and each costs real CPU
+# (a full kundali bundle is ~0.6s warm; report.pdf renders a WeasyPrint
+# PDF). A simple per-IP sliding-window limiter keeps one client from
+# saturating the single free-tier worker. Limit via VEDIC_RL_LIMIT
+# (requests per 60s per IP; default 60). /health and static are exempt.
+_RL_HEAVY = {("POST", "/api/kundali"), ("POST", "/api/match"),
+             ("POST", "/api/prashna"), ("GET", "/api/report.pdf")}
+_RL_WINDOW_S = 60.0
+_RL_BUCKETS: dict[str, deque] = {}
+
+
+def _rl_limit() -> int:
+    try:
+        return max(1, int(os.environ.get("VEDIC_RL_LIMIT", "60")))
+    except ValueError:
+        return 60
+
+
+def _rl_key(request) -> str:
+    # Behind Render, the real client IP is the first X-Forwarded-For entry.
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        return xff.split(",")[0].strip()[:64] or "unknown"
+    client = request.client
+    return client.host if client else "unknown"
+
+
+def _rl_allowed(key: str) -> bool:
+    now = time.monotonic()
+    dq = _RL_BUCKETS.get(key)
+    if dq is None:
+        dq = _RL_BUCKETS[key] = deque()
+    while dq and now - dq[0] > _RL_WINDOW_S:
+        dq.popleft()
+    if len(dq) >= _rl_limit():
+        return False
+    dq.append(now)
+    if len(_RL_BUCKETS) > 8192:
+        # Shed the stalest buckets so the map cannot grow unboundedly.
+        stale = sorted(_RL_BUCKETS,
+                       key=lambda k: _RL_BUCKETS[k][-1] if _RL_BUCKETS[k] else 0)
+        for k in stale[:4096]:
+            del _RL_BUCKETS[k]
+    return True
+
+
+@app.middleware("http")
+async def security_middleware(request, call_next):
+    if (request.method, request.url.path) in _RL_HEAVY and not _rl_allowed(_rl_key(request)):
+        return JSONResponse(
+            {"detail": "rate limit exceeded; please slow down and retry"},
+            status_code=429,
+            headers={"Retry-After": "60"},
+        )
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
+
 class BirthInput(BaseModel):
-    name: str | None = None
+    name: str | None = Field(default=None, max_length=200)
     dob: str  # YYYY-MM-DD
     tob: str  # HH:MM or HH:MM:SS
     place_id: str | None = None
-    place_name: str | None = None
+    place_name: str | None = Field(default=None, max_length=200)
     lat: float | None = None
     lon: float | None = None
     tz: str | None = None
@@ -89,7 +154,7 @@ class MatchInput(BaseModel):
 
 class PrashnaInput(BaseModel):
     number: int
-    question: str | None = None
+    question: str | None = Field(default=None, max_length=500)
     place_id: str | None = None
     place_name: str | None = None
     lat: float | None = None
@@ -177,7 +242,7 @@ def prashna(body: PrashnaInput):
 
 
 @app.get("/api/places")
-def places(q: str = Query(default="")):
+def places(q: str = Query(default="", max_length=200)):
     local = places_module.search_places(q)
     global_hits, global_available = geocode.search_global(q)
     local_names = {p["name"].lower() for p in local}

@@ -134,7 +134,7 @@ function loadApp({ lang = "en", throwOnSave = false, fetchScript = null } = {}) 
   vm.runInContext(fs.readFileSync(path.join(ROOT, "static/coords.js"), "utf8"), sandbox);
   Object.assign(sandbox, sandbox.module.exports);
   const appSrc = fs.readFileSync(path.join(ROOT, "static/app.js"), "utf8") +
-    "\n;globalThis.__harness = { STATE, renderBundle, saveCurrentChart, drawChartInto, renderMatch, renderPrashna, fetchKundaliWithRetry, isRetryableKundaliError, signColHeader, settlePlaceTz, PLACE_TZ_PENDING, ensureManualTz };";
+    "\n;globalThis.__harness = { STATE, renderBundle, saveCurrentChart, drawChartInto, renderMatch, renderPrashna, fetchKundaliWithRetry, isRetryableKundaliError, signColHeader, settlePlaceTz, PLACE_TZ_PENDING, ensureManualTz, renderSavedList, esc };";
   vm.runInContext(appSrc, sandbox);
   // el(id) mirrors document.getElementById (creating the stub on demand);
   // the raw Map only holds ids the app code actually touched.
@@ -340,4 +340,26 @@ test("ensureManualTz fills an empty timezone, keeps a hand-entered one", async (
   el("f-tz").value = "Pacific/Auckland";
   await h.ensureManualTz();
   assert.equal(el("f-tz").value, "Pacific/Auckland", "a hand-entered timezone always wins");
+});
+
+test("esc escapes HTML special characters", () => {
+  const { h } = loadApp({ lang: "en" });
+  assert.equal(h.esc('<a href="x">&\''), "&lt;a href=&quot;x&quot;&gt;&amp;&#39;");
+  assert.equal(h.esc(null), "");
+  assert.equal(h.esc(42), "42");
+});
+
+test("renderSavedList escapes user-controlled name/place (stored XSS guard)", () => {
+  const { h, el, store } = loadApp({ lang: "en" });
+  store.set("vedic-astro-charts", JSON.stringify([{
+    name: '<img src=x onerror=alert(1)>',
+    dob: "1998-05-14", tob: "06:30",
+    place_name: '"><svg onload=alert(2)>',
+  }]));
+  h.renderSavedList();
+  const html = el("saved-list").innerHTML;
+  assert.ok(!html.includes("<img src=x"), "raw injected markup must not appear");
+  assert.ok(!html.includes("<svg onload"), "raw injected markup must not appear");
+  assert.ok(html.includes("&lt;img src=x"), "injected markup must be escaped");
+  assert.ok(html.includes("&quot;&gt;&lt;svg"), "quote-breakout must be escaped");
 });
