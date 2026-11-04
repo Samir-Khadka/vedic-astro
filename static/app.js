@@ -1066,7 +1066,7 @@ function renderCore(b) {
   document.getElementById("results-title").textContent =
     (b.name ? `${t("results_for")} ${b.name}` : t("results_for")) ;
   document.getElementById("results-meta").textContent =
-    `${t("born_at")} ${b.birth.date} · ${b.birth.time} · ${b.birth.place.name} — ` +
+    `${t("born_at")} ${b.birth.date}${b.birth.bs_date ? ` (${LANG === "ne" ? b.birth.bs_date.formatted_ne : b.birth.bs_date.formatted_en})` : ""} · ${b.birth.time} · ${b.birth.place.name} — ` +
     `${t("lagna_word")}: ${signName(b.lagna.sign)} · ${t("moon_word")}: ${signName(moon.sign)} / ${LANG === "ne" ? moon.nakshatra_ne : moon.nakshatra_en}`;
 
   /* Chart at a glance — the four facts a layperson checks first, in plain

@@ -206,6 +206,15 @@ def _serialize_mudda(tree: dict, birth_dt: datetime) -> dict:
     }
 
 
+def _bs_date_for(dob):
+    """BS date for a birth date, or None outside the BS table range."""
+    try:
+        from . import bs_calendar as _bs
+        return _bs.ad_to_bs(dob)
+    except ValueError:
+        return None
+
+
 def compute_kundali(payload: dict, now: datetime | None = None,
                     light: bool = False) -> dict:
     """Compute the kundali bundle.
@@ -428,6 +437,7 @@ def compute_kundali(payload: dict, now: datetime | None = None,
         "name": payload.get("name") or "",
         "birth": {
             "date": dob.isoformat(), "time": tob.isoformat(),
+            "bs_date": _bs_date_for(dob),
             "place": place,
             "sunrise": rise.isoformat() if rise else None,
             "sunset": set_.isoformat() if set_ else None,

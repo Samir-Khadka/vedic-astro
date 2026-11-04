@@ -26,7 +26,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
-from astro import engine, geocode, life_questions as life_questions_module, panchang as panchang_module, pdf as pdf_module, places as places_module, prashna as prashna_module
+from astro import bs_calendar as bs_calendar_module, engine, geocode, life_questions as life_questions_module, panchang as panchang_module, pdf as pdf_module, places as places_module, prashna as prashna_module
 
 BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
@@ -285,6 +285,23 @@ def tz_lookup(lat: float, lon: float):
         raise HTTPException(status_code=422, detail="no timezone found for these coordinates")
     return {"tz": tz}
 
+
+
+@app.get("/api/bs")
+def bs_convert(
+    date_str: str | None = Query(default=None, alias="date"),
+    bs: str | None = Query(default=None),
+):
+    """BS <-> AD conversion. Give ?date=YYYY-MM-DD for AD->BS, or
+    ?bs=YYYY-MM-DD (BS) for BS->AD. Out-of-range dates return 400."""
+    try:
+        if bs is not None:
+            y, m, d = (int(x) for x in bs.split("-"))
+            return bs_calendar_module.bs_date_dict(y, m, d)
+        day = date.fromisoformat(date_str) if date_str else date.today()
+        return bs_calendar_module.ad_to_bs(day)
+    except (ValueError, TypeError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/api/panchang")
 def panchang(
