@@ -85,6 +85,17 @@ main { max-width: 1120px; margin: 0 auto; padding: 0 20px 64px; }
 .main-nav { display: flex; gap: 20px; }
 .main-nav a { color: var(--ink-dim); text-decoration: none; font-size: 15px; }
 .main-nav a:hover, .main-nav a:focus-visible { color: var(--violet); }
+.main-nav a.is-active { color: var(--violet); font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
+
+/* Page router: one page visible at a time (see router.js). */
+.page-empty { text-align: center; }
+
+/* Home menu cards: one page per card, two columns on desktop. */
+.home-menu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.home-menu > * { min-width: 0; }
+.home-card { text-decoration: none; color: inherit; display: block; }
+.home-card h3 { margin: 0 0 6px; }
+.home-card p { margin: 0; }
 .lang-toggle { display: flex; border: 1px solid var(--glass-border); border-radius: 999px; overflow: hidden; }
 .lang-btn {
   background: transparent; color: var(--ink-dim); border: 0; padding: 7px 14px;
@@ -381,7 +392,7 @@ legend { padding: 0 8px; color: var(--violet); font-weight: 600; }
      viewports (measured document width 804px). With min-width: 0 the
      card shrinks to the viewport and the table scrolls inside its
      existing .table-scroll wrapper instead. */
-  .results-grid, .pred-grid, .chapter-grid, .match-cols { grid-template-columns: minmax(0, 1fr); }
+  .results-grid, .pred-grid, .chapter-grid, .match-cols, .home-menu { grid-template-columns: minmax(0, 1fr); }
   .results-grid > *, .pred-grid > *, .chapter-grid > *, .match-cols > * { min-width: 0; }
   /* Keep the primary nav on mobile instead of hiding it: a
      horizontally scrollable row under the brand, so section jumps
@@ -834,8 +845,11 @@ html[lang="ne"] .strip-item .k, html[lang="ne"] .lucky-item .k { letter-spacing:
    only the complete report prints — the form, results tabs, premium
    report and site chrome are hidden. Cards flatten to plain paper. */
 @media print {
+  /* Pages are <div data-page> wrappers now (not direct <section>
+     children of <main>), so hide every page except the report's. */
   body.printing-report header, body.printing-report footer,
-  body.printing-report main > section:not(#complete-report) { display: none !important; }
+  body.printing-report main > :not([data-page="complete-report"]) { display: none !important; }
+  body.printing-report [data-page="complete-report"] { display: block !important; }
   body.printing-report #complete-report { display: block !important; }
   body.printing-report #complete-report-print-btn { display: none !important; }
   body.printing-report .cr-model-row { display: none !important; }

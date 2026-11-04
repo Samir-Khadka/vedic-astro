@@ -30,19 +30,21 @@
 <div id="intro" aria-hidden="true"><div class="intro-om">ॐ</div><div class="intro-ring"></div></div>
 
 <header class="site-header">
-  <a class="brand" href="#top" aria-label="Vedic Astro home">
+  <a class="brand" href="#home" aria-label="Vedic Astro home">
     <span class="brand-mark" aria-hidden="true">ॐ</span>
     <span class="brand-name">Vedic<em>Astro</em></span>
   </a>
   <nav class="main-nav" aria-label="Primary">
-    <a href="#kundali-form" data-i18n="nav_kundali">Kundali</a>
-    <a href="#premium" data-i18n="nav_premium">Premium Report</a>
-    <a href="#prashna" data-i18n="nav_prashna">KP Prashna</a>
-    <a href="#ai-astrologer">AI Astrologer</a>
-    <a href="#matching" data-i18n="nav_matching">Matching</a>
-    <a href="#panchang-strip" data-i18n="nav_panchang">Panchang</a>
-    <a href="#horoscope" data-i18n="nav_horoscope">Horoscope</a>
-    <a href="#muhurta" data-i18n="nav_muhurta">Muhurta</a>
+    <a href="#home" data-page="home" data-i18n="nav_home">Home</a>
+    <a href="#kundali" data-page="kundali" data-i18n="nav_kundali">Kundali</a>
+    <a href="#premium" data-page="premium" data-i18n="nav_premium">Premium Report</a>
+    <a href="#prashna" data-page="prashna" data-i18n="nav_prashna">KP Prashna</a>
+    <a href="#ai-astrologer" data-page="ai-astrologer" data-i18n="nav_ai">AI Astrologer</a>
+    <a href="#matching" data-page="matching" data-i18n="nav_matching">Matching</a>
+    <a href="#panchang" data-page="panchang" data-i18n="nav_panchang">Panchang</a>
+    <a href="#horoscope" data-page="horoscope" data-i18n="nav_horoscope">Horoscope</a>
+    <a href="#muhurta" data-page="muhurta" data-i18n="nav_muhurta">Muhurta</a>
+    <a href="#life-questions" data-page="life-questions" data-i18n="nav_life">Life Questions</a>
   </nav>
   <div class="lang-toggle" role="group" aria-label="Language">
     <button type="button" id="lang-en" class="lang-btn is-active">EN</button>
@@ -52,6 +54,7 @@
 
 <main id="top">
   <!-- HERO -->
+  <div class="page" id="page-home" data-page="home">
   <section class="hero" id="hero">
     <div id="hero-3d" aria-hidden="true"></div>
     <div class="hero-ring" aria-hidden="true">
@@ -65,11 +68,39 @@
     <p class="eyebrow hero-eyebrow" data-i18n="hero_eyebrow">Parashari · KP · Jaimini</p>
     <h1 class="hero-title" data-i18n="hero_title">Your stars, computed precisely.</h1>
     <p class="hero-sub" data-i18n="hero_sub">Swiss Ephemeris astronomy with Lahiri ayanamsa — Parashari depth, KP timing, Jaimini insight. In English and Nepali.</p>
-    <a class="btn btn-gold" href="#kundali-form" data-i18n="hero_cta">Create my Kundali</a>
+    <a class="btn btn-gold" href="#kundali" data-i18n="hero_cta">Create my Kundali</a>
     <div class="hero-cue" aria-hidden="true"><span></span></div>
   </section>
+  <!-- TODAY ON HOME -->
+  <section class="panchang-strip glass rv" id="home-panchang" aria-label="Today's Panchang">
+    <h2 class="strip-title" id="home-panchang-title" data-i18n="panchang_title">Today's Panchang</h2>
+    <div class="strip-grid" id="home-panchang-grid">
+      <p class="muted" data-i18n="loading">Loading…</p>
+    </div>
+    <p><a class="mini-btn" href="#panchang" data-i18n="nav_panchang">Panchang</a></p>
+  </section>
+
+  <!-- HOME MENU -->
+  <section class="home-menu-wrap section">
+    <h2 class="section-title" data-i18n="home_menu_title">Choose a page</h2>
+    <p class="results-meta" data-i18n="home_menu_sub">One page at a time — pick where to go.</p>
+    <div class="home-menu">
+      <a class="glass card home-card" href="#kundali"><h3 data-i18n="nav_kundali">Kundali</h3><p data-i18n="home_desc_kundali">Enter birth details and generate your kundali.</p></a>
+      <a class="glass card home-card" href="#complete-report"><h3 data-i18n="cr_title">Complete Kundali Report</h3><p data-i18n="home_desc_complete">The full 31-section report in traditional order.</p></a>
+      <a class="glass card home-card" href="#premium"><h3 data-i18n="nav_premium">Premium Report</h3><p data-i18n="home_desc_premium">The deep multi-chapter life reading.</p></a>
+      <a class="glass card home-card" href="#prashna"><h3 data-i18n="nav_prashna">KP Prashna</h3><p data-i18n="home_desc_prashna">Horary chart from a number 1–249.</p></a>
+      <a class="glass card home-card" href="#ai-astrologer"><h3 data-i18n="nav_ai">AI Astrologer</h3><p data-i18n="home_desc_ai">Ask anything — answered from your chart.</p></a>
+      <a class="glass card home-card" href="#matching"><h3 data-i18n="nav_matching">Matching</h3><p data-i18n="home_desc_matching">Guna Milan compatibility for two charts.</p></a>
+      <a class="glass card home-card" href="#panchang"><h3 data-i18n="nav_panchang">Panchang</h3><p data-i18n="home_desc_panchang">Today's panchang and the month calendar.</p></a>
+      <a class="glass card home-card" href="#horoscope"><h3 data-i18n="nav_horoscope">Horoscope</h3><p data-i18n="home_desc_horoscope">Moon-sign horoscope from today's transits.</p></a>
+      <a class="glass card home-card" href="#muhurta"><h3 data-i18n="nav_muhurta">Muhurta</h3><p data-i18n="home_desc_muhurta">Find auspicious dates for life events.</p></a>
+      <a class="glass card home-card" href="#life-questions"><h3 data-i18n="nav_life">Life Questions</h3><p data-i18n="home_desc_life">26 life questions, answered from your chart.</p></a>
+    </div>
+  </section>
+  </div>
 
   <!-- PANCHANG STRIP -->
+  <div class="page" id="page-panchang" data-page="panchang">
   <section id="panchang-strip" class="panchang-strip glass rv" aria-label="Today's Panchang">
     <h2 class="strip-title" data-i18n="panchang_title">Today's Panchang</h2>
     <div class="strip-grid" id="panchang-grid">
@@ -90,8 +121,10 @@
       <div id="cal-grid" class="cal-grid"></div>
     </details>
   </section>
+  </div>
 
   <!-- BIRTH FORM -->
+  <div class="page" id="page-kundali" data-page="kundali">
   <section id="kundali-form" class="section">
     <p class="eyebrow rv" data-i18n="eb_kundali">Chapter I — The Birth Chart</p>
     <h2 class="section-title rv" data-i18n="form_title">Birth Details</h2>
@@ -552,8 +585,14 @@
       </div>
     </div>
   </section>
+  </div>
 
   <!-- COMPLETE KUNDALI REPORT (legacy table-of-contents order) -->
+  <div class="page" id="page-complete-report" data-page="complete-report">
+  <div class="page-empty glass card wide" id="complete-report-empty">
+    <p data-i18n="page_empty">Compute a Kundali first — this page fills in from your chart.</p>
+    <p><a class="btn btn-gold" href="#kundali" data-i18n="hero_cta">Create my Kundali</a></p>
+  </div>
   <section id="complete-report" class="section" hidden>
     <p class="eyebrow" data-i18n="cr_title">Complete Kundali Report</p>
     <h2 class="section-title" id="complete-report-title" data-i18n="cr_title">Complete Kundali Report</h2>
@@ -571,8 +610,14 @@
     </div>
     <div id="complete-report-body"></div>
   </section>
+  </div>
 
   <!-- PREMIUM REPORT -->
+  <div class="page" id="page-premium" data-page="premium">
+  <div class="page-empty glass card wide" id="premium-empty">
+    <p data-i18n="page_empty">Compute a Kundali first — this page fills in from your chart.</p>
+    <p><a class="btn btn-gold" href="#kundali" data-i18n="hero_cta">Create my Kundali</a></p>
+  </div>
   <section id="premium" class="section" hidden>
     <p class="eyebrow" data-i18n="eb_premium">Chapter II — The Deep Reading</p>
     <h2 class="section-title" data-i18n="premium_title">Premium Life Report</h2>
@@ -671,6 +716,7 @@
       </div>
     </div>
   </section>
+  </div>
 
   <!-- FLOATING BOOK READER -->
   <div id="book-modal" hidden>
@@ -697,6 +743,7 @@
 
   <!-- KP PRASHNA (HORARY) -->
   <!-- HOROSCOPE -->
+  <div class="page" id="page-horoscope" data-page="horoscope">
   <section id="horoscope" class="section">
     <p class="eyebrow rv" data-i18n="eb_horoscope">Chapter V — Rashi Phal</p>
     <h2 class="section-title rv" data-i18n="horoscope_title">Moon-Sign Horoscope</h2>
@@ -723,8 +770,10 @@
       <div id="horoscope-extra"></div>
     </div>
   </section>
+  </div>
 
   <!-- MUHURTA -->
+  <div class="page" id="page-muhurta" data-page="muhurta">
   <section id="muhurta" class="section">
     <p class="eyebrow rv" data-i18n="eb_muhurta">Chapter VI — Auspicious Timing</p>
     <h2 class="section-title rv" data-i18n="muhurta_title">Muhurta Finder</h2>
@@ -812,7 +861,9 @@
       <p class="form-error" id="muhurta-month-error" role="alert" hidden></p>
     </div>
   </section>
+  </div>
 
+  <div class="page" id="page-prashna" data-page="prashna">
   <section id="prashna" class="section">
     <p class="eyebrow rv" data-i18n="eb_prashna">Chapter III — Horary</p>
     <h2 class="section-title rv" data-i18n="prashna_title">KP Prashna — Horary (1–249)</h2>
@@ -863,8 +914,10 @@
       </div>
     </div>
   </section>
+  </div>
 
   <!-- LIFE QUESTIONS -->
+  <div class="page" id="page-life-questions" data-page="life-questions">
   <section id="life-questions" class="section">
     <p class="eyebrow rv">Chapter III — Life Questions</p>
     <h2 class="section-title rv" id="lq-title">Life Questions Library</h2>
@@ -878,8 +931,10 @@
       <div id="lq-detail" hidden></div>
     </div>
   </section>
+  </div>
 
   <!-- AI ASTROLOGER -->
+  <div class="page" id="page-ai-astrologer" data-page="ai-astrologer">
   <section id="ai-astrologer" class="section">
     <p class="eyebrow rv">Chapter III — AI Astrologer</p>
     <h2 class="section-title rv" id="ai-title">AI Astrologer</h2>
@@ -903,8 +958,10 @@
       <div id="ai-areas"></div>
     </div>
   </section>
+  </div>
 
   <!-- MATCHING -->
+  <div class="page" id="page-matching" data-page="matching">
   <section id="matching" class="section">
     <p class="eyebrow rv" data-i18n="eb_matching">Chapter IV — Compatibility</p>
     <h2 class="section-title rv" data-i18n="match_title">Kundali Matching — Guna Milan</h2>
@@ -959,6 +1016,7 @@
       <div id="match-porutham"></div>
     </div>
   </section>
+  </div>
 
   <footer class="site-footer rv">
     <div class="zodiac-band" aria-hidden="true"><span>♈ ✦ ♉ ✦ ♊ ✦ ♋ ✦ ♌ ✦ ♍ ✦ ♎ ✦ ♏ ✦ ♐ ✦ ♑ ✦ ♒ ✦ ♓ ✦ </span><span>♈ ✦ ♉ ✦ ♊ ✦ ♋ ✦ ♌ ✦ ♍ ✦ ♎ ✦ ♏ ✦ ♐ ✦ ♑ ✦ ♒ ✦ ♓ ✦ </span></div>
@@ -972,6 +1030,7 @@
 <script src="/static/app.js" defer></script>
 <script src="/static/life_questions.js" defer></script>
 <script src="/static/ai_astrologer.js" defer></script>
+<script src="/static/router.js" defer></script>
 <script>
   // Installability only: cache the static app shell so the app can be
   // installed and loads fast on repeat visits. API calls are never

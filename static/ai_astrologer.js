@@ -152,8 +152,8 @@
       showStatus(L === "ne"
         ? "पहिले कुण्डली बनाउनुहोस् — त्यसपछि यो प्रश्नको उत्तर आफैँ आउँछ।"
         : "Compute a chart first — the answer to this question will then come up automatically.");
-      var form = document.getElementById("kundali-form");
-      if (form) form.scrollIntoView({ behavior: "smooth" });
+      if (window.vedicNavigate) window.vedicNavigate("kundali");
+      else { var form = document.getElementById("kundali-form"); if (form) form.scrollIntoView({ behavior: "smooth" }); }
       return;
     }
     try { localStorage.removeItem("vedic-pending-ai-question"); } catch (e) {}
@@ -269,8 +269,8 @@
       showStatus(L === "ne"
         ? "पहिले कुण्डली बनाउनुहोस् — त्यसपछि ८ जीवन क्षेत्र देखिन्छन्।"
         : "Compute a chart first — the 8 life areas will then appear.");
-      var form = document.getElementById("kundali-form");
-      if (form) form.scrollIntoView({ behavior: "smooth" });
+      if (window.vedicNavigate) window.vedicNavigate("kundali");
+      else { var form = document.getElementById("kundali-form"); if (form) form.scrollIntoView({ behavior: "smooth" }); }
       return;
     }
     if (areasEl) areasEl.innerHTML = '<p class="results-meta">' + (L === "ne" ? "क्षेत्रहरू निकालिँदैछन्…" : "Loading your life areas…") + "</p>";
@@ -304,8 +304,8 @@
   if (areasBtn) areasBtn.addEventListener("click", loadAreas);
   var resultsBtn = document.getElementById("ai-astrologer-btn");
   if (resultsBtn) resultsBtn.addEventListener("click", function () {
-    var sec = document.getElementById("ai-astrologer");
-    if (sec) sec.scrollIntoView({ behavior: "smooth" });
+    if (window.vedicNavigate) window.vedicNavigate("ai-astrologer");
+    else { var sec = document.getElementById("ai-astrologer"); if (sec) sec.scrollIntoView({ behavior: "smooth" }); }
   });
 
   /* Pending question: answered automatically once a chart is computed. */
@@ -319,8 +319,8 @@
       var L = lang();
       appendMessage("<p><strong>" + (L === "ne" ? "तपाईं: " : "You: ") + "</strong>" + esc(pending) + "</p>", "ai-user");
       requestAsk({ question: pending, lang: L, birth: ev.detail });
-      var sec = document.getElementById("ai-astrologer");
-      if (sec) sec.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      if (window.vedicNavigate) window.vedicNavigate("ai-astrologer");
+      else { var sec = document.getElementById("ai-astrologer"); if (sec) sec.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
     }
   });
 
