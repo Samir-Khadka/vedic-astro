@@ -171,8 +171,8 @@
         showAnswerStatus(L === "ne"
           ? "पहिले कुण्डली बनाउनुहोस् — त्यसपछि यो प्रश्नको उत्तर आफैँ आउँछ।"
           : "Compute a chart first — the answer for this question will then come up automatically.");
-        var form = document.getElementById("kundali-form");
-        if (form) form.scrollIntoView({ behavior: "smooth" });
+        if (window.vedicNavigate) window.vedicNavigate("kundali");
+        else { var form = document.getElementById("kundali-form"); if (form) form.scrollIntoView({ behavior: "smooth" }); }
         return;
       }
       try { localStorage.removeItem("vedic-pending-life-question"); } catch (e) {}
@@ -212,7 +212,8 @@
     if (pending && currentId === pending && ev.detail) {
       try { localStorage.removeItem("vedic-pending-life-question"); } catch (e) {}
       requestAnswer({ birth: ev.detail });
-      if (detailEl) detailEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      if (window.vedicNavigate) window.vedicNavigate("life-questions", "lq-detail");
+      else if (detailEl) detailEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   });
 

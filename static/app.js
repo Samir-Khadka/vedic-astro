@@ -32,6 +32,19 @@ const WEEKDAY_NE = ["सोमबार","मङ्गलबार","बुध�
 const I18N = {
   en: {
     nav_kundali:"Kundali", nav_premium:"Premium Report", nav_matching:"Matching", nav_panchang:"Panchang",
+    nav_home:"Home", nav_life:"Life Questions", nav_ai:"AI Astrologer",
+    home_menu_title:"Choose a page", home_menu_sub:"One page at a time — pick where to go.",
+    home_desc_kundali:"Enter birth details and generate your kundali.",
+    home_desc_complete:"The full 31-section report in traditional order.",
+    home_desc_premium:"The deep multi-chapter life reading.",
+    home_desc_prashna:"Horary chart from a number 1–249.",
+    home_desc_ai:"Ask anything — answered from your chart.",
+    home_desc_matching:"Guna Milan compatibility for two charts.",
+    home_desc_panchang:"Today's panchang and the month calendar.",
+    home_desc_horoscope:"Moon-sign horoscope from today's transits.",
+    home_desc_muhurta:"Find auspicious dates for life events.",
+    home_desc_life:"26 life questions, answered from your chart.",
+    page_empty:"Compute a Kundali first — this page fills in from your chart.",
     hero_title:"Your stars, computed precisely.",
     hero_eyebrow:"Parashari · KP · Jaimini",
     eb_kundali:"Chapter I — The Birth Chart", eb_results:"The Reading",
@@ -252,6 +265,19 @@ const I18N = {
   },
   ne: {
     nav_kundali:"कुण्डली", nav_premium:"प्रिमियम रिपोर्ट", nav_matching:"मेल मिलान", nav_panchang:"पञ्चाङ्ग",
+    nav_home:"गृहपृष्ठ", nav_life:"जीवन प्रश्नहरू", nav_ai:"एआई ज्योतिषी",
+    home_menu_title:"पृष्ठ छान्नुहोस्", home_menu_sub:"एक पटकमा एउटा पृष्ठ — कहाँ जाने छान्नुहोस्।",
+    home_desc_kundali:"जन्म विवरण हाल्नुहोस् र कुण्डली बनाउनुहोस्।",
+    home_desc_complete:"परम्परागत क्रममा पूरा ३१ खण्डको रिपोर्ट।",
+    home_desc_premium:"गहिरो बहु-अध्याय जीवन पठन।",
+    home_desc_prashna:"१–२४९ नम्बरबाट प्रश्न कुण्डली।",
+    home_desc_ai:"जे सोध्नुहोस् — तपाईंको कुण्डलीबाट उत्तर।",
+    home_desc_matching:"दुई कुण्डलीको गुण मिलान।",
+    home_desc_panchang:"आजको पञ्चाङ्ग र महिनाको पात्रो।",
+    home_desc_horoscope:"आजको गोचरबाट चन्द्र राशि फल।",
+    home_desc_muhurta:"जीवनका कार्यका लागि शुभ मुहूर्त खोज्नुहोस्।",
+    home_desc_life:"२६ जीवन प्रश्न, तपाईंको कुण्डलीबाट उत्तर।",
+    page_empty:"पहिले कुण्डली बनाउनुहोस् — यो पृष्ठ तपाईंको कुण्डलीबाट भरिन्छ।",
     hero_title:"तपाईंका तारा, यथार्थ रूपमा गणना गरिएको।",
     hero_eyebrow:"पराशरी · केपी · जैमिनी",
     eb_kundali:"अध्याय १ — जन्म कुण्डली", eb_results:"अध्ययन",
@@ -573,11 +599,18 @@ async function loadPanchang() {
       [t("sunset"), fmtTime(p.sunset)],
     ];
     const wd = LANG === "ne" ? WEEKDAY_NE[p.weekday] : WEEKDAY_EN[p.weekday];
-    document.querySelector(".strip-title").textContent = t("panchang_title") + " — " + wd;
-    grid.innerHTML = items.map(([k, v]) =>
+    const stripTitle = t("panchang_title") + " — " + wd;
+    document.querySelectorAll(".strip-title").forEach((el) => { el.textContent = stripTitle; });
+    const stripHtml = items.map(([k, v]) =>
       `<div class="strip-item"><span class="k">${k}</span><span class="v">${v}</span></div>`).join("");
+    grid.innerHTML = stripHtml;
+    /* Home page shows the same today's-panchang strip. */
+    const homeGrid = document.getElementById("home-panchang-grid");
+    if (homeGrid) homeGrid.innerHTML = stripHtml;
   } catch (e) {
     grid.innerHTML = `<p class="muted">${t("err_server")}</p>`;
+    const homeGrid = document.getElementById("home-panchang-grid");
+    if (homeGrid) homeGrid.innerHTML = `<p class="muted">${t("err_server")}</p>`;
   }
 }
 
@@ -874,6 +907,8 @@ document.getElementById("birth-form").addEventListener("submit", async (ev) => {
        is still a chart, and must not be hidden behind a generic error. */
     document.getElementById("results").hidden = false;
     document.getElementById("premium").hidden = false;
+    const premEmpty = document.getElementById("premium-empty");
+    if (premEmpty) premEmpty.hidden = true;
     const coreOk = renderBundle();
     if (!coreOk) { errEl.textContent = t("err_incomplete"); errEl.hidden = false; }
     revealSection(document.getElementById("results"));
@@ -1880,8 +1915,9 @@ document.getElementById("pdf-btn").addEventListener("click", () => {
     btn.textContent = msg;
     btn.disabled = true;
     setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 3000);
-    // Scroll to the form.
-    document.getElementById("kundali-form")?.scrollIntoView({behavior: "smooth"});
+    // Go to the Kundali page, where the form lives.
+    if (window.vedicNavigate) window.vedicNavigate("kundali");
+    else document.getElementById("kundali-form")?.scrollIntoView({behavior: "smooth"});
     return;
   }
   const q = new URLSearchParams();
@@ -3194,6 +3230,8 @@ function renderCompleteReport(report, skipScroll) {
     sec.hidden = false;
     if (sec.classList) sec.classList.toggle("cr-model-book", model === "book");
   }
+  const crEmpty = document.getElementById("complete-report-empty");
+  if (crEmpty) crEmpty.hidden = true;
   const modelSel = document.getElementById("complete-report-model");
   if (modelSel) modelSel.value = model;
   if (!skipScroll && sec && sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth" });
@@ -3206,7 +3244,9 @@ async function loadCompleteReport() {
   const key = JSON.stringify(payload);
   if (STATE.completeReport && STATE.completeReportFor === key) {
     const sec = document.getElementById("complete-report");
-    if (sec) { sec.hidden = false; if (sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth" }); }
+    if (sec) sec.hidden = false;
+    if (window.vedicNavigate) window.vedicNavigate("complete-report");
+    else if (sec && sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth" });
     return;
   }
   if (btn) { btn.disabled = true; btn.textContent = t("cr_loading"); }
@@ -3217,7 +3257,8 @@ async function loadCompleteReport() {
     if (!res.ok) throw new Error("http");
     const report = await res.json();
     STATE.completeReportFor = key;
-    renderCompleteReport(report);
+    if (window.vedicNavigate) window.vedicNavigate("complete-report");
+    renderCompleteReport(report, true);
     if (btn) btn.textContent = t("cr_btn");
   } catch (e) {
     if (btn) btn.textContent = t("cr_error");
