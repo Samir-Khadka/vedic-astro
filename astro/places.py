@@ -20,11 +20,14 @@ def search_places(query: str, limit: int = 10) -> list[dict]:
     q = (query or "").strip().lower()
     if not q:
         return _PLACES[:limit]
-    hits = [
-        p for p in _PLACES
-        if q in p["name"].lower() or q in p["country"].lower() or q in p["id"]
-    ]
-    hits.sort(key=lambda p: (not p["name"].lower().startswith(q), p["name"]))
+
+    def _matches(p: dict) -> bool:
+        hay = [p["name"], p["country"], p["id"], p.get("name_ne", "")]
+        hay += list(p.get("aliases", []))
+        return any(q in h.lower() for h in hay)
+
+    hits = [p for p in _PLACES if _matches(p)]
+    hits.sort(key=lambda p: (not (p["name"].lower().startswith(q) or p.get("name_ne", "").startswith(q)), p["name"]))
     return hits[:limit]
 
 
