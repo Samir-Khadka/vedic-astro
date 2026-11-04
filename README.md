@@ -32,7 +32,8 @@ Kundali matching, daily panchang and PDF export. Fully bilingual:
   Muntha, year lord) for 3 years, remedies (life/lucky/fortune gemstones,
   Rudraksha, beej mantra, dosha remedies) and lucky attributes.
 - **PDF export** — the full premium report as a downloadable PDF
-  (WeasyPrint; reportlab fallback).
+  (WeasyPrint; fpdf2 + vendored Noto Sans Devanagari fallback, so the
+  PDF stays in Nepali or English even without Pango).
 - **Kundali matching** — Ashtakoota Guna Milan (36 points) with full
   koota-by-koota breakdown, Manglik comparison and bilingual verdict.
 - **Panchang** — tithi, nakshatra, yoga, karana, vaara at sunrise, with
@@ -71,8 +72,11 @@ python3 -m venv .venv
 ```
 
 WeasyPrint needs the usual system libraries (Pango etc.) for the best PDF
-output incl. Devanagari; without them the app automatically falls back to a
-reportlab-generated English PDF.
+output incl. Devanagari; without them the app automatically falls back to
+an fpdf2 PDF using the vendored Noto Sans Devanagari fonts in
+`data/fonts/` (with uharfbuzz shaping), so the PDF stays in the requested
+language. Only if those fonts are unavailable does it degrade to the
+English-only reportlab path.
 
 ## Deployment
 

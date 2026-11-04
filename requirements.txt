@@ -5,3 +5,5 @@ pydantic>=2.6
 timezonefinder==9.2.0
 weasyprint>=60
 reportlab>=4.0
+fpdf2>=2.8
+uharfbuzz>=0.5

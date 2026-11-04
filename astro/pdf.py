@@ -9,7 +9,11 @@ doshas & remedies → Lal Kitab → transits & timing synthesis → year
 forecast → gemstones & lucky attributes → disclaimer.
 
 Primary renderer: WeasyPrint (HTML/CSS — handles Devanagari when a
-suitable font is present). Fallback: reportlab, English-only.
+suitable font is present). Fallback: fpdf2 with the vendored Noto Sans
+Devanagari fonts (data/fonts/) and uharfbuzz shaping, so the PDF stays
+in the requested language (English or Nepali) instead of degrading to
+English-only. If even that is unavailable, the last resort is the
+English-only reportlab path.
 """
 from __future__ import annotations
 
@@ -782,7 +786,142 @@ def render_pdf(bundle: dict, lang: str = "en") -> bytes:
 
         return HTML(string=html_text).write_pdf()
     except Exception:
+        return _render_pdf_fallback(bundle, lang)
+
+
+def _fallback_font_paths():
+    """Vendored fallback fonts, else system copies of the same fonts.
+
+    Returns (devanagari_regular, devanagari_bold, latin_regular,
+    latin_bold) or None. Noto Sans Devanagari does not cover full
+    Latin, so Latin words are set in DejaVu Sans (see data/fonts/).
+    """
+    import os
+    here = os.path.dirname(os.path.abspath(__file__))
+    vendored = [
+        os.path.join(here, "..", "data", "fonts", "NotoSansDevanagari-Regular.ttf"),
+        os.path.join(here, "..", "data", "fonts", "NotoSansDevanagari-Bold.ttf"),
+        os.path.join(here, "..", "data", "fonts", "DejaVuSans.ttf"),
+        os.path.join(here, "..", "data", "fonts", "DejaVuSans-Bold.ttf"),
+    ]
+    if all(os.path.exists(p) for p in vendored):
+        return tuple(vendored)
+    system = [
+        "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Bold.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    ]
+    if all(os.path.exists(p) for p in system):
+        return tuple(system)
+    return None
+
+
+def _is_devanagari_word(word: str) -> bool:
+    return any("\u0900" <= ch <= "\u097f" for ch in word)
+
+
+def _render_pdf_fallback(bundle: dict, lang: str = "en") -> bytes:
+    """Language-preserving fallback when WeasyPrint is unavailable.
+
+    fpdf2 + uharfbuzz shapes Devanagari correctly (conjuncts, vowel
+    signs); plain reportlab with a TTF cannot, which is why the old
+    fallback was English-only. If the fonts or fpdf2 are missing,
+    degrade to the English-only reportlab path rather than failing.
+    """
+    paths = _fallback_font_paths()
+    if paths is None:
         return _render_pdf_reportlab(bundle)
+    try:
+        from fpdf import FPDF
+    except Exception:
+        return _render_pdf_reportlab(bundle)
+
+    ne = lang == "ne"
+    dev_regular, dev_bold, lat_regular, lat_bold = paths
+    pdf = FPDF(format="A4")
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_margins(15, 15, 15)
+    pdf.add_page()
+    pdf.add_font("NotoDev", "", dev_regular)
+    pdf.add_font("NotoDev", "B", dev_bold)
+    pdf.add_font("DejaVu", "", lat_regular)
+    pdf.add_font("DejaVu", "B", lat_bold)
+
+    def clean(text: str) -> str:
+        return (str(text).replace("—", "-").replace("–", "-")
+                .replace("·", "-").replace("“", '"').replace("”", '"')
+                .replace("‘", "'").replace("’", "'"))
+
+    def paragraph(text: str, size: int, bold: bool):
+        """Word-wrapped paragraph, switching font per word's script.
+
+        fpdf2 has no mixed-font multi_cell, and a whole paragraph is
+        rarely single-script (dates, place names and planet names are
+        Latin inside Nepali text). Words are homogeneous in practice,
+        so word-level switching renders both scripts correctly.
+        """
+        style = "B" if bold else ""
+        pdf.set_x(pdf.l_margin)
+        for word in clean(text).split(" "):
+            if not word:
+                continue
+            family = "NotoDev" if _is_devanagari_word(word) else "DejaVu"
+            pdf.set_font(family, style, size)
+            width = pdf.get_string_width(word + " ")
+            if pdf.get_x() + width > pdf.w - pdf.r_margin:
+                pdf.ln(size * 0.45)
+                pdf.set_x(pdf.l_margin)
+            pdf.cell(width, size * 0.45, word + " ")
+        pdf.ln(size * 0.45)
+
+    def heading(text: str):
+        paragraph(text, 14, True)
+        pdf.ln(1)
+
+    def body(text: str):
+        paragraph(text, 11, False)
+        pdf.ln(1)
+
+    def pick(f):
+        if isinstance(f, dict):
+            return f.get(lang) or f.get("en", "")
+        return str(f)
+
+    def add_section(title: str, facts):
+        if not facts:
+            return
+        heading(title)
+        for f in facts:
+            body(pick(f))
+
+    paragraph("Vedic Astro - Premium Report" if not ne
+              else "वैदिक ज्योतिष - प्रिमियम रिपोर्ट", 20, True)
+    birth = bundle["birth"]
+    bs = birth.get("bs_date") or ""
+    bs_txt = f" ({bs})" if bs else ""
+    body(f"{'Born' if not ne else 'जन्म'} {birth['date']}{bs_txt} "
+         f"{'at' if not ne else 'मा'} {birth['time']} - "
+         f"{birth['place']['name']}")
+    deep = bundle.get("deep_report") or {}
+    for pname in PLANET_ORDER:
+        add_section(f"Planet - {pname}" if not ne else f"ग्रह - {pname}",
+                    (deep.get("planet_chapters") or {}).get(pname))
+    for key, facts in bundle.get("predictions", {}).items():
+        titles = PREDICTION_TITLES.get(key, (key.title(), key.title()))
+        add_section(titles[1] if ne else titles[0], facts)
+    report = bundle.get("report", {})
+    for key, facts in report.get("chapters", {}).items():
+        titles = CHAPTER_TITLES.get(key, (key.title(), key.title()))
+        add_section(titles[1] if ne else titles[0], facts)
+    if report.get("favourable_periods"):
+        heading("Favourable Periods" if not ne else "अनुकूल अवधि")
+        for row in report["favourable_periods"]:
+            summary = row.get("summary", {})
+            summary = summary.get(lang) or summary.get("en", "") if isinstance(summary, dict) else str(summary)
+            body(f"{row['year']} - {row['mahadasha']}/"
+                 f"{row.get('antardasha') or ''}: {summary}")
+    return bytes(pdf.output())
 
 
 def _render_pdf_reportlab(bundle: dict) -> bytes:
