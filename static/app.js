@@ -158,6 +158,8 @@ const I18N = {
     muhurta_submit:"Find best days", muhurta_best:"Best days", muhurta_detail:"Day detail",
     act_marriage:"Marriage", act_travel:"Travel", act_business:"Business / trade", act_house:"House construction",
     act_education:"Education", act_job:"Starting a job", act_vehicle:"Buying a vehicle", act_naming:"Naming ceremony",
+    act_grahapravesh:"House entry", act_shop_opening:"Shop inauguration", act_bride_entry:"Bride's entry", act_partner_selection:"Bride/groom selection", act_vehicle_ceremony:"Vehicle ceremony", act_planting:"Planting", act_first_ploughing:"First ploughing",
+    u_facing:"House facing (Grahapravesh only)", facing_any:"Any", facing_east:"East", facing_west:"West", facing_north:"North", facing_south:"South",
     month_cal_title:"Month Calendar", cal_load:"Show month",
     cal_hint:"Markers are astronomical only (Ekadashi, Purnima, Amavasya, Sankranti) — regional festival dates are not guessed.",
     saved_title:"Saved Charts",
@@ -365,6 +367,8 @@ const I18N = {
     muhurta_submit:"उत्तम दिन खोज्नुहोस्", muhurta_best:"उत्तम दिनहरू", muhurta_detail:"दिनको विवरण",
     act_marriage:"विवाह", act_travel:"यात्रा", act_business:"व्यापार", act_house:"गृह निर्माण",
     act_education:"शिक्षा", act_job:"नोकरी सुरु", act_vehicle:"वाहन खरिद", act_naming:"नामकरण",
+    act_grahapravesh:"गृहप्रवेश", act_shop_opening:"पसल उद्घाटन", act_bride_entry:"नववधू प्रवेश", act_partner_selection:"वर / कन्या वरण", act_vehicle_ceremony:"वाहन पूजा", act_planting:"वृक्षरोपण", act_first_ploughing:"हलो जोत्ने",
+    u_facing:"घरको मुख (गृहप्रवेशका लागि मात्र)", facing_any:"जुनसुकै", facing_east:"पूर्व", facing_west:"पश्चिम", facing_north:"उत्तर", facing_south:"दक्षिण",
     month_cal_title:"महिनाको पात्रो", cal_load:"महिना देखाउनुहोस्",
     cal_hint:"चिन्हहरू खगोलीय मात्र हुन् (एकादशी, पूर्णिमा, औंसी, सङ्क्रान्ति) — क्षेत्रीय पर्व मितिहरू अनुमान गरिँदैनन्।",
     saved_title:"सुरक्षित कुण्डलीहरू",
@@ -2301,15 +2305,21 @@ if (muhurtaForm) {
   document.getElementById("u-from").value = iso(today);
   const plus7 = new Date(today); plus7.setDate(plus7.getDate() + 7);
   document.getElementById("u-to").value = iso(plus7);
+  const facingField = document.getElementById("u-facing-field");
+  const activitySel = document.getElementById("u-activity");
+  const syncFacing = () => { if (facingField) facingField.hidden = activitySel.value !== "grahapravesh"; };
+  if (activitySel) { activitySel.addEventListener("change", syncFacing); syncFacing(); }
   muhurtaForm.addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const errEl = document.getElementById("muhurta-error"); errEl.hidden = true;
     const place = resolvePlace("u-place");
+    const activityVal = document.getElementById("u-activity").value;
     const params = new URLSearchParams({
       date_from: document.getElementById("u-from").value,
       date_to: document.getElementById("u-to").value,
-      activity: document.getElementById("u-activity").value,
+      activity: activityVal,
     });
+    if (activityVal === "grahapravesh") params.set("facing", document.getElementById("u-facing").value || "any");
     if (place && place.place_id) params.set("place_id", place.place_id);
     else if (place && place.lat != null) { params.set("lat", place.lat); params.set("lon", place.lon); if (place.tz) params.set("tz", place.tz); }
     else params.set("tz", Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kathmandu");
