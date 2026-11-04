@@ -544,6 +544,74 @@ def panchang_month(
     return result
 
 
+@app.get("/api/bs-month")
+def bs_month(
+    bs_year: int, bs_month: int,
+    place_id: str | None = None,
+    lat: float | None = None,
+    lon: float | None = None,
+    tz: str | None = None,
+):
+    """Nepali-calendar month: every BS day with its AD date, weekday and
+    tithi/nakshatra (computed exactly like /api/panchang-month, same place
+    handling and defaults). Year/month are validated by hand so bad values
+    return 400, not FastAPI's 422. Additive only — no existing shape changes."""
+    _validate_coords_tz(lat, lon, tz)
+    try:
+        month_length = bs_calendar_module.days_in_bs_month(bs_year, bs_month)
+        place = engine.resolve_place({"place_id": place_id, "lat": lat, "lon": lon, "tz": tz})
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    from datetime import timedelta as _timedelta
+
+    from astro.ephemeris import sun_moon_longitudes as _sun_moon, to_julian_day as _to_jd
+    from datetime import datetime as _datetime, time as _time
+
+    days = []
+    prev_sun_sign = None
+    # Sankranti for the first BS day compares against the previous AD day.
+    first_ad = bs_calendar_module.bs_to_ad(bs_year, bs_month, 1)
+    prev_ad = first_ad - _timedelta(days=1)
+    _sun, _ = _sun_moon(_to_jd(_datetime.combine(prev_ad, _time(12, 0), tzinfo=ZoneInfo(place["tz"]))))
+    prev_sun_sign = int(_sun // 30.0)
+    for d in range(1, month_length + 1):
+        ad = bs_calendar_module.bs_to_ad(bs_year, bs_month, d)
+        p = panchang_module.daily_panchang(ad, place["lat"], place["lon"], place["tz"])
+        sun, _moon = _sun_moon(_to_jd(_datetime.combine(ad, _time(12, 0), tzinfo=ZoneInfo(place["tz"]))))
+        sun_sign = int(sun // 30.0)
+        markers = []
+        if p["tithi_index"] in (10, 25):
+            markers.append("Ekadashi")
+        if p["tithi_index"] == 14:
+            markers.append("Purnima")
+        if p["tithi_index"] == 29:
+            markers.append("Amavasya")
+        if sun_sign != prev_sun_sign:
+            markers.append("Sankranti")
+        prev_sun_sign = sun_sign
+        days.append({
+            "bs_year": bs_year, "bs_month": bs_month, "bs_day": d,
+            "bs": f"{bs_year}-{bs_month:02d}-{d:02d}",
+            "ad": ad.isoformat(), "date": ad.isoformat(),
+            "weekday": ad.weekday(),
+            "tithi_index": p["tithi_index"], "nakshatra_index": p["nakshatra_index"],
+            "sun_sign": sun_sign, "markers": markers,
+        })
+    return {"bs_year": bs_year, "bs_month": bs_month, "month_length": month_length,
+            "place": place, "days": days}
+
+
+@app.get("/api/bs-month-length")
+def bs_month_length(bs_year: int, bs_month: int):
+    """Cheap month-length lookup for the BS date-entry widget (no ephemeris
+    work, unlike /api/bs-month). 400 on out-of-range year/month."""
+    try:
+        length = bs_calendar_module.days_in_bs_month(bs_year, bs_month)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"bs_year": bs_year, "bs_month": bs_month, "month_length": length}
+
+
 @app.get("/api/report.pdf")
 def report_pdf(
     dob: str, tob: str,

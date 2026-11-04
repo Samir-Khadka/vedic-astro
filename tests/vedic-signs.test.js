@@ -50,5 +50,5 @@ test("Vedic replacements are present", () => {
 
 test("service-worker cache bumped so returning visitors get the new files", () => {
   const sw = fs.readFileSync(path.join(__dirname, "..", "static", "sw.js"), "utf8");
-  assert.ok(sw.includes("vedic-astro-static-v4"), "sw.js cache must be v4");
+  assert.ok(sw.includes("vedic-astro-static-v5"), "sw.js cache must be v5");
 });

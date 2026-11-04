@@ -109,6 +109,12 @@
     <details class="month-cal" id="month-cal">
       <summary data-i18n="month_cal_title">Month Calendar</summary>
       <div class="cal-controls">
+        <button type="button" class="mini-btn" id="cal-prev" data-i18n="cal_prev">‹ Previous</button>
+        <button type="button" class="mini-btn" id="cal-next" data-i18n="cal_next">Next ›</button>
+        <div class="date-mode" role="group" aria-label="Calendar system">
+          <button type="button" class="mini-btn date-mode-btn is-active" id="cal-mode-ad" data-i18n="cal_system_ad">AD</button>
+          <button type="button" class="mini-btn date-mode-btn" id="cal-mode-bs" data-i18n="cal_system_bs">BS</button>
+        </div>
         <select id="cal-year" aria-label="Year"></select>
         <select id="cal-month" aria-label="Month"></select>
         <div class="place-wrap">
@@ -136,7 +142,18 @@
       <div class="field-row">
         <div class="field">
           <label for="f-dob" data-i18n="f_dob">Date of birth</label>
+          <div class="date-mode" role="group" aria-label="Calendar system">
+            <button type="button" class="mini-btn date-mode-btn is-active" data-date-prefix="f" data-date-mode="ad" data-i18n="cal_system_ad">AD</button>
+            <button type="button" class="mini-btn date-mode-btn" data-date-prefix="f" data-date-mode="bs" data-i18n="cal_system_bs">BS</button>
+          </div>
           <input id="f-dob" name="dob" type="date" required>
+          <div class="bs-fields" id="f-bs-fields" hidden>
+            <select id="f-bs-year" aria-label="BS year"></select>
+            <select id="f-bs-month" aria-label="BS month"></select>
+            <select id="f-bs-day" aria-label="BS day"></select>
+          </div>
+          <p class="hint date-equiv" id="f-date-equiv" hidden></p>
+          <p class="form-error date-error" id="f-date-error" role="alert" hidden></p>
         </div>
         <div class="field">
           <label for="f-tob" data-i18n="f_tob">Time of birth</label>
@@ -970,7 +987,18 @@
         <fieldset>
           <legend data-i18n="groom">Groom / Partner 1</legend>
           <div class="field"><label for="m1-dob" data-i18n="f_dob">Date of birth</label>
-            <input id="m1-dob" type="date" required></div>
+            <div class="date-mode" role="group" aria-label="Calendar system">
+              <button type="button" class="mini-btn date-mode-btn is-active" data-date-prefix="m1" data-date-mode="ad" data-i18n="cal_system_ad">AD</button>
+              <button type="button" class="mini-btn date-mode-btn" data-date-prefix="m1" data-date-mode="bs" data-i18n="cal_system_bs">BS</button>
+            </div>
+            <input id="m1-dob" type="date" required>
+            <div class="bs-fields" id="m1-bs-fields" hidden>
+              <select id="m1-bs-year" aria-label="BS year"></select>
+              <select id="m1-bs-month" aria-label="BS month"></select>
+              <select id="m1-bs-day" aria-label="BS day"></select>
+            </div>
+            <p class="hint date-equiv" id="m1-date-equiv" hidden></p>
+            <p class="form-error date-error" id="m1-date-error" role="alert" hidden></p></div>
           <div class="field"><label for="m1-tob" data-i18n="f_tob">Time of birth</label>
             <input id="m1-tob" type="time" required></div>
           <div class="field"><label for="m1-place" data-i18n="f_place">Birth place</label>
@@ -982,7 +1010,18 @@
         <fieldset>
           <legend data-i18n="bride">Bride / Partner 2</legend>
           <div class="field"><label for="m2-dob" data-i18n="f_dob">Date of birth</label>
-            <input id="m2-dob" type="date" required></div>
+            <div class="date-mode" role="group" aria-label="Calendar system">
+              <button type="button" class="mini-btn date-mode-btn is-active" data-date-prefix="m2" data-date-mode="ad" data-i18n="cal_system_ad">AD</button>
+              <button type="button" class="mini-btn date-mode-btn" data-date-prefix="m2" data-date-mode="bs" data-i18n="cal_system_bs">BS</button>
+            </div>
+            <input id="m2-dob" type="date" required>
+            <div class="bs-fields" id="m2-bs-fields" hidden>
+              <select id="m2-bs-year" aria-label="BS year"></select>
+              <select id="m2-bs-month" aria-label="BS month"></select>
+              <select id="m2-bs-day" aria-label="BS day"></select>
+            </div>
+            <p class="hint date-equiv" id="m2-date-equiv" hidden></p>
+            <p class="form-error date-error" id="m2-date-error" role="alert" hidden></p></div>
           <div class="field"><label for="m2-tob" data-i18n="f_tob">Time of birth</label>
             <input id="m2-tob" type="time" required></div>
           <div class="field"><label for="m2-place" data-i18n="f_place">Birth place</label>
@@ -1028,6 +1067,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js" defer></script>
 <script src="/static/scene3d.js" defer></script>
 <script src="/static/app.js" defer></script>
+<script src="/static/date_entry.js" defer></script>
 <script src="/static/life_questions.js" defer></script>
 <script src="/static/ai_astrologer.js" defer></script>
 <script src="/static/router.js" defer></script>

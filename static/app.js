@@ -107,6 +107,14 @@ const I18N = {
     groom_moon:"Groom", bride_moon:"Bride",
     err_place:"Please pick a birth place from the list, or enter latitude, longitude and timezone.",
     err_fields:"Please fill in date and time of birth.",
+    err_missing_date:"Please enter a date of birth.",
+    err_bad_date:"That date is not a real calendar date — please check the day, month and year.",
+    err_future_date:"The birth date cannot be in the future.",
+    err_bad_time:"Please enter a valid time (HH:MM).",
+    equiv_bs:"Bikram Sambat", equiv_ad:"AD",
+    date_year_ph:"Year", date_month_ph:"Month", date_day_ph:"Day",
+    cal_system_ad:"AD", cal_system_bs:"BS",
+    cal_prev:"‹ Previous", cal_next:"Next ›",
     err_server:"Something went wrong while computing. Please check the details and try again.",
     err_input:"The server could not use these details — please check the date, time and place, then try again.",
     err_timeout:"The server is taking too long to answer (it may be waking up after idling). Please try again in a moment.",
@@ -340,6 +348,14 @@ const I18N = {
     groom_moon:"दुलहा", bride_moon:"दुलही",
     err_place:"कृपया सूचीबाट जन्म स्थान छान्नुहोस्, वा अक्षांश, देशान्तर र समय क्षेत्र भर्नुहोस्।",
     err_fields:"कृपया जन्म मिति र समय भर्नुहोस्।",
+    err_missing_date:"कृपया जन्म मिति भर्नुहोस्।",
+    err_bad_date:"त्यो मिति वास्तविक पात्रो मिति होइन — दिन, महिना र वर्ष जाँच्नुहोस्।",
+    err_future_date:"जन्म मिति भविष्यको हुन सक्दैन।",
+    err_bad_time:"कृपया सही समय भर्नुहोस् (HH:MM)।",
+    equiv_bs:"विक्रम संवत्", equiv_ad:"ई.सं.",
+    date_year_ph:"वर्ष", date_month_ph:"महिना", date_day_ph:"दिन",
+    cal_system_ad:"ई.सं.", cal_system_bs:"वि.सं.",
+    cal_prev:"‹ अघिल्लो", cal_next:"पछिल्लो ›",
     err_server:"गणना गर्दा समस्या भयो। विवरण जाँचेर फेरि प्रयास गर्नुहोस्।",
     err_input:"सर्भरले यी विवरण प्रयोग गर्न सकेन — मिति, समय र स्थान जाँचेर फेरि प्रयास गर्नुहोस्।",
     err_timeout:"सर्भरबाट जवाफ आउन धेरै समय लाग्यो (सर्भर अलि बेर निष्क्रिय बसेर उठ्दै हुन सक्छ)। केही क्षणमा फेरि प्रयास गर्नुहोस्।",
@@ -588,6 +604,8 @@ function applyLang() {
   renderHeroRing();
   renderFooterBand();
   if (window.rebuildHeroWheel) window.rebuildHeroWheel();
+  if (window.VedicDateEntry) window.VedicDateEntry.refreshLanguage();
+  refreshCalLanguage();
   loadPanchang();
   if (STATE.bundle) renderBundle();
   if (STATE.match) renderMatch();
@@ -877,9 +895,19 @@ document.getElementById("birth-form").addEventListener("submit", async (ev) => {
   const errEl = document.getElementById("form-error");
   errEl.hidden = true;
   const name = document.getElementById("f-name").value.trim();
-  const dob = document.getElementById("f-dob").value;
   const tob = document.getElementById("f-tob").value;
-  if (!dob || !tob) { errEl.textContent = t("err_fields"); errEl.hidden = false; return; }
+  const de = window.VedicDateEntry;
+  let dob = document.getElementById("f-dob").value;
+  if (de) {
+    // BS/AD date entry with real validation (blocks submit on bad dates).
+    const dateKey = de.validate("f");
+    if (dateKey) { de.showError("f", dateKey); errEl.textContent = t(dateKey); errEl.hidden = false; return; }
+    de.clearError("f");
+    dob = await de.resolveAdDate("f");
+    if (!dob) { de.showError("f", "err_bad_date"); errEl.textContent = t("err_bad_date"); errEl.hidden = false; return; }
+    if (!tob) { errEl.textContent = t("err_fields"); errEl.hidden = false; return; }
+    if (!de.isValidTime(tob)) { errEl.textContent = t("err_bad_time"); errEl.hidden = false; return; }
+  } else if (!dob || !tob) { errEl.textContent = t("err_fields"); errEl.hidden = false; return; }
   let payload = { name, dob, tob };
   payload.ayanamsa = document.getElementById("f-ayanamsa").value;
   payload.house_system = document.getElementById("f-house").value;
@@ -2273,11 +2301,21 @@ document.getElementById("match-form").addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const errEl = document.getElementById("match-error");
   errEl.hidden = true;
+  const de = window.VedicDateEntry;
+  if (de) {
+    for (const p of ["m1", "m2"]) {
+      const k = de.validate(p);
+      if (k) { de.showError(p, k); errEl.textContent = t(k); errEl.hidden = false; return; }
+      de.clearError(p);
+      const tt = document.getElementById(p + "-tob").value;
+      if (!tt || !de.isValidTime(tt)) { errEl.textContent = t(tt ? "err_bad_time" : "err_fields"); errEl.hidden = false; return; }
+    }
+  }
   function person(prefix) {
-    const dob = document.getElementById(prefix + "-dob").value;
-    const tob = document.getElementById(prefix + "-tob").value;
-    return settlePlaceTz(prefix + "-place").then(() => {
+    return settlePlaceTz(prefix + "-place").then(async () => {
       const place = resolvePlace(prefix + "-place");
+      const dob = de ? await de.resolveAdDate(prefix) : document.getElementById(prefix + "-dob").value;
+      const tob = document.getElementById(prefix + "-tob").value;
       if (!dob || !tob || !place) return null;
       return { dob, tob, ...place };
     });
@@ -2437,6 +2475,15 @@ function wireSavedExportImport() {
 }
 /* Saving must never kill a generation: storage can fail (private mode,
    quota) and a bug here once hid every chart behind the generic error. */
+/* Date-entry widget bridge: restoring a chart sets the AD value and
+   refreshes the BS selects/display via the widget when it is loaded;
+   before it loads (share-link autoload) this falls back to the raw input
+   and the widget syncs itself on init. */
+function setDobValue(prefix, iso) {
+  const de = window.VedicDateEntry;
+  if (de && de.setAdDate) de.setAdDate(prefix, iso);
+  else document.getElementById(prefix + "-dob").value = iso || "";
+}
 function saveCurrentChart() {
   try {
     const p = STATE.birthPayload;
@@ -2451,7 +2498,7 @@ function saveCurrentChart() {
 function loadSavedChart(entry) {
   const p = entry.payload;
   document.getElementById("f-name").value = p.name || "";
-  document.getElementById("f-dob").value = p.dob || "";
+  setDobValue("f", p.dob || "");
   document.getElementById("f-tob").value = p.tob || "";
   if (p.place_id) {
     PLACE_SELECTED["f-place"] = { place_id: p.place_id };
@@ -2645,42 +2692,160 @@ function renderMuhurtaDay(dateStr) {
     (d.dasha_suitability ? `<p><b>Dasha:</b> ${planetName(d.dasha_suitability.mahadasha_lord)} (${d.dasha_suitability.verdict})</p>` : "");
 }
 
-/* Month calendar */
+/* Month calendar: AD grid (unchanged) + BS grid (Nepali calendar).
+   The AD grid keeps its exact existing rendering; the BS grid adds
+   Sunday-first weekday headers, BS day prominent with the AD date small
+   underneath, and a today highlight matched on the AD date. Clicking a
+   day does nothing in either mode — the AD grid has no click behavior
+   to mirror, so none is invented for BS. */
+const MONTH_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MONTH_NE = ["जनवरी","फेब्रुअरी","मार्च","अप्रिल","मे","जुन","जुलाई","अगस्ट","सेप्टेम्बर","अक्टोबर","नोभेम्बर","डिसेम्बर"];
+const MONTH_SHORT_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTH_SHORT_NE = ["जन","फेब","मार्च","अप्रिल","मे","जुन","जुलाई","अगस्ट","सेप्ट","अक्ट","नोभ","डिस"];
+/* Sunday-first weekday headers (Nepal week starts Sunday). */
+const WD_SHORT_EN = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const WD_SHORT_NE = ["आइत","सोम","मंगल","बुध","बिहि","शुक्र","शनि"];
+/* Mirrors astro/bs_calendar.py BS_MONTHS_EN/NE (lengths still come from
+   the backend — these are display names only). */
+const BS_MONTHS_EN = ["Baisakh","Jestha","Ashadh","Shrawan","Bhadra","Ashwin",
+  "Kartik","Mangsir","Poush","Magh","Falgun","Chaitra"];
+const BS_MONTHS_NE = ["बैशाख","जेठ","असार","श्रावण","भदौ","आश्विन",
+  "कार्तिक","मंसिर","पौष","माघ","फाल्गुन","चैत्र"];
+let calSystem = "ad";
+let lastCal = null; // {system, data} — re-rendered on language toggle
+function localTodayIso() {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+}
+function buildCalSelects(centerYear) {
+  const ySel = document.getElementById("cal-year"), mSel = document.getElementById("cal-month");
+  if (!ySel || !mSel) return;
+  const prevY = ySel.value, prevM = mSel.value;
+  ySel.innerHTML = ""; mSel.innerHTML = "";
+  if (calSystem === "ad") {
+    const c = centerYear || new Date().getFullYear();
+    for (let y = c - 1; y <= c + 1; y++) {
+      const o = document.createElement("option"); o.value = y; o.textContent = LANG === "ne" ? nepNum(y) : y; ySel.appendChild(o);
+    }
+    MONTH_EN.forEach((m, i) => {
+      const o = document.createElement("option"); o.value = i + 1; o.textContent = LANG === "ne" ? MONTH_NE[i] : m; mSel.appendChild(o);
+    });
+  } else {
+    for (let y = 2000; y <= 2090; y++) {
+      const o = document.createElement("option"); o.value = y; o.textContent = LANG === "ne" ? nepNum(y) : y; ySel.appendChild(o);
+    }
+    BS_MONTHS_EN.forEach((m, i) => {
+      const o = document.createElement("option"); o.value = i + 1; o.textContent = LANG === "ne" ? BS_MONTHS_NE[i] : m; mSel.appendChild(o);
+    });
+  }
+  if ([...ySel.options].some((o) => o.value === prevY)) ySel.value = prevY;
+  if ([...mSel.options].some((o) => o.value === prevM)) mSel.value = prevM;
+}
+function renderCalGrid(system, cal) {
+  const grid = document.getElementById("cal-grid");
+  if (!grid) return;
+  if (system === "ad") {
+    grid.innerHTML = cal.days.map((d) => `
+      <div class="cal-cell"><b>${d.date.slice(-2)}</b> ${(LANG === "ne" ? TITHI_NE[d.tithi_index] : TITHI_EN[d.tithi_index])} · ${(LANG === "ne" ? NAK_NE[d.nakshatra_index] : NAK_EN[d.nakshatra_index])}
+      ${d.markers.map((m) => `<span class="cal-marker">${m}</span>`).join(" ")}</div>`).join("");
+    return;
+  }
+  const today = localTodayIso();
+  const wd = LANG === "ne" ? WD_SHORT_NE : WD_SHORT_EN;
+  let html = wd.map((w) => `<div class="cal-weekday">${w}</div>`).join("");
+  if (cal.days.length) {
+    const offset = (cal.days[0].weekday + 1) % 7; // weekday Mon=0 -> Sunday-first offset
+    for (let i = 0; i < offset; i++) html += `<div class="cal-blank"></div>`;
+  }
+  html += cal.days.map((d) => {
+    const [ay, am, adn] = d.ad.split("-").map(Number);
+    const shortM = (LANG === "ne" ? MONTH_SHORT_NE : MONTH_SHORT_EN)[am - 1];
+    const adSmall = LANG === "ne" ? `${nepNum(adn)} ${shortM}` : `${adn} ${shortM}`;
+    return `<div class="cal-cell cal-bs-cell${d.ad === today ? " cal-today" : ""}"><b>${LANG === "ne" ? nepNum(d.bs_day) : d.bs_day}</b><span class="cal-ad">${adSmall}</span> ${(LANG === "ne" ? TITHI_NE[d.tithi_index] : TITHI_EN[d.tithi_index])} · ${(LANG === "ne" ? NAK_NE[d.nakshatra_index] : NAK_EN[d.nakshatra_index])}
+      ${d.markers.map((m) => `<span class="cal-marker">${m}</span>`).join(" ")}</div>`;
+  }).join("");
+  grid.innerHTML = html;
+}
+function calPlaceParams() {
+  const place = resolvePlace("c-place");
+  const params = new URLSearchParams();
+  if (place && place.place_id) params.set("place_id", place.place_id);
+  else if (place && place.lat != null) { params.set("lat", place.lat); params.set("lon", place.lon); if (place.tz) params.set("tz", place.tz); }
+  /* No place picked: Kathmandu, like the panchang strip's default. A
+     tz-only fallback used to be sent here, but resolve_place rejects
+     tz without lat/lon, so the month grid silently never loaded. */
+  else params.set("place_id", "kathmandu");
+  return params;
+}
+async function loadCal() {
+  const ySel = document.getElementById("cal-year"), mSel = document.getElementById("cal-month");
+  if (!ySel || !mSel) return;
+  const params = calPlaceParams();
+  if (calSystem === "ad") { params.set("year", ySel.value); params.set("month", mSel.value); }
+  else { params.set("bs_year", ySel.value); params.set("bs_month", mSel.value); }
+  const url = calSystem === "ad" ? `/api/panchang-month?${params}` : `/api/bs-month?${params}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("bad");
+    const cal = await res.json();
+    lastCal = { system: calSystem, data: cal };
+    renderCalGrid(calSystem, cal);
+  } catch { /* keep previous grid */ }
+}
+function setCalSystem(sys) {
+  calSystem = sys;
+  const adBtn = document.getElementById("cal-mode-ad"), bsBtn = document.getElementById("cal-mode-bs");
+  if (adBtn) adBtn.classList.toggle("is-active", sys === "ad");
+  if (bsBtn) bsBtn.classList.toggle("is-active", sys === "bs");
+  buildCalSelects();
+  const ySel = document.getElementById("cal-year"), mSel = document.getElementById("cal-month");
+  if (sys === "bs") {
+    fetch("/api/bs").then((r) => (r.ok ? r.json() : null)).then((body) => {
+      if (body) { ySel.value = body.year; mSel.value = body.month; }
+      loadCal();
+    }).catch(() => loadCal());
+  } else {
+    const now = new Date();
+    ySel.value = now.getFullYear(); mSel.value = now.getMonth() + 1;
+    loadCal();
+  }
+}
+function stepCal(dir) {
+  const ySel = document.getElementById("cal-year"), mSel = document.getElementById("cal-month");
+  if (!ySel || !mSel || !ySel.value || !mSel.value) return;
+  let y = +ySel.value, m = +mSel.value + dir;
+  if (m < 1) { m = 12; y--; }
+  if (m > 12) { m = 1; y++; }
+  if (calSystem === "bs" && (y < 2000 || y > 2090)) return;
+  if (calSystem === "ad") buildCalSelects(y);
+  else buildCalSelects();
+  ySel.value = y; mSel.value = m;
+  loadCal();
+}
+function refreshCalLanguage() {
+  const ySel = document.getElementById("cal-year");
+  if (!ySel) return;
+  buildCalSelects(calSystem === "ad" ? +ySel.value || undefined : undefined);
+  if (lastCal) renderCalGrid(lastCal.system, lastCal.data);
+}
 (function initCalendar() {
   const ySel = document.getElementById("cal-year"), mSel = document.getElementById("cal-month");
   if (!ySel || !mSel) return;
+  buildCalSelects();
   const now = new Date();
-  for (let y = now.getFullYear() - 1; y <= now.getFullYear() + 1; y++) {
-    const o = document.createElement("option"); o.value = y; o.textContent = y; ySel.appendChild(o);
-  }
   ySel.value = now.getFullYear();
-  SIGNS_EN.forEach((_, i) => {}); // months are not signs; names below
-  const MONTH_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-  const MONTH_NE = ["जनवरी","फेब्रुअरी","मार्च","अप्रिल","मे","जुन","जुलाई","अगस्ट","सेप्टेम्बर","अक्टोबर","नोभेम्बर","डिसेम्बर"];
-  MONTH_EN.forEach((m, i) => {
-    const o = document.createElement("option"); o.value = i + 1; o.textContent = LANG === "ne" ? MONTH_NE[i] : m; mSel.appendChild(o);
-  });
   mSel.value = now.getMonth() + 1;
 })();
 const calBtn = document.getElementById("cal-load");
-if (calBtn) calBtn.addEventListener("click", async () => {
-  const place = resolvePlace("c-place");
-  const params = new URLSearchParams({
-    year: document.getElementById("cal-year").value,
-    month: document.getElementById("cal-month").value,
-  });
-  if (place && place.place_id) params.set("place_id", place.place_id);
-  else if (place && place.lat != null) { params.set("lat", place.lat); params.set("lon", place.lon); if (place.tz) params.set("tz", place.tz); }
-  else params.set("tz", Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kathmandu");
-  try {
-    const res = await fetch(`/api/panchang-month?${params}`);
-    if (!res.ok) throw new Error("bad");
-    const cal = await res.json();
-    document.getElementById("cal-grid").innerHTML = cal.days.map((d) => `
-      <div class="cal-cell"><b>${d.date.slice(-2)}</b> ${(LANG === "ne" ? TITHI_NE[d.tithi_index] : TITHI_EN[d.tithi_index])} · ${(LANG === "ne" ? NAK_NE[d.nakshatra_index] : NAK_EN[d.nakshatra_index])}
-      ${d.markers.map((m) => `<span class="cal-marker">${m}</span>`).join(" ")}</div>`).join("");
-  } catch { /* keep previous grid */ }
-});
+if (calBtn) calBtn.addEventListener("click", loadCal);
+const calPrevBtn = document.getElementById("cal-prev");
+if (calPrevBtn) calPrevBtn.addEventListener("click", () => stepCal(-1));
+const calNextBtn = document.getElementById("cal-next");
+if (calNextBtn) calNextBtn.addEventListener("click", () => stepCal(1));
+const calModeAd = document.getElementById("cal-mode-ad");
+if (calModeAd) calModeAd.addEventListener("click", () => setCalSystem("ad"));
+const calModeBs = document.getElementById("cal-mode-bs");
+if (calModeBs) calModeBs.addEventListener("click", () => setCalSystem("bs"));
 
 /* Share-link autoload + saved list on start */
 (function initShare() {
@@ -2689,7 +2854,7 @@ if (calBtn) calBtn.addEventListener("click", async () => {
   const params = parseShareParams(window.location.search);
   if (!params) return;
   document.getElementById("f-name").value = params.name || "";
-  document.getElementById("f-dob").value = params.dob || "";
+  setDobValue("f", params.dob || "");
   document.getElementById("f-tob").value = params.tob || "";
   if (params.ayanamsa) document.getElementById("f-ayanamsa").value = params.ayanamsa;
   if (params.house_system) document.getElementById("f-house").value = params.house_system;
