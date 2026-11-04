@@ -50,6 +50,10 @@ Kundali matching, daily panchang and PDF export. Fully bilingual:
   dasha-suitability checks when birth details are given.
 - **KP Prashna (horary)** — pick a number 1–249 and cast the chart of
   the moment, with ruling planets and cuspal sub-lords.
+- **Saved-chart comparison** — pick any two saved charts and see
+  Lagna, all nine planets and the current Mahadasha/Antardasha side
+  by side, with matching signs highlighted. Charts are recomputed
+  fresh from their saved birth details; nothing is stored server-side.
 - **Life Questions library** — 26 curated chart-reading guides in
   English and Nepali (marriage, education, career, travel, children,
   property, vehicle, health, general caution and litigation), each with

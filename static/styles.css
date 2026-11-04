@@ -541,6 +541,11 @@ body.webgl-on .hero-ring { display: none; }
 }
 .kundali-svg { filter: drop-shadow(0 12px 30px rgba(42, 20, 69, 0.16)); }
 
+/* Saved-chart comparison */
+.compare-block { margin-top: 18px; border-top: 1px solid var(--hairline); padding-top: 14px; }
+.compare-block h4 { margin: 0 0 6px; font-family: var(--font-display); font-size: 17px; color: var(--ink); }
+.cmp-same { background: rgba(201, 162, 39, .16); font-weight: 600; }
+
 /* Tables — refined striping */
 .data-table thead th {
   background: rgba(201, 162, 39, 0.07);

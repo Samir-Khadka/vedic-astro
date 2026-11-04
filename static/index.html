@@ -179,6 +179,23 @@
         <input type="file" id="saved-import-file" accept=".json,application/json" hidden>
       </div>
       <p class="hint" id="saved-msg" hidden></p>
+      <div class="compare-block">
+        <h4 data-i18n="compare_title">Compare two saved charts</h4>
+        <p class="hint" data-i18n="compare_hint">Pick two saved charts to see Lagna, planets and current dasha side by side. Matching signs are highlighted.</p>
+        <div class="field-row">
+          <div class="field">
+            <label for="compare-a" data-i18n="compare_a">Chart A</label>
+            <select id="compare-a"></select>
+          </div>
+          <div class="field">
+            <label for="compare-b" data-i18n="compare_b">Chart B</label>
+            <select id="compare-b"></select>
+          </div>
+        </div>
+        <button type="button" class="mini-btn" id="compare-btn" data-i18n="compare_btn">Compare</button>
+        <p class="form-error" id="compare-error" role="alert" hidden></p>
+        <div id="compare-result"></div>
+      </div>
     </div>
   </section>
 
