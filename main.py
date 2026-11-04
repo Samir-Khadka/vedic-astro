@@ -26,7 +26,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
-from astro import engine, geocode, panchang as panchang_module, pdf as pdf_module, places as places_module, prashna as prashna_module
+from astro import engine, geocode, life_questions as life_questions_module, panchang as panchang_module, pdf as pdf_module, places as places_module, prashna as prashna_module
 
 BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
@@ -239,6 +239,27 @@ def prashna(body: PrashnaInput):
         return prashna_module.horary(body.number, place, moment, body.question or "")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/api/life-questions")
+def life_questions(category: str | None = Query(default=None, max_length=50)):
+    """Curated Life Questions library (EN+NE guide, no verdict without a
+    chart). Filter by category slug, e.g. ?category=marriage."""
+    if category is not None and category not in {c["slug"] for c in life_questions_module.categories()}:
+        raise HTTPException(status_code=400, detail=f"unknown category: {category}")
+    return {
+        "categories": life_questions_module.categories(),
+        "questions": [life_questions_module.to_public(q)
+                      for q in life_questions_module.list_questions(category)],
+    }
+
+
+@app.get("/api/life-questions/{question_id}")
+def life_question(question_id: str):
+    q = life_questions_module.get_question(question_id)
+    if q is None:
+        raise HTTPException(status_code=404, detail=f"unknown question: {question_id}")
+    return life_questions_module.to_public(q)
 
 
 @app.get("/api/places")
