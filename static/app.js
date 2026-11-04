@@ -13,8 +13,11 @@ function esc(s) {
 /* ---------------- i18n ---------------- */
 const SIGNS_EN = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"];
 const SIGNS_NE = ["मेष","वृष","मिथुन","कर्कट","सिंह","कन्या","तुला","वृश्चिक","धनु","मकर","कुम्भ","मीन"];
-const SIGN_GLYPHS = ["♈","♉","♊","♋","♌","♍","♎","♏","♐","♑","♒","♓"];
 const SIGN_LORDS = ["Mars","Venus","Mercury","Moon","Sun","Mercury","Venus","Mars","Jupiter","Saturn","Saturn","Jupiter"];
+/* Footer zodiac band: full traditional sign names, never Western glyphs.
+   Nepali uses वृषभ (not the short वृष in SIGNS_NE) to match the patri naming. */
+const FOOTER_SIGNS_EN = ["Mesha","Vrishabha","Mithuna","Karka","Simha","Kanya","Tula","Vrischika","Dhanus","Makara","Kumbha","Meena"];
+const FOOTER_SIGNS_NE = ["मेष","वृषभ","मिथुन","कर्कट","सिंह","कन्या","तुला","वृश्चिक","धनु","मकर","कुम्भ","मीन"];
 const NE_DIGITS = "०१२३४५६७८९";
 const nepNum = (n) => String(n).replace(/\d/g, (d) => NE_DIGITS[+d]);
 const locNum = (n) => (LANG === "ne" ? nepNum(n) : String(n));
@@ -546,20 +549,32 @@ const STATE = { bundle: null, birthPayload: null, match: null, varga: "D1", comp
   if (!reduced) raf = requestAnimationFrame(draw);
 })();
 
-/* Hero ring signs */
-(function heroRing() {
+/* Hero ring: Vedic sign NUMBERS in house order 1–12, re-rendered on
+   every language change (Devanagari digits in Nepali, Arabic in English),
+   like the numbered houses of the printed patri charts. */
+function renderHeroRing() {
   const g = document.querySelector(".ring-signs");
   if (!g) return;
+  g.innerHTML = "";
   const cx = 100, cy = 100, r = 84;
-  SIGN_GLYPHS.forEach((glyph, i) => {
+  for (let i = 0; i < 12; i++) {
     const a = ((i * 30 - 90) * Math.PI) / 180;
     const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
     txt.setAttribute("x", cx + r * Math.cos(a));
     txt.setAttribute("y", cy + r * Math.sin(a));
-    txt.textContent = glyph;
+    txt.textContent = locNum(i + 1);
     g.appendChild(txt);
-  });
-})();
+  }
+}
+renderHeroRing();
+
+/* Footer zodiac band: full traditional sign names for the current language. */
+function renderFooterBand() {
+  const names = LANG === "ne" ? FOOTER_SIGNS_NE : FOOTER_SIGNS_EN;
+  const band = names.join(" ✦ ") + " ✦ ";
+  document.querySelectorAll(".zodiac-band span").forEach((el) => { el.textContent = band; });
+}
+renderFooterBand();
 
 /* ---------------- Language ---------------- */
 function applyLang() {
@@ -570,6 +585,9 @@ function applyLang() {
   });
   document.getElementById("lang-en").classList.toggle("is-active", LANG === "en");
   document.getElementById("lang-ne").classList.toggle("is-active", LANG === "ne");
+  renderHeroRing();
+  renderFooterBand();
+  if (window.rebuildHeroWheel) window.rebuildHeroWheel();
   loadPanchang();
   if (STATE.bundle) renderBundle();
   if (STATE.match) renderMatch();
@@ -1811,7 +1829,12 @@ function renderPrastaraGrid(b) {
     `${planetName(planet)}: BAV ${entry.bav.reduce((a, x) => a + x, 0)} → ${LANG === "ne" ? "घटाइएको" : "reduced"} ${entry.reduced_total}`;
 }
 
-const PLANET_GLYPHS = { Sun: "☉", Moon: "☽", Mars: "♂", Mercury: "☿", Jupiter: "♃", Venus: "♀", Saturn: "♄", Rahu: "Rā", Ketu: "Ke" };
+/* Sudarshana Chakra labels: short Vedic planet abbreviations, never
+   Western glyphs. Rendered per language by sudarshanaSvg(). */
+const PLANET_ABBR = {
+  en: { Sun: "Su", Moon: "Mo", Mars: "Ma", Mercury: "Me", Jupiter: "Ju", Venus: "Ve", Saturn: "Sa", Rahu: "Ra", Ketu: "Ke" },
+  ne: { Sun: "सू", Moon: "चं", Mars: "मं", Mercury: "बु", Jupiter: "गु", Venus: "शु", Saturn: "श", Rahu: "रा", Ketu: "के" },
+};
 function sudarshanaSvg(sd) {
   const C = 150, rings = [
     { r0: 138, r1: 104, key: "lagna_house", label: "Lagna" },
@@ -1836,7 +1859,7 @@ function sudarshanaSvg(sd) {
       const h = r[ring.key];
       const a = ((h - 1) * 30 - 75) * Math.PI / 180;
       const rm = (ring.r0 + ring.r1) / 2;
-      s += `<text x="${(C + rm * Math.cos(a)).toFixed(1)}" y="${(C + rm * Math.sin(a)).toFixed(1)}" class="sud-glyph" text-anchor="middle" dominant-baseline="middle">${PLANET_GLYPHS[p] || p}</text>`;
+      s += `<text x="${(C + rm * Math.cos(a)).toFixed(1)}" y="${(C + rm * Math.sin(a)).toFixed(1)}" class="sud-glyph" text-anchor="middle" dominant-baseline="middle">${(PLANET_ABBR[LANG] || PLANET_ABBR.en)[p] || p}</text>`;
     }
   }
   return s + "</svg>";
