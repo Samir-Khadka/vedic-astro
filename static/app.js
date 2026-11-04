@@ -170,6 +170,7 @@ const I18N = {
     share_btn:"Copy share link", share_copied:"Link copied!", saved_empty:"No saved charts yet.",
     cr_btn:"Complete Kundali Report", cr_title:"Complete Kundali Report", cr_sub:"All 31 sections in the traditional order — positions, charts, vargas, balas, dashas, Varshphal, predictions, doshas, Ratna-Mantra and Yantra.",
     cr_loading:"Building the complete report…", cr_error:"Could not build the complete report. Please try again.", cr_print:"Print / Save as PDF", cr_contents:"Contents",
+    cr_model:"Report model", cr_model_detailed:"Detailed — all 31 sections", cr_model_basic:"Basic — quick reading", cr_model_book:"Book — all 31 sections, book style",
     cr_th_planet:"Planet", cr_th_sign:"Sign", cr_th_degree:"Degree", cr_th_nakshatra:"Nakshatra", cr_th_house:"House", cr_th_start:"Start", cr_th_end:"End", cr_th_years:"Years",
     cr_th_lord:"Lord", cr_th_result:"Result", cr_th_strength:"Strength", cr_th_reading:"Reading", cr_th_cusp:"Cusp", cr_th_aspects:"Aspects", cr_th_name:"Name", cr_th_value:"Value",
     cr_coming_soon:"Not yet computed", cr_year:"Year", cr_age:"Age", cr_varsha_lagna:"Varsha Lagna", cr_muntha:"Muntha", cr_year_lord:"Year Lord",
@@ -389,6 +390,7 @@ const I18N = {
     share_btn:"साझा लिङ्क कपी गर्नुहोस्", share_copied:"लिङ्क कपी भयो!", saved_empty:"अहिलेसम्म कुनै सुरक्षित कुण्डली छैन।",
     cr_btn:"पूर्ण कुण्डली प्रतिवेदन", cr_title:"पूर्ण कुण्डली प्रतिवेदन", cr_sub:"परम्परागत क्रममा सबै ३१ खण्ड — स्थिति, चार्ट, वर्ग, बल, दशा, वर्षफल, भविष्यवाणी, दोष, रत्न-मन्त्र र यन्त्र।",
     cr_loading:"पूर्ण प्रतिवेदन बनाइँदैछ…", cr_error:"पूर्ण प्रतिवेदन बनाउन सकिएन। कृपया फेरि प्रयास गर्नुहोस्।", cr_print:"छाप्नुहोस् / PDF बनाउनुहोस्", cr_contents:"सूची",
+    cr_model:"रिपोर्ट मोडेल", cr_model_detailed:"विस्तृत — सबै ३१ खण्ड", cr_model_basic:"आधारभूत — छोटो पठन", cr_model_book:"पुस्तक — सबै ३१ खण्ड, पुस्तक शैली",
     cr_th_planet:"ग्रह", cr_th_sign:"राशि", cr_th_degree:"डिग्री", cr_th_nakshatra:"नक्षत्र", cr_th_house:"भाव", cr_th_start:"सुरु", cr_th_end:"समाप्ति", cr_th_years:"वर्ष",
     cr_th_lord:"स्वामी", cr_th_result:"परिणाम", cr_th_strength:"बल", cr_th_reading:"पठन", cr_th_cusp:"सन्धि", cr_th_aspects:"दृष्टि", cr_th_name:"नाम", cr_th_value:"मान",
     cr_coming_soon:"अहिलेसम्म गणना भएको छैन", cr_year:"वर्ष", cr_age:"उमेर", cr_varsha_lagna:"वर्ष लग्न", cr_muntha:"मुन्था", cr_year_lord:"वर्ष स्वामी",
@@ -476,7 +478,7 @@ const planetName = (p) => (LANG === "ne" ? (PLANET_NE[p] || p) : p);
 const signName = (s) => (LANG === "ne" ? SIGNS_NE[s] : SIGNS_EN[s]);
 const bi = (obj) => (obj ? (obj[LANG] || obj.en || "") : "");
 
-const STATE = { bundle: null, birthPayload: null, match: null, varga: "D1",
+const STATE = { bundle: null, birthPayload: null, match: null, varga: "D1", completeReportModel: "detailed",
                 chartStyle: localStorage.getItem("vedic-astro-style") || "nepali",
                 prashna: null };
 
@@ -3133,12 +3135,33 @@ function crSectionHTML2(sec) {
   }
 }
 
-function crReportHTML(report) {
+/* Print models for the Complete Report (legacy report-model idea, same
+   section data, no second API call). Detailed = all sections; Basic = a
+   condensed quick reading in the order below; Book = all sections in a
+   larger book style (see .cr-model-book in styles.css). */
+const CR_BASIC_SECTIONS = ["title", "planet_position", "birth_details",
+  "moon_navamsa", "vimshottari", "sade_sati", "manglik", "kaalsarp",
+  "general_predictions"];
+function crModelSections(report, model) {
   const secs = (report && report.sections) || [];
+  if (model === "basic") {
+    return CR_BASIC_SECTIONS
+      .map((id) => secs.find((s) => s.id === id))
+      .filter(Boolean);
+  }
+  return secs;
+}
+function crReportHTML(report, model) {
+  const secs = crModelSections(report, model);
   const toc = secs.map((sec) => `<li><a href="#cr-${esc(sec.id)}">${esc(crTitle(sec))}</a></li>`).join("");
   const body = secs.map((sec, i) => {
     const note = (sec.available && sec.note) ? `<p class="cr-note">${esc(crBi(sec.note))}</p>` : "";
-    return `<article class="glass card wide cr-section" id="cr-${esc(sec.id)}"><h3>${i + 1}. ${esc(crTitle(sec))}</h3>${note}${crSectionHTML(sec)}</article>`;
+    /* Basic model: Vimshottari is condensed to its current
+       Mahadasha/Antardasha summary (the renderer already leads with
+       it); dropping the full timeline keeps the quick reading short. */
+    const shown = (model === "basic" && sec.id === "vimshottari")
+      ? { ...sec, data: { ...(sec.data || {}), mahadashas: [] } } : sec;
+    return `<article class="glass card wide cr-section" id="cr-${esc(sec.id)}"><h3>${i + 1}. ${esc(crTitle(sec))}</h3>${note}${crSectionHTML(shown)}</article>`;
   }).join("");
   return { toc, body };
 }
@@ -3148,7 +3171,8 @@ function renderCompleteReport(report, skipScroll) {
   const tocEl = document.getElementById("complete-report-toc");
   const bodyEl = document.getElementById("complete-report-body");
   if (!tocEl || !bodyEl) return false;
-  const { toc, body } = crReportHTML(report);
+  const model = STATE.completeReportModel || "detailed";
+  const { toc, body } = crReportHTML(report, model);
   tocEl.innerHTML = toc;
   bodyEl.innerHTML = body;
   /* Charts reuse the existing patri renderer (never a second one):
@@ -3160,7 +3184,12 @@ function renderCompleteReport(report, skipScroll) {
   const vy = byId("varshphal").data || {};
   (vy.years || []).forEach((y) => drawChartInto(document.getElementById(`cr-chart-v${y.year}`), y.chart, `V${y.year}`));
   const sec = document.getElementById("complete-report");
-  if (sec) sec.hidden = false;
+  if (sec) {
+    sec.hidden = false;
+    if (sec.classList) sec.classList.toggle("cr-model-book", model === "book");
+  }
+  const modelSel = document.getElementById("complete-report-model");
+  if (modelSel) modelSel.value = model;
   if (!skipScroll && sec && sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth" });
   return true;
 }
@@ -3191,6 +3220,12 @@ async function loadCompleteReport() {
   }
 }
 document.getElementById("complete-report-btn").addEventListener("click", loadCompleteReport);
+document.getElementById("complete-report-model").addEventListener("change", (e) => {
+  /* Re-render from the already-fetched report — no second API call —
+     and keep the chosen model across language toggles. */
+  STATE.completeReportModel = (e.target && e.target.value) || "detailed";
+  if (STATE.completeReport) renderCompleteReport(STATE.completeReport, true);
+});
 document.getElementById("complete-report-print-btn").addEventListener("click", () => {
   /* Print stylesheet hides everything except #complete-report while
      this class is on; it is removed right after printing. */

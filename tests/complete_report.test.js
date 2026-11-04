@@ -125,7 +125,7 @@ function loadApp({ lang = "en" } = {}) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, "static/coords.js"), "utf8"), sandbox);
   Object.assign(sandbox, sandbox.module.exports);
   const appSrc = fs.readFileSync(path.join(ROOT, "static/app.js"), "utf8") +
-    "\n;globalThis.__harness = { STATE, crTitle, crSectionHTML, crReportHTML, renderCompleteReport, loadCompleteReport, drawChartInto };";
+    "\n;globalThis.__harness = { STATE, crTitle, crSectionHTML, crReportHTML, crModelSections, CR_BASIC_SECTIONS, renderCompleteReport, loadCompleteReport, drawChartInto };";
   vm.runInContext(appSrc, sandbox);
   return { h: sandbox.__harness, elements, el: getEl, calls, fixture };
 }
@@ -205,4 +205,77 @@ test("loadCompleteReport POSTs the same birth payload to /api/complete-report", 
   const before = calls.length;
   await h.loadCompleteReport();
   assert.equal(calls.length, before);
+});
+
+/* ---- Print models (step 2) ---- */
+
+function fullReport(fixture) {
+  // Every real section id, in API order, so Basic filtering can be
+  // checked exactly even though the fixture is trimmed.
+  const ids = ["title", "planet_position", "birth_details", "sayan_charts",
+    "moon_navamsa", "chalit_bhava", "shodash_varga", "shodash_varga_table",
+    "karaka_avastha_tara", "sudarshan", "aspects_planets", "aspects_bhava",
+    "aspects_cusps", "upagrahas_arudha", "vimsopak_bala", "ashtakavarga",
+    "shad_bhava_bala", "sarvato_bhadra", "vimshottari", "yogini",
+    "aaditya_lagnam", "dasha_phala", "varshphal", "general_predictions",
+    "effects_of_planets", "nakshatra_phal", "sade_sati", "manglik",
+    "kaalsarp", "ratna_mantra", "yantra"];
+  const byId = Object.fromEntries(fixture.sections.map((s) => [s.id, s]));
+  return { sections: ids.map((id) => byId[id] || { id, title_en: id, title_ne: id, available: true, data: {} }) };
+}
+
+test("print models: Detailed and Book keep all sections, Basic keeps exactly its subset in order", () => {
+  const { h, fixture } = loadApp();
+  const report = fullReport(fixture);
+  // Joined-string comparison: arrays cross the vm realm boundary, so
+  // deepStrictEqual rejects them on prototype mismatch.
+  const ids = (arr) => [...arr].join(",");
+  assert.equal(ids(h.crModelSections(report, "detailed").map((s) => s.id)),
+    ids(report.sections.map((s) => s.id)));
+  assert.equal(ids(h.crModelSections(report, "book").map((s) => s.id)),
+    ids(report.sections.map((s) => s.id)));
+  assert.equal(ids(h.CR_BASIC_SECTIONS), ["title", "planet_position",
+    "birth_details", "moon_navamsa", "vimshottari", "sade_sati", "manglik",
+    "kaalsarp", "general_predictions"].join(","));
+  assert.equal(ids(h.crModelSections(report, "basic").map((s) => s.id)),
+    ids(h.CR_BASIC_SECTIONS));
+  // Unknown ids in the subset are skipped, never rendered empty.
+  const partial = { sections: report.sections.filter((s) => s.id !== "manglik") };
+  assert.equal(
+    ids(h.crModelSections(partial, "basic").map((s) => s.id)),
+    ids([...h.CR_BASIC_SECTIONS].filter((id) => id !== "manglik")));
+});
+
+test("print models: Basic TOC/body show only the subset and condense Vimshottari to its current summary", () => {
+  const { h, fixture } = loadApp();
+  const report = fullReport(fixture);
+  const { toc, body } = h.crReportHTML(report, "basic");
+  const tocCount = (toc.match(/<li>/g) || []).length;
+  assert.equal(tocCount, 9, "Basic TOC has 9 entries");
+  assert.match(body, /General Predictions|general_predictions/);
+  assert.doesNotMatch(body, /Ashtakavarga|ashtakavarga/);
+  assert.doesNotMatch(body, /Yantra|yantra/);
+  // Condensed Vimshottari: current summary present, full timeline table gone.
+  const vim = body.split('id="cr-vimshottari"')[1].split("</article>")[0];
+  assert.match(vim, /Current:/);
+  assert.doesNotMatch(vim, /Antardashas/);
+  // Detailed keeps everything, including the full Vimshottari timeline.
+  const full = h.crReportHTML(report, "detailed");
+  assert.equal((full.toc.match(/<li>/g) || []).length, 31);
+  assert.match(full.body, /Antardashas/);
+});
+
+test("print models: renderCompleteReport applies the selected model and Book class, and re-render keeps it", () => {
+  const { h, elements, fixture } = loadApp();
+  const report = fullReport(fixture);
+  h.STATE.completeReportModel = "basic";
+  assert.equal(h.renderCompleteReport(report, true), true);
+  assert.equal((elements.get("complete-report-toc").innerHTML.match(/<li>/g) || []).length, 9);
+  h.STATE.completeReportModel = "book";
+  assert.equal(h.renderCompleteReport(report, true), true);
+  assert.equal((elements.get("complete-report-toc").innerHTML.match(/<li>/g) || []).length, 31);
+  assert.ok(elements.get("complete-report").classList.contains("cr-model-book"));
+  h.STATE.completeReportModel = "detailed";
+  assert.equal(h.renderCompleteReport(report, true), true);
+  assert.ok(!elements.get("complete-report").classList.contains("cr-model-book"));
 });
