@@ -59,6 +59,7 @@ from .ephemeris import sunrise_sunset
 from .names import (
     EXALTATION, NAKSHATRAS_EN, NAKSHATRAS_NE, NATURAL_BENEFICS,
     NATURAL_MALEFICS, OWN_SIGNS, SIGNS_EN, SIGNS_NE, SIGN_LORDS,
+    WEEKDAYS_EN, WEEKDAYS_NE,
 )
 from .nakshatra import chandrabala as _chandrabala
 from .panchang import panchang_at
@@ -124,7 +125,76 @@ ACTIVITIES = {
         "en": "Naming ceremony", "ne": "नामकरण",
         "good_nakshatras": [0, 3, 5, 6, 7, 12, 13, 16, 21, 22, 26],
     },
+    # --- Phase 1 extension (legacy Kundli Chakra ceremony types,
+    # rewritten as rule lists, not copied data) ---
+    # Legacy indices converted: nakshatra 1=Ashwini -> 0, tithi 1..30,
+    # weekday Sun-first 0=Sunday. Lunar-month rules are documented
+    # in the spec but NOT scored here: panchang_at does not yet
+    # compute the lunar month, so no month factor is invented.
+    "grahapravesh": {
+        "en": "House entry", "ne": "गृहप्रवेश",
+        "good_nakshatras": [3, 4, 11, 13, 16, 20, 25, 26],
+        "facing_nakshatras": {
+            "east": [3, 4], "west": [16, 20],
+            "south": [11, 13], "north": [25, 26],
+        },
+        # Sun-first weekdays: Mon, Wed, Thu, Fri, Sat (Sun/Tue avoided)
+        "allowed_weekdays": [1, 3, 4, 5, 6],
+        # tithi numbers 1..29 (Amavasya, 30, excluded)
+        "allowed_tithis": list(range(1, 30)),
+        "lunar_months_en": "Vaishakh, Jyeshtha, Magh, Phalguna",
+        "lunar_months_ne": "वैशाख, ज्येष्ठ, माघ, फाल्गुन",
+    },
+    "shop_opening": {
+        "en": "Shop inauguration", "ne": "पसल उद्घाटन",
+        "good_nakshatras": [0, 3, 4, 7, 11, 12, 13, 16, 20, 25, 26],
+        "allowed_weekdays": [0, 1, 3, 4, 5, 6],
+        "allowed_tithis": list(range(1, 30)),
+    },
+    "bride_entry": {
+        "en": "Bride's entry", "ne": "नववधू प्रवेश",
+        "good_nakshatras": [0, 3, 4, 7, 9, 11, 12, 13, 14, 16, 18, 20, 21, 22, 25, 26],
+        "allowed_weekdays": [1, 4, 5, 6],
+        "allowed_tithis": [1, 2, 3, 5, 6, 7, 8, 10, 11, 12, 13, 15, 16, 17, 18, 20, 21, 22, 23, 25, 26, 27, 28],
+    },
+    "partner_selection": {
+        "en": "Bride/groom selection", "ne": "वर / कन्या वरण",
+        "good_nakshatras": [2, 3, 10, 11, 19, 20, 24, 25],
+        "allowed_weekdays": [1, 3, 4, 5],
+        "allowed_tithis": [2, 3, 5, 7, 10, 11, 12, 13, 17, 18, 20, 22, 25, 26, 27],
+    },
+    "vehicle_ceremony": {
+        "en": "Vehicle ceremony", "ne": "वाहन पूजा",
+        "good_nakshatras": [3, 4, 6, 7, 8, 12, 13, 14, 16, 21, 22, 23, 26],
+        "allowed_weekdays": [0, 1, 3, 4, 5],
+        "allowed_tithis": [2, 3, 5, 6, 7, 8, 10, 11, 12, 13, 15, 16, 17, 18, 20, 21, 22, 23, 25, 26, 27, 28],
+    },
+    "planting": {
+        "en": "Planting", "ne": "वृक्षरोपण",
+        "good_nakshatras": [0, 3, 4, 7, 11, 12, 13, 15, 16, 18, 20, 23, 25, 26],
+    },
+    "first_ploughing": {
+        "en": "First ploughing", "ne": "हलो जोत्ने",
+        "good_nakshatras": [0, 3, 4, 6, 7, 11, 12, 13, 14, 16, 18, 20, 21, 22, 23, 25, 26],
+        "allowed_weekdays": [1, 3, 4, 5],
+    },
 }
+
+FACINGS = {
+    "any": {"en": "Any", "ne": "जुनसुकै"},
+    "east": {"en": "East", "ne": "पूर्व"},
+    "west": {"en": "West", "ne": "पश्चिम"},
+    "north": {"en": "North", "ne": "उत्तर"},
+    "south": {"en": "South", "ne": "दक्षिण"},
+}
+
+
+def effective_nakshatras(activity: str, facing: str = "any") -> list[int]:
+    """Nakshatra list for an activity, applying a Grahapravesh facing."""
+    act = ACTIVITIES.get(activity, ACTIVITIES["marriage"])
+    if activity == "grahapravesh" and facing in act.get("facing_nakshatras", {}):
+        return act["facing_nakshatras"][facing]
+    return act["good_nakshatras"]
 
 
 def _sunfirst_weekday(d: date) -> int:
@@ -265,7 +335,7 @@ def dasha_suitability(dasha_tree: dict, at: datetime,
 
 
 def day_muhurta(day: date, lat: float, lon: float, tz_name: str,
-                 activity: str = "marriage", birth_nakshatra: int | None = None,
+                 activity: str = "marriage", facing: str = "any", birth_nakshatra: int | None = None,
                  birth_moon_sign: int | None = None,
                  dasha_tree: dict | None = None,
                  natal_planets: dict | None = None,
@@ -311,13 +381,34 @@ def day_muhurta(day: date, lat: float, lon: float, tz_name: str,
 
     p = panchang_at(rise, lat, lon, tz_name)
     act = ACTIVITIES.get(activity, ACTIVITIES["marriage"])
+    if facing not in FACINGS:
+        raise ValueError(f"unknown facing: {facing}")
+    good_nak = effective_nakshatras(activity, facing)
     nak = p["nakshatra_index"]
     tithi = p["tithi_index"]
+    tithi_num = tithi + 1
     tclass = _tithi_class(tithi)
 
     score = 0
     factors: list[dict] = []
-    if tclass == "Rikta":
+    # Weekday rule (Sun-first weekdays, as in the legacy tables).
+    if "allowed_weekdays" in act and wd not in act["allowed_weekdays"]:
+        mon_idx = (wd + 6) % 7
+        score -= 2
+        factors.append({"en": f"Weekday {WEEKDAYS_EN[mon_idx]} — traditionally avoided for {act['en'].lower()}",
+                        "ne": f"बार {WEEKDAYS_NE[mon_idx]} — {act['ne']} का लागि परम्परागत रूपमा बेवास्ता गरिन्छ", "points": -2})
+    # Tithi rule: when an activity has an explicit list, it replaces
+    # the generic Rikta/Nanda/Jaya/Purna factor (to avoid double counting).
+    if "allowed_tithis" in act:
+        if tithi_num in act["allowed_tithis"]:
+            score += 1
+            factors.append({"en": f"Tithi {tithi_num} — on the preferred list for {act['en'].lower()}",
+                            "ne": f"तिथि {tithi_num} — {act['ne']} का लागि रुचाइएको सूचीमा छ", "points": 1})
+        else:
+            score -= 2
+            factors.append({"en": f"Tithi {tithi_num} — not on the preferred list for {act['en'].lower()}",
+                            "ne": f"तिथि {tithi_num} — {act['ne']} का लागि रुचाइएको सूचीमा छैन", "points": -2})
+    elif tclass == "Rikta":
         score -= 2
         factors.append({"en": "Rikta tithi — traditionally avoided for beginnings",
                         "ne": "रिक्ता तिथि — सुरुवातका लागि परम्परागत रूपमा बेवास्ता गरिन्छ", "points": -2})
@@ -325,13 +416,16 @@ def day_muhurta(day: date, lat: float, lon: float, tz_name: str,
         score += 1
         factors.append({"en": f"{tclass} tithi — favourable for beginnings",
                         "ne": f"{tclass} तिथि — सुरुवातका लागि शुभ", "points": 1})
-    if nak in act["good_nakshatras"]:
+    if nak in good_nak:
         score += 2
         factors.append({"en": f"Moon in {NAKSHATRAS_EN[nak]} — auspicious for {act['en'].lower()}",
                         "ne": f"चन्द्र {NAKSHATRAS_NE[nak]} मा — {act['ne']} का लागि शुभ", "points": 2})
     else:
         factors.append({"en": f"Moon in {NAKSHATRAS_EN[nak]} — not on the preferred list for {act['en'].lower()}",
                         "ne": f"चन्द्र {NAKSHATRAS_NE[nak]} मा — {act['ne']} का लागि रुचाइएको सूचीमा छैन", "points": 0})
+    if activity == "grahapravesh" and "lunar_months_en" in act:
+        factors.append({"en": f"Lunar-month rule ({act['lunar_months_en']}) is documented but not scored yet — the panchang module does not yet compute the lunar month",
+                        "ne": f"चान्द्रमास नियम ({act['lunar_months_ne']}) दस्तावेज गरिएको छ तर अझै अङ्कन गरिएको छैन — पञ्चाङ्ग मोड्युलले अझै चान्द्रमास गणना गर्दैन", "points": 0})
     tara = None
     if birth_nakshatra is not None:
         tara = (nak - birth_nakshatra) % 9 + 1
@@ -416,7 +510,7 @@ def day_muhurta(day: date, lat: float, lon: float, tz_name: str,
         "abhijit": {"start": abh_start.isoformat(), "end": abh_end.isoformat(),
                     "wednesday_note": wd == 3},
         "hora": horas,
-        "activity": activity, "score": score, "grade": grade, "grade_ne": grade_ne,
+        "activity": activity, "facing": facing, "score": score, "grade": grade, "grade_ne": grade_ne,
         "factors": factors, "tara": tara,
         "good_windows": [{"start": s["start"], "end": s["end"], "lord": s["lord"]} for s in good_windows],
         "election_score": election_score, "election_grade": egrade, "election_grade_ne": egrade_ne,
@@ -426,7 +520,7 @@ def day_muhurta(day: date, lat: float, lon: float, tz_name: str,
 
 
 def muhurta_range(date_from: date, date_to: date, lat: float, lon: float,
-                  tz_name: str, activity: str = "marriage",
+                  tz_name: str, activity: str = "marriage", facing: str = "any",
                   birth_nakshatra: int | None = None,
                   birth_moon_sign: int | None = None,
                   dasha_tree: dict | None = None,
@@ -442,10 +536,10 @@ def muhurta_range(date_from: date, date_to: date, lat: float, lon: float,
     days = []
     d = date_from
     while d <= date_to:
-        days.append(day_muhurta(d, lat, lon, tz_name, activity, birth_nakshatra,
+        days.append(day_muhurta(d, lat, lon, tz_name, activity, facing, birth_nakshatra,
                                 birth_moon_sign, dasha_tree, natal_planets, natal_lagna_sign))
         d += timedelta(days=1)
     ranked = sorted(days, key=lambda x: (-x["score"], x["date"]))
     ranked_election = sorted(days, key=lambda x: (-x["election_score"], x["date"]))
-    return {"activity": activity, "days": days, "best": ranked[:5],
+    return {"activity": activity, "facing": facing, "days": days, "best": ranked[:5],
             "best_election": ranked_election[:5]}
