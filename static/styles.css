@@ -845,3 +845,14 @@ html[lang="ne"] .strip-item .k, html[lang="ne"] .lucky-item .k { letter-spacing:
   body.printing-report #complete-report.cr-model-book .cr-section h4 { break-after: avoid; page-break-after: avoid; }
   body.printing-report .table-scroll { overflow: visible; }
 }
+
+/* Life Question answers: band-tinted box + evidence table */
+.lq-answer { border: 1pt solid #d9b98a; border-radius: 8px; background: #fffdf7; padding: 12px 14px; margin-top: 12px; }
+.lq-answer h4 { margin-top: 0; }
+.lq-band-favourable h4 { color: #2e7d32; }
+.lq-band-mixed h4 { color: #b85f06; }
+.lq-band-unfavourable h4 { color: #a93226; }
+.lq-band-unclear h4 { color: #6b5a44; }
+.lq-answer table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+.lq-answer th, .lq-answer td { border: 0.5pt solid #d9b98a; padding: 4px 6px; text-align: left; }
+.lq-answer th { background: #fbeed7; color: #7a3c06; }

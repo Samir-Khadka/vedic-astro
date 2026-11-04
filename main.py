@@ -277,6 +277,42 @@ def life_question(question_id: str):
     return life_questions_module.to_public(q)
 
 
+@app.post("/api/life-questions/{question_id}/answer")
+def life_question_answer(question_id: str, body: dict):
+    """Answer a Life Question WITH a chart — the fix for the library's
+    old dead-end buttons. Accepts either {"birth": <BirthInput>} or
+    {"prashna": <PrashnaInput>}. 404 unknown id, 400 bad payload.
+    Traditional probability guidance only; see astro/life_answers.py."""
+    from astro import life_answers as life_answers_module
+    from pydantic import ValidationError
+
+    q = life_questions_module.get_question(question_id)
+    if q is None:
+        raise HTTPException(status_code=404, detail=f"unknown question: {question_id}")
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="body must be an object")
+    try:
+        if "birth" in body and body["birth"] is not None:
+            birth = BirthInput.model_validate(body["birth"])
+            bundle = engine.compute_kundali(_payload(birth))
+            return life_answers_module.answer_from_birth(q, bundle)
+        if "prashna" in body and body["prashna"] is not None:
+            prashna_in = PrashnaInput.model_validate(body["prashna"])
+            from datetime import datetime
+
+            payload = prashna_in.model_dump()
+            place = engine.resolve_place(payload)
+            moment = datetime.now(ZoneInfo(place["tz"]))
+            horary = prashna_module.horary(prashna_in.number, place, moment,
+                                           prashna_in.question or "")
+            return life_answers_module.answer_from_prashna(q, horary)
+    except (ValidationError, ValueError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    raise HTTPException(
+        status_code=400,
+        detail="provide either a 'birth' chart payload or a 'prashna' payload")
+
+
 @app.get("/api/places")
 def places(q: str = Query(default="", max_length=200)):
     local = places_module.search_places(q)
@@ -463,6 +499,48 @@ def report_pdf(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={"Content-Disposition": "attachment; filename=vedic-report.pdf"},
+    )
+
+
+@app.get("/api/complete-report.pdf")
+def complete_report_pdf(
+    dob: str, tob: str,
+    place_id: str | None = None,
+    place_name: str | None = None,
+    lat: float | None = None, lon: float | None = None, tz: str | None = None,
+    name: str | None = None, lang: str = "en",
+    ayanamsa: str | None = None, house_system: str | None = None,
+    model: str = "detailed",
+):
+    """Downloadable PDF of the Complete Kundali Report (all 31 sections
+    in legacy order for detailed/book, 9 sections for basic). Mirrors
+    /api/report.pdf's parameter style; renders via astro/complete_pdf.py
+    (WeasyPrint primary, fpdf2 + vendored Devanagari fallback)."""
+    from astro import complete_pdf as complete_pdf_module
+    from astro import complete_report as complete_report_module
+
+    payload = {
+        "name": name, "dob": dob, "tob": tob if len(tob) > 5 else tob + ":00",
+        "place_id": place_id, "place_name": place_name, "lat": lat, "lon": lon, "tz": tz,
+        "ayanamsa": ayanamsa, "house_system": house_system,
+    }
+    _validate_coords_tz(lat, lon, tz)
+    if model not in ("detailed", "basic", "book"):
+        raise HTTPException(status_code=400, detail=f"unknown model: {model}")
+    try:
+        bundle = engine.compute_kundali(payload)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    report = complete_report_module.build_complete_report(bundle)
+    try:
+        pdf_bytes = complete_pdf_module.render_complete_pdf(
+            report, lang="ne" if lang == "ne" else "en", model=model)
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=vedic-complete-report.pdf"},
     )
 
 
