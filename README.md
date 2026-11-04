@@ -47,7 +47,10 @@ Kundali matching, daily panchang and PDF export. Fully bilingual:
   first ploughing. Each day shows Choghadiya, Hora, Rahu Kaal, Abhijit
   and a per-factor score with reasons (see "How Muhurta scoring works"
   below), plus personalised Chandra Bala, Panchaka, elected-Lagna and
-  dasha-suitability checks when birth details are given.
+  dasha-suitability checks when birth details are given. A month view
+  shows a whole calendar month coloured by day grade; clicking a day
+  shows its full detail, reusing the same activity, facing, place and
+  personalised checks.
 - **KP Prashna (horary)** — pick a number 1–249 and cast the chart of
   the moment, with ruling planets and cuspal sub-lords.
 - **Life Questions library** — 26 curated chart-reading guides in
