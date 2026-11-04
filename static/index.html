@@ -38,6 +38,7 @@
     <a href="#kundali-form" data-i18n="nav_kundali">Kundali</a>
     <a href="#premium" data-i18n="nav_premium">Premium Report</a>
     <a href="#prashna" data-i18n="nav_prashna">KP Prashna</a>
+    <a href="#ai-astrologer">AI Astrologer</a>
     <a href="#matching" data-i18n="nav_matching">Matching</a>
     <a href="#panchang-strip" data-i18n="nav_panchang">Panchang</a>
     <a href="#horoscope" data-i18n="nav_horoscope">Horoscope</a>
@@ -208,7 +209,8 @@
     <p class="results-meta" id="results-meta"></p>
     <div id="section-notes" hidden aria-live="polite"></div>
     <p><button type="button" class="mini-btn" id="share-btn" data-i18n="share_btn">Copy share link</button>
-    <button type="button" class="mini-btn" id="complete-report-btn" data-i18n="cr_btn">Complete Kundali Report</button></p>
+    <button type="button" class="mini-btn" id="complete-report-btn" data-i18n="cr_btn">Complete Kundali Report</button>
+    <button type="button" class="mini-btn" id="ai-astrologer-btn">AI Astrologer &amp; Life Areas</button></p>
     <div class="glance-strip" id="glance-strip" aria-label="Chart at a glance"></div>
     <div class="glance-strip panchang-strip" id="birth-panchang-strip" aria-label="Panchang at birth"></div>
 
@@ -877,6 +879,31 @@
     </div>
   </section>
 
+  <!-- AI ASTROLOGER -->
+  <section id="ai-astrologer" class="section">
+    <p class="eyebrow rv">Chapter III — AI Astrologer</p>
+    <h2 class="section-title rv" id="ai-title">AI Astrologer</h2>
+    <p class="results-meta" id="ai-sub">Ask anything about your life — the answer is computed from your own chart, planet by planet. Traditional probability guidance, never a certain verdict. No external AI is involved.</p>
+    <div class="glass form-card rv">
+      <div id="ai-suggestions"></div>
+      <div id="ai-chat" class="ai-chat"></div>
+      <div class="field-row">
+        <input id="ai-input" type="text" placeholder="Ask your question…">
+        <button type="button" class="btn btn-gold" id="ai-send">Ask</button>
+        <button type="button" class="btn" id="ai-prashna-btn">Answer by Prashna</button>
+      </div>
+      <div id="ai-prashna-inline" hidden>
+        <div class="field-row">
+          <label>Prashna number (1–249) <input id="ai-p-number" type="number" min="1" max="249" style="width:6em"></label>
+          <label>Place <input id="ai-p-place" type="text" placeholder="Kathmandu"></label>
+          <button type="button" class="btn btn-gold" id="ai-p-go">Get answer</button>
+        </div>
+      </div>
+      <p><button type="button" class="btn btn-gold" id="ai-areas-btn">View my 8 Life Areas in detail</button></p>
+      <div id="ai-areas"></div>
+    </div>
+  </section>
+
   <!-- MATCHING -->
   <section id="matching" class="section">
     <p class="eyebrow rv" data-i18n="eb_matching">Chapter IV — Compatibility</p>
@@ -944,6 +971,7 @@
 <script src="/static/scene3d.js" defer></script>
 <script src="/static/app.js" defer></script>
 <script src="/static/life_questions.js" defer></script>
+<script src="/static/ai_astrologer.js" defer></script>
 <script>
   // Installability only: cache the static app shell so the app can be
   // installed and loads fast on repeat visits. API calls are never
