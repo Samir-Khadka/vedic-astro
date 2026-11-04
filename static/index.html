@@ -207,7 +207,8 @@
     <h2 class="section-title" id="results-title">Your Kundali</h2>
     <p class="results-meta" id="results-meta"></p>
     <div id="section-notes" hidden aria-live="polite"></div>
-    <p><button type="button" class="mini-btn" id="share-btn" data-i18n="share_btn">Copy share link</button></p>
+    <p><button type="button" class="mini-btn" id="share-btn" data-i18n="share_btn">Copy share link</button>
+    <button type="button" class="mini-btn" id="complete-report-btn" data-i18n="cr_btn">Complete Kundali Report</button></p>
     <div class="glance-strip" id="glance-strip" aria-label="Chart at a glance"></div>
     <div class="glance-strip panchang-strip" id="birth-panchang-strip" aria-label="Panchang at birth"></div>
 
@@ -548,6 +549,19 @@
         </table>
       </div>
     </div>
+  </section>
+
+  <!-- COMPLETE KUNDALI REPORT (legacy table-of-contents order) -->
+  <section id="complete-report" class="section" hidden>
+    <p class="eyebrow" data-i18n="cr_title">Complete Kundali Report</p>
+    <h2 class="section-title" id="complete-report-title" data-i18n="cr_title">Complete Kundali Report</h2>
+    <p class="results-meta" data-i18n="cr_sub">All 31 sections in the traditional order — positions, charts, vargas, balas, dashas, Varshphal, predictions, doshas, Ratna-Mantra and Yantra.</p>
+    <p><button type="button" class="mini-btn" id="complete-report-print-btn" data-i18n="cr_print">Print / Save as PDF</button></p>
+    <div class="glass card wide">
+      <h3 data-i18n="cr_contents">Contents</h3>
+      <ol class="cr-toc" id="complete-report-toc"></ol>
+    </div>
+    <div id="complete-report-body"></div>
   </section>
 
   <!-- PREMIUM REPORT -->

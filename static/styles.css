@@ -791,3 +791,45 @@ html[lang="ne"] .strip-item .k, html[lang="ne"] .lucky-item .k { letter-spacing:
   .bk-page, .bk-face { padding: 18px 14px; font-size: 11.5px; }
   .bk-chart svg { max-height: 150px; }
 }
+
+/* ---------------- Complete Kundali Report ---------------- */
+.cr-toc { columns: 2; column-gap: 32px; margin: 8px 0 0; padding-left: 22px; }
+.cr-toc li { margin: 3px 0; break-inside: avoid; }
+.cr-toc a { color: var(--violet); }
+.cr-section { min-width: 0; scroll-margin-top: 12px; }
+.cr-section h3 { margin-top: 0; }
+.cr-subhead { margin: 18px 0 6px; color: var(--violet); }
+.cr-note { color: var(--muted, #6b5b7a); font-style: italic; }
+.cr-disclaimer { border-left: 3px solid var(--gold); padding: 8px 12px; background: rgba(201, 162, 39, 0.08); }
+.cr-kv th { width: 34%; color: var(--violet); font-weight: 600; white-space: normal; }
+.cr-kv td { white-space: normal; }
+.cr-block { margin: 12px 0; }
+.cr-block h4, .cr-block h5 { margin: 10px 0 4px; }
+.cr-list { padding-left: 20px; }
+.cr-list li { margin: 4px 0; }
+.cr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.cr-card { min-width: 0; border: 1px solid var(--hairline); border-radius: 12px; padding: 14px; }
+.cr-card h4 { margin-top: 0; }
+.cr-mantra { font-size: 16px; }
+.cr-translit { font-size: 13px; color: var(--muted, #6b5b7a); }
+.cr-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.cr-chart-box { min-width: 0; }
+.cr-chart-name { text-align: center; margin: 8px 0 4px; }
+.cr-chart { max-width: 520px; margin: 0 auto; min-width: 0; }
+.cr-chart .kundali-svg { width: min(520px, 100%); height: auto; }
+@media (max-width: 880px) {
+  .cr-toc { columns: 1; }
+  .cr-charts { grid-template-columns: minmax(0, 1fr); }
+  .cr-grid { grid-template-columns: minmax(0, 1fr); }
+}
+/* Print: the Print button adds .printing-report to <body> first, so
+   only the complete report prints — the form, results tabs, premium
+   report and site chrome are hidden. Cards flatten to plain paper. */
+@media print {
+  body.printing-report header, body.printing-report footer,
+  body.printing-report main > section:not(#complete-report) { display: none !important; }
+  body.printing-report #complete-report { display: block !important; }
+  body.printing-report #complete-report-print-btn { display: none !important; }
+  body.printing-report .cr-section, body.printing-report .cr-card { break-inside: avoid; box-shadow: none !important; background: #fff !important; }
+  body.printing-report .table-scroll { overflow: visible; }
+}

@@ -375,6 +375,9 @@ def compute_kundali(payload: dict, now: datetime | None = None,
         "ishta_devta": ishta, "baby_name": baby_name,
     })
     premium = report_module.generate_premium_report(report_ctx)
+    # Complete-report Varshphal: 10 annual charts ahead (the premium
+    # report keeps its 3-year set; the complete report needs a decade).
+    varshphal_10 = report_module.varshphal(report_ctx, years_ahead=10)
 
     deep_ctx = dict(report_ctx)
     deep_ctx.update({
@@ -493,6 +496,10 @@ def compute_kundali(payload: dict, now: datetime | None = None,
             "key": ayanamsa_key,
             "name": ayanamsa_module.mode_name(ayanamsa_key),
         },
+        # Ayanamsa value (degrees) at birth: the Complete Report derives
+        # Sayana (tropical) positions from sidereal longitudes + this.
+        "ayanamsa_value": round(ayanamsa_module.ayanamsa_value_ut(jd), 4),
+        "varshphal_extended": varshphal_10,
         "house_system": {
             "key": house_system,
             "name": ephemeris.HOUSE_SYSTEMS[house_system][0],

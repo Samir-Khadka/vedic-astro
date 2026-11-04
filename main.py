@@ -217,6 +217,21 @@ def kundali(body: BirthInput):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@app.post("/api/complete-report")
+def complete_report(body: BirthInput):
+    """Complete Kundali Report: the full legacy table-of-contents order
+    (title, positions, panchang, charts, vargas, balas, dashas, Varshphal,
+    predictions, doshas, Ratna-Mantra, Yantra) assembled from one kundali
+    bundle. Accepts the same payload as /api/kundali."""
+    from astro import complete_report as complete_report_module
+
+    try:
+        bundle = engine.compute_kundali(_payload(body))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return complete_report_module.build_complete_report(bundle)
+
+
 @app.post("/api/match")
 def match(body: MatchInput):
     try:
