@@ -173,6 +173,12 @@
       <h3 data-i18n="saved_title">Saved Charts</h3>
       <p class="hint" data-i18n="saved_hint">Stored only in this browser — no account needed. A share link opens the same chart on any device.</p>
       <div id="saved-list"></div>
+      <div class="saved-actions">
+        <button type="button" class="mini-btn" id="saved-export-btn" data-i18n="saved_export">Export as JSON</button>
+        <button type="button" class="mini-btn" id="saved-import-btn" data-i18n="saved_import">Import JSON</button>
+        <input type="file" id="saved-import-file" accept=".json,application/json" hidden>
+      </div>
+      <p class="hint" id="saved-msg" hidden></p>
     </div>
   </section>
 

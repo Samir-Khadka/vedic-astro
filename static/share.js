@@ -75,6 +75,60 @@ function dedupeCharts(saved, payload, max) {
   return next.slice(0, max || 8);
 }
 
+
+/* Open-JSON export/import for saved charts (Phase 2).
+ * Format: {format: "vedic-astro-saved-charts", version: 1,
+ *          exported_at: ISO string, charts: [saved entries]}
+ * A bare array of entries is also accepted on import, so a hand-edited
+ * or older file still loads. Invalid entries are skipped, never fatal,
+ * and the merged list keeps the existing 8-chart cap. */
+
+function isValidChartPayload(p) {
+  if (!p || typeof p !== "object") return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(p.dob || "")) return false;
+  if (!/^\d{2}:\d{2}(:\d{2})?$/.test(p.tob || "")) return false;
+  if (typeof p.place_id === "string" && p.place_id) return true;
+  const lat = Number(p.lat), lon = Number(p.lon);
+  return Number.isFinite(lat) && Number.isFinite(lon) && typeof p.tz === "string" && !!p.tz
+    && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+}
+
+function normalizeSavedEntry(entry) {
+  if (!entry || typeof entry !== "object") return null;
+  const payload = entry.payload || entry;
+  if (!isValidChartPayload(payload)) return null;
+  if (entry.payload) return entry; // already a wrapper entry
+  return { name: payload.name || "", dob: payload.dob, tob: payload.tob,
+           place_name: payload.place_name || "", payload };
+}
+
+function exportSavedCharts(saved) {
+  const charts = (Array.isArray(saved) ? saved : [])
+    .map(normalizeSavedEntry).filter(Boolean);
+  return JSON.stringify({ format: "vedic-astro-saved-charts", version: 1,
+    exported_at: new Date().toISOString(), charts }, null, 2);
+}
+
+function importSavedCharts(text, existing, max) {
+  let data;
+  try { data = JSON.parse(text); } catch { return { charts: existing || [], skipped: 0, error: "invalid-json" }; }
+  const list = Array.isArray(data) ? data : data.charts;
+  if (!Array.isArray(list)) return { charts: existing || [], skipped: 0, error: "bad-format" };
+  if (data.format && data.format !== "vedic-astro-saved-charts") {
+    return { charts: existing || [], skipped: 0, error: "bad-format" };
+  }
+  let merged = Array.isArray(existing) ? existing.slice() : [];
+  let skipped = 0;
+  for (const raw of list) {
+    const entry = normalizeSavedEntry(raw);
+    if (!entry) { skipped++; continue; }
+    const next = dedupeCharts(merged, entry, max || 8);
+    if (next.length === merged.length && !next.some((c) => chartKey(c) === chartKey(entry))) skipped++;
+    merged = next;
+  }
+  return { charts: merged, skipped, error: null };
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { shareParams, buildShareUrl, parseShareParams, chartKey, dedupeCharts };
+  module.exports = { shareParams, buildShareUrl, parseShareParams, chartKey, dedupeCharts, isValidChartPayload, normalizeSavedEntry, exportSavedCharts, importSavedCharts };
 }

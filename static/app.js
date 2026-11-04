@@ -166,7 +166,7 @@ const I18N = {
     saved_title:"Saved Charts",
     saved_hint:"Stored only in this browser — no account needed. A share link opens the same chart on any device.",
     share_btn:"Copy share link", share_copied:"Link copied!", saved_empty:"No saved charts yet.",
-    saved_load:"Open", saved_delete:"Remove",
+    saved_load:"Open", saved_delete:"Remove", saved_export:"Export as JSON", saved_import:"Import JSON", saved_imported:"Charts imported.", saved_import_bad:"That file is not a saved-charts JSON file.",
     chalit_title:"Bhava Chalit — houses by actual cusps",
     chalit_hint:"Sripathi method: each house is centred on its cusp. Planets marked shifted sit in a different Chalit house than their Rashi house.",
     th_rashi_house:"Rashi house", th_chalit_house:"Chalit house", th_shifted:"Shifted?",
@@ -376,7 +376,7 @@ const I18N = {
     saved_title:"सुरक्षित कुण्डलीहरू",
     saved_hint:"यही ब्राउजरमा मात्र राखिन्छ — कुनै खाता चाहिँदैन। साझा लिङ्कले कुनै पनि यन्त्रमा उही कुण्डली खोल्छ।",
     share_btn:"साझा लिङ्क कपी गर्नुहोस्", share_copied:"लिङ्क कपी भयो!", saved_empty:"अहिलेसम्म कुनै सुरक्षित कुण्डली छैन।",
-    saved_load:"खोल्नुहोस्", saved_delete:"हटाउनुहोस्",
+    saved_load:"खोल्नुहोस्", saved_delete:"हटाउनुहोस्", saved_export:"JSON को रूपमा निर्यात गर्नुहोस्", saved_import:"JSON आयात गर्नुहोस्", saved_imported:"कुण्डलीहरू आयात गरियो।", saved_import_bad:"त्यो फाइल सुरक्षित कुण्डलीको JSON फाइल होइन।",
     chalit_title:"भाव चलित — वास्तविक भावसीमाबाट घरहरू",
     chalit_hint:"श्रीपति विधि: प्रत्येक भाव आफ्नो कस्पमा केन्द्रित हुन्छ। 'सरेको' चिन्ह लागेका ग्रह राशि घरभन्दा फरक चलित घरमा छन्।",
     th_rashi_house:"राशि भाव", th_chalit_house:"चलित भाव", th_shifted:"सरेको?",
@@ -2215,6 +2215,35 @@ function renderSavedList() {
     localStorage.setItem(SAVED_KEY, JSON.stringify(next)); renderSavedList();
   }));
 }
+
+/* Saved-chart export/import (open JSON, Phase 2). Runs on the same
+ * helpers as the share links, so an exported file re-opens anywhere. */
+function wireSavedExportImport() {
+  const expBtn = document.getElementById("saved-export-btn");
+  const impBtn = document.getElementById("saved-import-btn");
+  const fileEl = document.getElementById("saved-import-file");
+  const msgEl = document.getElementById("saved-msg");
+  if (!expBtn || !impBtn || !fileEl) return;
+  const showMsg = (key) => { if (msgEl) { msgEl.textContent = t(key); msgEl.hidden = false; } };
+  expBtn.addEventListener("click", () => {
+    if (typeof exportSavedCharts !== "function") return;
+    const blob = new Blob([exportSavedCharts(loadSavedCharts())], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "vedic-astro-saved-charts.json"; a.click();
+    URL.revokeObjectURL(a.href);
+  });
+  impBtn.addEventListener("click", () => fileEl.click());
+  fileEl.addEventListener("change", async () => {
+    const file = fileEl.files && fileEl.files[0];
+    fileEl.value = "";
+    if (!file || typeof importSavedCharts !== "function") return;
+    try {
+      const res = importSavedCharts(await file.text(), loadSavedCharts());
+      if (res.error) { showMsg("saved_import_bad"); return; }
+      localStorage.setItem(SAVED_KEY, JSON.stringify(res.charts)); renderSavedList(); showMsg("saved_imported");
+    } catch { showMsg("saved_import_bad"); }
+  });
+}
 /* Saving must never kill a generation: storage can fail (private mode,
    quota) and a bug here once hid every chart behind the generic error. */
 function saveCurrentChart() {
@@ -2412,7 +2441,7 @@ if (calBtn) calBtn.addEventListener("click", async () => {
 
 /* Share-link autoload + saved list on start */
 (function initShare() {
-  renderSavedList();
+  renderSavedList(); wireSavedExportImport();
   if (typeof parseShareParams !== "function") return;
   const params = parseShareParams(window.location.search);
   if (!params) return;

@@ -37,3 +37,24 @@ test("shareParams omits empty name", () => {
   assert.deepEqual(shareParams({ dob: "2000-01-01", tob: "06:30", place_id: "kathmandu" }),
     { dob: "2000-01-01", tob: "06:30", place_id: "kathmandu" });
 });
+
+test("saved-chart export/import round-trip, with bad entries skipped", () => {
+  const { exportSavedCharts, importSavedCharts } = require("../static/share.js");
+  const entry = { name: "A", dob: "1998-05-14", tob: "06:30", place_name: "Kathmandu",
+    payload: { name: "A", dob: "1998-05-14", tob: "06:30", place_id: "kathmandu" } };
+  const text = exportSavedCharts([entry, { dob: "bad", tob: "06:30", place_id: "kathmandu" }]);
+  const doc = JSON.parse(text);
+  assert.equal(doc.format, "vedic-astro-saved-charts");
+  assert.equal(doc.charts.length, 1);
+  const res = importSavedCharts(text, []);
+  assert.equal(res.error, null);
+  assert.equal(res.charts.length, 1);
+  assert.equal(res.charts[0].dob, "1998-05-14");
+  // Bare array and broken JSON both behave safely.
+  assert.equal(importSavedCharts(JSON.stringify([entry]), []).charts.length, 1);
+  const bad = importSavedCharts("not json", [entry]);
+  assert.equal(bad.error, "invalid-json");
+  assert.equal(bad.charts.length, 1);
+  const wrong = importSavedCharts(JSON.stringify({ format: "other", charts: [] }), []);
+  assert.equal(wrong.error, "bad-format");
+});
