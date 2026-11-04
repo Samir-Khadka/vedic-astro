@@ -100,7 +100,7 @@ const I18N = {
     err_incomplete:"The chart data came back incomplete, so the chart itself could not be drawn. Please try again.",
     chart_caption_d1:"Rashi chart (D1) — Nepali janma-patri style", chart_caption_d9:"Navamsa chart (D9)", chart_caption_d10:"Dashamsa chart (D10)",
     chart_caption_pair:"Lagna (D1) + Navamsa (D9) — the traditional kundali pair; D10 below for career",
-    chart_lagna:"Lagna", chart_navamsa:"Navamsa", chart_d1_sub:"Rashi · D1", chart_d9_sub:"D9 · strength of planets",
+    chart_lagna:"Lagna", chart_navamsa:"Navamsa", chart_d1_sub:"Rashi · D1", chart_d9_sub:"D9 · strength of planets", chart_dashamsa:"Dashamsa", chart_d10_sub:"D10 · career chart",
     varga_more:"More vargas — Dashamsa (D10), career chart", birth_panchang_title:"Panchang at birth", vara:"Weekday",
     glance_lagna:"Lagna (Ascendant)", glance_moon:"Moon sign", glance_sun:"Sun sign", glance_lagna_lord:"Lagna lord", pada_word:"Pada",
     sarva:"Sarvashtakavarga",
@@ -314,7 +314,7 @@ const I18N = {
     err_incomplete:"कुण्डली डाटा अपूर्ण आयो, त्यसैले चार्ट कोर्न सकिएन। फेरि प्रयास गर्नुहोस्।",
     chart_caption_d1:"राशि कुण्डली (D1) — नेपाली जन्मपत्री शैली", chart_caption_d9:"नवांश कुण्डली (D9)", chart_caption_d10:"दशमांश कुण्डली (D10)",
     chart_caption_pair:"लग्न (D1) + नवांश (D9) — परम्परागत कुण्डली जोडी; करियरका लागि D10 तल",
-    chart_lagna:"लग्न", chart_navamsa:"नवांश", chart_d1_sub:"राशि · D1", chart_d9_sub:"D9 · ग्रह बल",
+    chart_lagna:"लग्न", chart_navamsa:"नवांश", chart_d1_sub:"राशि · D1", chart_d9_sub:"D9 · ग्रह बल", chart_dashamsa:"दशांश", chart_d10_sub:"D10 · करियर कुण्डली",
     varga_more:"थप वर्गहरू — दशमांश (D10), करियर कुण्डली", birth_panchang_title:"जन्म पञ्चाङ्ग", vara:"वार",
     glance_lagna:"लग्न", glance_moon:"चन्द्र राशि", glance_sun:"सूर्य राशि", glance_lagna_lord:"लग्न स्वामी", pada_word:"पद",
     sarva:"सर्वाष्टकवर्ग",
@@ -872,11 +872,10 @@ document.getElementById("birth-form").addEventListener("submit", async (ev) => {
 
 /* ---------------- Kundali charts (SVG) -------------------------------
    Three styles, one geometry family tree:
-   * "nepali" (default) — the authentic Nepali janma-patri presentation:
-     North-Indian fixed-house diamond, Lagna top-centre, houses counted
-     counterclockwise, sign name + number in every cell, and each planet
-     written WITH its degree-in-sign, the way Nepali apps (Mero Jyotish)
-     and printed patris show it.
+   * "nepali" (default) — the traditional printed janma-patri: red
+     double border, sign numbers in Devanagari at the house corners,
+     full planet names (सूर्य, चन्द्र, मंगल…) with no degrees, and an
+     Om emblem in a red circle at the centre.
    * "north" — the same diamond, compact software style (abbreviations
      only, no degrees).
    * "south" — South-Indian fixed-sign square grid: signs never move,
@@ -904,11 +903,20 @@ const ABBR_NE = { Sun: "सू", Moon: "चं", Mars: "मं", Mercury: "ब�
 const SIGN_ANCHORS = ["middle", "start", "start", "start", "start", "start",
                       "middle", "end", "end", "end", "end", "end"];
 
+/* Full planet names for the traditional patri chart (the screenshot
+   style: सूर्य, चन्द्र, मंगल… — never abbreviations). */
+const PLANET_FULL_NE = { Sun: "सूर्य", Moon: "चन्द्र", Mars: "मंगल", Mercury: "बुध", Jupiter: "गुरु", Venus: "शुक्र", Saturn: "शनि", Rahu: "राहु", Ketu: "केतु" };
+
 /* opts: {degrees: {body: degreeInSign}, lagnaDegree, retro: Set, style} */
 function diamondSVG(chartMap, opts) {
   const lagnaSign = chartMap["Lagna"];
-  const withDeg = opts.style === "nepali";
-  let svg = `<svg class="kundali-svg${withDeg ? " nepali" : ""}" viewBox="0 0 400 400" role="img" aria-label="Kundali chart">`;
+  /* "nepali" is the traditional patri style from the reference chart:
+     red double border, Devanagari (in Nepali mode) sign numbers at the
+     house corners, full planet names with no degrees, and an Om emblem
+     in a red circle at the centre — the way a printed Nepali janma-patri
+     looks. The compact "north" style keeps abbreviations + degrees. */
+  const patra = opts.style === "nepali";
+  let svg = `<svg class="kundali-svg${patra ? " nepali patra" : ""}" viewBox="0 0 400 400" role="img" aria-label="Kundali chart">`;
   HOUSE_REGIONS.forEach((region, idx) => {
     const house = idx + 1;
     const sign = (lagnaSign + house - 1) % 12;
@@ -916,26 +924,52 @@ function diamondSVG(chartMap, opts) {
     const isLagna = house === 1;
     svg += `<polygon class="house-poly${isLagna ? " lagna-house" : ""}" points="${region.poly}"/>`;
     const anchor = SIGN_ANCHORS[idx];
-    svg += `<text class="sign-name" style="text-anchor:${anchor}" x="${region.sign[0]}" y="${region.sign[1]}">${signName(sign)}</text>`;
-    svg += `<text class="sign-num" style="text-anchor:${anchor}" x="${region.sign[0]}" y="${region.sign[1] + 12}">${locNum(sign + 1)}</text>`;
-    if (isLagna) {
-      const degTxt = withDeg && opts.lagnaDegree != null ? " " + locNum(Math.floor(opts.lagnaDegree)) + "°" : "";
-      svg += `<text class="lagna-txt" x="${region.label[0]}" y="${region.label[1] - 16}">${LANG === "ne" ? "लग्न" : "Lagna"}${degTxt}</text>`;
+    if (patra) {
+      /* Sign number only, at the house corner, like the printed patri. */
+      svg += `<text class="sign-num-patra" style="text-anchor:${anchor}" x="${region.sign[0]}" y="${region.sign[1]}">${locNum(sign + 1)}</text>`;
+    } else {
+      svg += `<text class="sign-name" style="text-anchor:${anchor}" x="${region.sign[0]}" y="${region.sign[1]}">${signName(sign)}</text>`;
+      svg += `<text class="sign-num" style="text-anchor:${anchor}" x="${region.sign[0]}" y="${region.sign[1] + 12}">${locNum(sign + 1)}</text>`;
+    }
+    if (isLagna && !patra) {
+      svg += `<text class="lagna-txt" x="${region.label[0]}" y="${region.label[1] - 16}">${LANG === "ne" ? "लग्न" : "Lagna"}</text>`;
     }
     const labelOf = (b) => {
+      if (patra) return LANG === "ne" ? PLANET_FULL_NE[b] : b;
+      /* Degrees live in the planetary table; the chart itself stays
+         clean in both styles, as in the printed patri. */
       let s = (LANG === "ne" ? ABBR_NE[b] : ABBR[b]);
       if (opts.retro && opts.retro.has(b)) s += "ᴿ";
-      if (withDeg && opts.degrees && opts.degrees[b] != null) s += " " + locNum(Math.floor(opts.degrees[b])) + "°";
       return s;
     };
     const labels = bodies.map(labelOf);
-    const perLine = withDeg ? 2 : 3;
+    /* Patri houses hold at most three full names; wrap one per line so
+       long Devanagari names never collide. */
+    const perLine = patra ? 1 : 3;
     const lines = [];
     for (let i = 0; i < labels.length; i += perLine) lines.push(labels.slice(i, i + perLine).join(" "));
     lines.forEach((line, li) => {
-      svg += `<text class="planet-txt" x="${region.label[0]}" y="${region.label[1] + li * 15}">${line}</text>`;
+      svg += `<text class="planet-txt${patra ? " patra-planet" : ""}" x="${region.label[0]}" y="${region.label[1] + li * 17}">${line}</text>`;
     });
   });
+  if (patra) {
+    /* Double red outer border + Ganesha emblem in a red circle at the
+       centre, as in the printed patri (the emblem image is clipped to
+       the circle; the Om text underneath is only a fallback if the
+       image fails to load). */
+    const clipId = `ganesha-clip-${opts.captionShort || "D1"}`;
+    svg += `<defs><clipPath id="${clipId}"><circle cx="200" cy="200" r="52"/></clipPath></defs>`;
+    svg += `<rect class="patra-border" x="2" y="2" width="396" height="396"/>`;
+    svg += `<rect class="patra-border-inner" x="8" y="8" width="384" height="384"/>`;
+    svg += `<circle class="patra-om-circle" cx="200" cy="200" r="52"/>`;
+    svg += `<text class="patra-om" x="200" y="216">ॐ</text>`;
+    svg += `<image href="/static/ganesha-emblem.png" x="142" y="142" width="116" height="116" clip-path="url(#${clipId})" preserveAspectRatio="xMidYMid meet"/>`;
+  } else if (opts.captionShort) {
+    /* The centre of a North-Indian chart is traditionally left for the
+       chart's identity — label it (D1/D9/D10) instead of leaving a blank
+       hole in the middle of the kundali. */
+    svg += `<text class="centre-txt" x="200" y="206">${opts.captionShort}</text>`;
+  }
   svg += "</svg>";
   return svg;
 }
@@ -1010,12 +1044,36 @@ function drawChartInto(el, chartMap, varga) {
 
 /* Traditional kundali view: Lagna (D1) + Navamsa (D9) side by side,
    Dashamsa (D10) one tap below — the layout the popular kundali sites use. */
+/* Traditional chart titles for the patri style, as printed above the
+   reference charts: Rashi (Lagna Kundali), Navamsa (Dharma Varga),
+   Dashamsa (Karma Varga). Other styles keep the plain Lagna/Navamsa/
+   Dashamsa headings (restored from the saved originals). */
+const PATRA_TITLES = ["राशि चार्ट (लग्न कुण्डली)", "नवांश चार्ट (धर्म वर्ग)", "दशांश चार्ट (कर्म वर्ग)"];
 function renderChartPair() {
   const b = STATE.bundle;
   if (!b) return;
   drawChartInto(document.getElementById("chart-d1"), b.charts["D1"], "D1");
   drawChartInto(document.getElementById("chart-d9"), b.charts["D9"], "D9");
   drawChartInto(document.getElementById("chart-d10"), b.charts["D10"], "D10");
+  document.querySelectorAll(".chart-one .chart-name").forEach((h, i) => {
+    const main = h.querySelector("span:first-child");
+    const sub = h.querySelector(".chart-sub");
+    if (!main) return;
+    if (STATE.chartStyle === "nepali" && PATRA_TITLES[i]) {
+      if (main.dataset.orig === undefined) {
+        main.dataset.orig = main.textContent;
+        if (sub) sub.dataset.orig = sub.textContent;
+      }
+      main.textContent = PATRA_TITLES[i];
+      if (sub) sub.textContent = "";
+    } else if (main.dataset.orig !== undefined && PATRA_TITLES.includes(main.textContent)) {
+      /* Leaving the patri style: restore the plain heading. (When the
+         language changes, applyLang rewrites these spans itself, so the
+         saved original is only used to undo a patri title.) */
+      main.textContent = main.dataset.orig;
+      if (sub) sub.textContent = sub.dataset.orig || "";
+    }
+  });
   const cap = document.getElementById("chart-caption");
   cap.textContent = STATE.chartStyle === "south" ? t("chart_caption_south") : t("chart_caption_pair");
 }
