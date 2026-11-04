@@ -444,6 +444,30 @@ def panchang(
     return result
 
 
+@app.get("/api/panchang-detail")
+def panchang_detail(
+    date_str: str = Query(default=None, alias="date"),
+    place_id: str | None = None,
+    lat: float | None = None,
+    lon: float | None = None,
+    tz: str | None = None,
+):
+    """Full patro day detail for one date: rise/set times, tithi /
+    nakshatra / yoga / karana with their transitions to the next one,
+    moon sign, ritu, ayana and sidereal planet positions at sunrise.
+    Additive only — month endpoints are untouched so month loads stay
+    fast. 400 on a bad date."""
+    _validate_coords_tz(lat, lon, tz)
+    try:
+        place = engine.resolve_place({"place_id": place_id, "lat": lat, "lon": lon, "tz": tz})
+        day = date.fromisoformat(date_str) if date_str else date.today()
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    result = panchang_module.day_detail(day, place["lat"], place["lon"], place["tz"])
+    result["place"] = place
+    return result
+
+
 @app.get("/api/muhurta")
 def muhurta(
     date_from: str = Query(default=None),
