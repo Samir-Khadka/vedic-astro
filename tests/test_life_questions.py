@@ -17,15 +17,18 @@ REQUIRED = [
     "disclaimer_en", "disclaimer_ne",
 ]
 
-# Words that must never appear in the curated library (case-insensitive).
-EXCLUDED = [
-    "sex of", "abortion", "miscarriage", "call girl", "prostitution",
-    "imprisonment", "rape",
+# Sensitive topics are included only in probability framing (per Samir,
+# 2026-11-04): each such entry must say so explicitly, never as a
+# guaranteed outcome, and must point to a clinician/lawyer where relevant.
+SENSITIVE_IDS = [
+    "children_sex_indication", "children_pregnancy_difficulty",
+    "marriage_relationship_strain", "litigation_legal_trouble",
+    "litigation_court_outcome", "health_serious_periods",
 ]
 
 
 def test_about_twenty_questions_unique_ids():
-    assert 18 <= len(lq.QUESTIONS) <= 24, len(lq.QUESTIONS)
+    assert 18 <= len(lq.QUESTIONS) <= 30, len(lq.QUESTIONS)
     ids = [q["id"] for q in lq.QUESTIONS]
     assert len(ids) == len(set(ids))
 
@@ -42,16 +45,20 @@ def test_every_question_bilingual_and_valid_houses():
         assert any("\u0900" <= ch <= "\u097f" for ch in pub["question_ne"]), q["id"]
 
 
-def test_no_excluded_topics_and_health_disclaimer():
-    blob = " ".join(
-        f"{q['question_en']} {q['what_to_check_en']} {q['timing_note_en']}".lower()
-        for q in lq.QUESTIONS
-    )
-    for word in EXCLUDED:
-        assert word not in blob, word
+def test_sensitive_topics_probability_framed_and_health_disclaimer():
+    for qid in SENSITIVE_IDS:
+        q = lq.get_question(qid)
+        assert q is not None, qid
+        text = f"{q['what_to_check_en']} {q['timing_note_en']}".lower()
+        assert "probability" in text, qid
+        assert "not" in text, qid
     health = lq.get_question("health_general")
     assert "not medical advice" in health["what_to_check_en"].lower()
     assert "not medical advice" in lq.DISCLAIMER_EN.lower()
+    # No sensitive entry may claim a guaranteed outcome.
+    for qid in SENSITIVE_IDS:
+        q = lq.get_question(qid)
+        assert "will happen" not in q["what_to_check_en"].lower(), qid
 
 
 def test_api_list_filter_and_single():

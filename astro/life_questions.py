@@ -9,10 +9,16 @@ This is a guide, not a verdict: no question is answered without a
 chart, and nothing here is a guaranteed outcome, medical advice, or
 legal advice.
 
-Explicitly NOT in this library: sex-of-child prediction,
-abortion/miscarriage predictions, scandalous-affair framing,
-imprisonment-cause predictions, deterministic claims about another
-person, a court outcome, or a medical outcome.
+Probability framing (per Samir, 2026-11-04): astrology here is a
+traditional probability indication, not a deterministic fact. Entries
+on sensitive topics — child sex indication, pregnancy difficulty,
+relationship strain involving a third party, legal trouble /
+imprisonment risk, court outcomes, and serious health periods — are
+included on that basis only, each with its own disclaimer. Pregnancy
+and health entries are not medical advice (see a clinician); legal
+entries are not legal advice (see a lawyer); and no entry should be
+used to accuse a specific person or to decide a medical or legal
+matter on its own.
 """
 
 from __future__ import annotations
@@ -269,6 +275,78 @@ QUESTIONS = [
         "what_to_check_ne": "यो प्रविष्टि सामान्य सावधानी मात्र हो, व्यक्तिगत दुर्घटनाको भविष्यवाणी कहिल्यै होइन। परम्परागत रूपमा आठौँ (आकस्मिक घटना), बाह्रौँ (हानि) र छैटौँ (चोट/बाधा) लाई जीवनशक्ति (पहिलो) र समर्थन (एघारौँ) सँग तुलना गरिन्छ; भारी अवधिले सडक र काममा थप सावधानीको प्रेरणा मात्र दिन्छ, अरू केही होइन।",
         "timing_note_en": "Caution periods are read from dasha/bhukti and Mars transits in general terms; safe behaviour, not the chart, prevents accidents.",
         "timing_note_ne": "सावधानी अवधि दशा/भुक्ति र मङ्गलको गोचरबाट सामान्य रूपमा पढिन्छ; दुर्घटना रोक्ने भनेको सुरक्षित व्यवहार हो, कुण्डली होइन।",
+    },
+    {
+        "id": "children_sex_indication",
+        "category": "children", "category_en": "Children", "category_ne": "सन्तान",
+        "question_en": "Child — traditional sex indication, as probability only?",
+        "question_ne": "सन्तान — परम्परागत लिङ्ग सङ्केत, सम्भावनाका रूपमा मात्र?",
+        "prime_houses": [5, 2, 11], "supporting_houses": [9, 7], "negating_houses": [1, 6, 10],
+        "significator_en": "Jupiter", "significator_ne": "गुरु",
+        "what_to_check_en": "Traditional lore reads male/female indications from the 5th house, its lord, and the planets/signs involved (Sun, Mars and Jupiter traditionally counted as male; Moon and Venus as female), together with the 2nd and 11th. This is a probability indication from tradition only — it is not reliable, it is not a medical determination, and it must not be used on its own for any medical decision.",
+        "what_to_check_ne": "परम्परागत ज्ञानले पाँचौँ भाव, त्यसका स्वामी र संलग्न ग्रह/राशिबाट पुरुष/स्त्री सङ्केत पढ्छ (सूर्य, मङ्गल र गुरु परम्परागत रूपमा पुरुष; चन्द्रमा र शुक्र स्त्री), दोस्रो र एघारौँसँगै। यो परम्परागत सम्भावना सङ्केत मात्र हो — भरपर्दो होइन, चिकित्सकीय निर्धारण होइन, र कुनै चिकित्सकीय निर्णयका लागि एक्लै प्रयोग गर्नु हुँदैन।",
+        "timing_note_en": "Read only from dasha/bhukti touching the 5th house, and always as 'leaning, not certain'.",
+        "timing_note_ne": "पाँचौँ भावलाई छुने दशा/भुक्तिबाट मात्र, र सधैँ 'झुकाव, निश्चित होइन' भनेर पढ्नुहोस्।",
+    },
+    {
+        "id": "children_pregnancy_difficulty",
+        "category": "children", "category_en": "Children", "category_ne": "सन्तान",
+        "question_en": "Pregnancy — difficulty or loss risk, in traditional probability terms?",
+        "question_ne": "गर्भावस्था — कठिनाइ वा हानिको जोखिम, परम्परागत सम्भावनाका रूपमा?",
+        "prime_houses": [5, 2, 11], "supporting_houses": [9, 11], "negating_houses": [8, 12, 6],
+        "significator_en": "Moon", "significator_ne": "चन्द्रमा",
+        "what_to_check_en": "Traditional reading looks at the 5th house against the 8th (sudden difficulty), 12th (loss) and 6th (health obstacle), with the Moon as significator of pregnancy. A heavy indication is a probability prompt for extra medical care and rest — it is not a diagnosis, not a prediction of loss, and any pregnancy concern must go to a clinician promptly.",
+        "what_to_check_ne": "परम्परागत पठनले पाँचौँ भावलाई आठौँ (आकस्मिक कठिनाइ), बाह्रौँ (हानि) र छैटौँ (स्वास्थ्य बाधा) सँग तुलना गर्छ, गर्भावस्थाका कारक चन्द्रमासहित। भारी सङ्केत भनेको थप चिकित्सकीय हेरचाह र आरामका लागि सम्भावना प्रेरणा मात्र हो — निदान होइन, हानि हुन्छ भन्ने भविष्यवाणी होइन, र गर्भावस्थाको कुनै पनि चिन्ता तुरुन्त चिकित्सककहाँ लैजानुपर्छ।",
+        "timing_note_en": "Read difficulty periods from dasha/bhukti to the 5th/8th houses; medical timing and care always follow the clinician, not the chart.",
+        "timing_note_ne": "कठिनाइ अवधि पाँचौँ/आठौँ भावका दशा/भुक्तिबाट पढिन्छ; चिकित्सकीय समय र हेरचाह सधैँ चिकित्सककै हुन्छ, कुण्डलीको होइन।",
+    },
+    {
+        "id": "marriage_relationship_strain",
+        "category": "marriage", "category_en": "Marriage", "category_ne": "विवाह",
+        "question_en": "Relationship strain, including a third party?",
+        "question_ne": "सम्बन्धमा तनाव, तेस्रो पक्षसहित?",
+        "prime_houses": [7, 5, 12], "supporting_houses": [3, 11], "negating_houses": [1, 6, 10],
+        "significator_en": "Venus", "significator_ne": "शुक्र",
+        "what_to_check_en": "Strain is read from the 7th (partnership) against the 5th (romance) and 12th (secrecy, separation), with Venus as significator. A third-party indication is a probability pattern in the chart, in general terms — it is not proof about any specific person, and it should prompt conversation and counselling, not an accusation.",
+        "what_to_check_ne": "तनाव सातौँ (साझेदारी) लाई पाँचौँ (प्रेम) र बाह्रौँ (गोप्यता, अलगाव) सँग तुलना गरी पढिन्छ, कारक शुक्रसहित। तेस्रो पक्षको सङ्केत कुण्डलीमा सामान्य सम्भावना ढाँचा मात्र हो — कुनै विशेष व्यक्तिबारे प्रमाण होइन, र यसले संवाद र परामर्शतर्फ प्रेरणा दिनुपर्छ, आरोप होइन।",
+        "timing_note_en": "Strain periods follow dasha/bhukti to the 7th/12th houses; how a couple responds in real life matters more than the period itself.",
+        "timing_note_ne": "तनाव अवधि सातौँ/बाह्रौँ भावका दशा/भुक्तिले पढिन्छ; दम्पतीले वास्तविक जीवनमा कसरी प्रतिक्रिया दिन्छन्, त्यो अवधिभन्दा महत्त्वपूर्ण हुन्छ।",
+    },
+    {
+        "id": "litigation_legal_trouble",
+        "category": "litigation", "category_en": "Litigation", "category_ne": "मुद्दा",
+        "question_en": "Legal trouble or imprisonment risk, in traditional probability terms?",
+        "question_ne": "कानुनी समस्या वा कैदको जोखिम, परम्परागत सम्भावनाका रूपमा?",
+        "prime_houses": [6, 12, 8], "supporting_houses": [9, 11], "negating_houses": [2, 10],
+        "significator_en": "Saturn", "significator_ne": "शनि",
+        "what_to_check_en": "Traditional reading links disputes (6th) to confinement/loss (12th) and sudden trouble (8th), with Saturn as significator of restriction. A heavy pattern is a probability caution to seek legal advice early and act lawfully — it is not a prediction of imprisonment, and it is not legal advice.",
+        "what_to_check_ne": "परम्परागत पठनले विवाद (छैटौँ) लाई बन्दी/हानि (बाह्रौँ) र आकस्मिक समस्या (आठौँ) सँग जोड्छ, प्रतिबन्धका कारक शनिसहित। भारी ढाँचा भनेको चाँडै कानुनी सल्लाह लिने र कानुनसम्मत व्यवहार गर्ने सम्भावना सावधानी मात्र हो — कैद हुन्छ भन्ने भविष्यवाणी होइन, र कानुनी सल्लाह होइन।",
+        "timing_note_en": "Risk periods follow dasha/bhukti to the 6th/12th houses; the actual outcome depends on facts, law and counsel, not the chart alone.",
+        "timing_note_ne": "जोखिम अवधि छैटौँ/बाह्रौँ भावका दशा/भुक्तिले पढिन्छ; वास्तविक परिणाम तथ्य, कानुन र वकिलमा निर्भर हुन्छ, कुण्डलीमा मात्र होइन।",
+    },
+    {
+        "id": "litigation_court_outcome",
+        "category": "litigation", "category_en": "Litigation", "category_ne": "मुद्दा",
+        "question_en": "Court case — favourable outcome, as probability?",
+        "question_ne": "अदालतको मुद्दा — अनुकूल परिणाम, सम्भावनाका रूपमा?",
+        "prime_houses": [6, 7, 11], "supporting_houses": [9, 2], "negating_houses": [12, 8],
+        "significator_en": "Jupiter", "significator_ne": "गुरु",
+        "what_to_check_en": "A case is read from disputes (6th) and the opposing party (7th) with gain (11th) and fortune/justice (9th) supporting a favourable leaning, and Jupiter as significator of justice. This is a probability leaning only — it does not decide a case, and a lawyer must be consulted for the actual matter.",
+        "what_to_check_ne": "मुद्दा विवाद (छैटौँ) र विपक्षी (सातौँ) बाट लाभ (एघारौँ) र भाग्य/न्याय (नवौँ) ले अनुकूल झुकावलाई समर्थन गर्दा पढिन्छ, न्यायका कारक गुरुसहित। यो सम्भावना झुकाव मात्र हो — यसले मुद्दा निर्धारण गर्दैन, र वास्तविक विषयका लागि वकिलसँग परामर्श गर्नुपर्छ।",
+        "timing_note_en": "Favourable periods follow dasha/bhukti to the 6th/7th/11th houses around hearing dates; evidence and procedure still decide the case.",
+        "timing_note_ne": "अनुकूल अवधि सुनुवाइ मितिमा छैटौँ/सातौँ/एघारौँ भावका दशा/भुक्तिले पढिन्छ; प्रमाण र प्रक्रियाले नै मुद्दा निर्धारण गर्छ।",
+    },
+    {
+        "id": "health_serious_periods",
+        "category": "health", "category_en": "Health", "category_ne": "स्वास्थ्य",
+        "question_en": "Serious health periods, in traditional probability terms?",
+        "question_ne": "गम्भीर स्वास्थ्य अवधि, परम्परागत सम्भावनाका रूपमा?",
+        "prime_houses": [6, 8, 12], "supporting_houses": [1, 11], "negating_houses": [2, 9],
+        "significator_en": "Saturn", "significator_ne": "शनि",
+        "what_to_check_en": "Serious health strain is traditionally read from the 6th (illness), 8th (sudden/chronic difficulty) and 12th (hospitalisation/loss) against vitality (1st) and support (11th), with Saturn as significator of chronic strain. This is a probability prompt for check-ups and care — it does not diagnose any disease, name a condition, or time treatment; any symptom needs a clinician.",
+        "what_to_check_ne": "गम्भीर स्वास्थ्य तनाव परम्परागत रूपमा छैटौँ (रोग), आठौँ (आकस्मिक/दीर्घकालीन कठिनाइ) र बाह्रौँ (अस्पताल/हानि) लाई जीवनशक्ति (पहिलो) र समर्थन (एघारौँ) सँग तुलना गरी पढिन्छ, दीर्घकालीन तनावका कारक शनिसहित। यो जाँच र हेरचाहका लागि सम्भावना प्रेरणा मात्र हो — यसले कुनै रोग निदान गर्दैन, अवस्था तोक्दैन, वा उपचारको समय निर्धारण गर्दैन; कुनै पनि लक्षण चिकित्सककै हो।",
+        "timing_note_en": "Strain periods follow dasha/bhukti to the 6th/8th houses; medical decisions always follow the clinician, not the chart.",
+        "timing_note_ne": "तनाव अवधि छैटौँ/आठौँ भावका दशा/भुक्तिले पढिन्छ; चिकित्सकीय निर्णय सधैँ चिकित्सककै हुन्छ, कुण्डलीको होइन।",
     },
 ]
 
