@@ -192,7 +192,9 @@ const I18N = {
     act_grahapravesh:"House entry", act_shop_opening:"Shop inauguration", act_bride_entry:"Bride's entry", act_partner_selection:"Bride/groom selection", act_vehicle_ceremony:"Vehicle ceremony", act_planting:"Planting", act_first_ploughing:"First ploughing",
     u_facing:"House facing (Grahapravesh only)", facing_any:"Any", facing_east:"East", facing_west:"West", facing_north:"North", facing_south:"South",
     month_cal_title:"Month Calendar", cal_load:"Show month",
-    cal_hint:"Markers are astronomical only (Ekadashi, Purnima, Amavasya, Sankranti) — regional festival dates are not guessed.",
+    cal_hint:"Gold chips are astronomical markers (Ekadashi, Purnima, Amavasya, Sankranti); violet chips are festivals and red chips are public holidays.",
+    cal_legend_marker:"Astronomical marker", cal_legend_festival:"Festival", cal_legend_holiday:"Public holiday",
+    cal_fest_title:"Festivals & holidays", cal_holiday_flag:"Public holiday", cal_no_fest:"No festival or public holiday on this day.",
     saved_title:"Saved Charts",
     saved_hint:"Stored only in this browser — no account needed. A share link opens the same chart on any device.",
     share_btn:"Copy share link", share_copied:"Link copied!", saved_empty:"No saved charts yet.",
@@ -437,7 +439,9 @@ const I18N = {
     act_grahapravesh:"गृहप्रवेश", act_shop_opening:"पसल उद्घाटन", act_bride_entry:"नववधू प्रवेश", act_partner_selection:"वर / कन्या वरण", act_vehicle_ceremony:"वाहन पूजा", act_planting:"वृक्षरोपण", act_first_ploughing:"हलो जोत्ने",
     u_facing:"घरको मुख (गृहप्रवेशका लागि मात्र)", facing_any:"जुनसुकै", facing_east:"पूर्व", facing_west:"पश्चिम", facing_north:"उत्तर", facing_south:"दक्षिण",
     month_cal_title:"महिनाको पात्रो", cal_load:"महिना देखाउनुहोस्",
-    cal_hint:"चिन्हहरू खगोलीय मात्र हुन् (एकादशी, पूर्णिमा, औंसी, सङ्क्रान्ति) — क्षेत्रीय पर्व मितिहरू अनुमान गरिँदैनन्।",
+    cal_hint:"सुनौला चिप खगोलीय चिन्ह हुन् (एकादशी, पूर्णिमा, औंसी, सङ्क्रान्ति); बैजनी चिप पर्व र रातो चिप सार्वजनिक बिदा हुन्।",
+    cal_legend_marker:"खगोलीय चिन्ह", cal_legend_festival:"पर्व", cal_legend_holiday:"सार्वजनिक बिदा",
+    cal_fest_title:"पर्व तथा बिदाहरू", cal_holiday_flag:"सार्वजनिक बिदा", cal_no_fest:"यस दिन कुनै पर्व वा सार्वजनिक बिदा छैन।",
     saved_title:"सुरक्षित कुण्डलीहरू",
     saved_hint:"यही ब्राउजरमा मात्र राखिन्छ — कुनै खाता चाहिँदैन। साझा लिङ्कले कुनै पनि यन्त्रमा उही कुण्डली खोल्छ।",
     share_btn:"साझा लिङ्क कपी गर्नुहोस्", share_copied:"लिङ्क कपी भयो!", saved_empty:"अहिलेसम्म कुनै सुरक्षित कुण्डली छैन।",
@@ -2747,16 +2751,38 @@ function buildCalSelects(centerYear) {
    both AD and BS modes, at every viewport width. Cell hierarchy: the
    month's own day number LARGE, the counterpart date smaller beneath
    (BS under AD, AD under BS), then tithi · nakshatra, then the
-   computed-only astronomical markers. Clicking a day opens the full
-   day detail below the grid. */
+   computed-only astronomical markers (gold), then festival badges
+   (violet) and public-holiday badges (deep red). Clicking a day
+   opens the full day detail below the grid and marks the cell
+   selected. */
 const WD_FULL_EN = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const WD_FULL_NE = ["आइतबार","सोमबार","मंगलबार","बुधबार","बिहिबार","शुक्रबार","शनिबार"];
 let lastDetail = null; // day-detail json — re-rendered on language toggle
+let selectedCalDate = null; // AD iso of the clicked day — re-applied on re-render
 function calTodayLabel(dateIso) {
   return dateIso === localTodayIso() ? ` <span class="cal-today-label">${t("cal_today")}</span>` : "";
 }
 function calMarkers(markers) {
   return markers.map((m) => `<span class="cal-marker">${m}</span>`).join(" ");
+}
+/* Festival/holiday badges: violet for a festival, deep red for a
+   public holiday (the way patro readers expect holidays to stand
+   out). Distinct from the gold astronomical markers above. A cell
+   may carry several — they wrap inside the cell. */
+function calFestivals(festivals) {
+  if (!festivals || !festivals.length) return "";
+  return `<span class="cal-fest-wrap">` + festivals.map((f) => {
+    const name = LANG === "ne" ? f.name_ne : f.name_en;
+    const cls = f.holiday ? "cal-holiday" : "cal-festival";
+    return `<span class="${cls}">${name}</span>`;
+  }).join(" ") + `</span>`;
+}
+function renderCalLegend() {
+  const el = document.getElementById("cal-legend");
+  if (!el) return;
+  el.innerHTML = `<span class="cal-legend-item"><span class="cal-marker">${t("cal_legend_marker")}</span></span>` +
+    `<span class="cal-legend-item"><span class="cal-festival">${t("cal_legend_festival")}</span></span>` +
+    `<span class="cal-legend-item"><span class="cal-holiday">${t("cal_legend_holiday")}</span></span>`;
 }
 function calLimb(d) {
   const ti = LANG === "ne" ? TITHI_NE[d.tithi_index] : TITHI_EN[d.tithi_index];
@@ -2779,7 +2805,7 @@ function renderCalGrid(system, cal, adBs) {
       const dayNum = Number(d.date.slice(-2));
       const bs = adBs && adBs[d.date];
       const bsSmall = bs ? (LANG === "ne" ? `${nepNum(bs.bs_day)} ${BS_MONTHS_NE[bs.bs_month - 1]}` : `${bs.bs_day} ${BS_MONTHS_EN[bs.bs_month - 1]}`) : "";
-      return `<button type="button" class="cal-cell${d.date === today ? " cal-today" : ""}" data-date="${d.date}"><b class="cal-day-num">${LANG === "ne" ? nepNum(dayNum) : dayNum}</b>${bsSmall ? `<span class="cal-counter">${bsSmall}</span>` : ""}${calLimb(d)}${calMarkers(d.markers)}${calTodayLabel(d.date)}</button>`;
+      return `<button type="button" class="cal-cell${d.date === today ? " cal-today" : ""}${d.date === selectedCalDate ? " cal-selected" : ""}" data-date="${d.date}"><b class="cal-day-num">${LANG === "ne" ? nepNum(dayNum) : dayNum}</b>${bsSmall ? `<span class="cal-counter">${bsSmall}</span>` : ""}${calLimb(d)}${calMarkers(d.markers)}${calFestivals(d.festivals)}${calTodayLabel(d.date)}</button>`;
     }).join("");
     if (titleEl) {
       const adTitle = LANG === "ne" ? `${MONTH_NE[cal.month - 1]} ${nepNum(cal.year)}` : `${MONTH_EN[cal.month - 1]} ${cal.year}`;
@@ -2802,7 +2828,7 @@ function renderCalGrid(system, cal, adBs) {
       const [ay, am, adn] = d.ad.split("-").map(Number);
       const shortM = (LANG === "ne" ? MONTH_SHORT_NE : MONTH_SHORT_EN)[am - 1];
       const adSmall = LANG === "ne" ? `${nepNum(adn)} ${shortM}` : `${adn} ${shortM}`;
-      return `<button type="button" class="cal-cell cal-bs-cell${d.ad === today ? " cal-today" : ""}" data-date="${d.ad}"><b class="cal-day-num">${LANG === "ne" ? nepNum(d.bs_day) : d.bs_day}</b><span class="cal-counter">${adSmall}</span>${calLimb(d)}${calMarkers(d.markers)}${calTodayLabel(d.ad)}</button>`;
+      return `<button type="button" class="cal-cell cal-bs-cell${d.ad === today ? " cal-today" : ""}${d.ad === selectedCalDate ? " cal-selected" : ""}" data-date="${d.ad}"><b class="cal-day-num">${LANG === "ne" ? nepNum(d.bs_day) : d.bs_day}</b><span class="cal-counter">${adSmall}</span>${calLimb(d)}${calMarkers(d.markers)}${calFestivals(d.festivals)}${calTodayLabel(d.ad)}</button>`;
     }).join("");
     if (titleEl) {
       const bsTitle = LANG === "ne" ? `${BS_MONTHS_NE[cal.bs_month - 1]} ${nepNum(cal.bs_year)}` : `${BS_MONTHS_EN[cal.bs_month - 1]} ${cal.bs_year}`;
@@ -2816,6 +2842,7 @@ function renderCalGrid(system, cal, adBs) {
     }
   }
   grid.innerHTML = html;
+  renderCalLegend();
 }
 /* AD -> BS counterpart map for the AD grid, built from the existing
    endpoints only (no backend change): the BS months overlapping the
@@ -2853,6 +2880,9 @@ function tithiName(idx, paksha) {
 async function showDayDetail(dateStr) {
   const el = document.getElementById("cal-day-detail");
   if (!el) return;
+  selectedCalDate = dateStr;
+  document.querySelectorAll("#cal-grid .cal-cell").forEach((c) =>
+    c.classList.toggle("cal-selected", c.dataset.date === dateStr));
   el.hidden = false;
   el.innerHTML = `<p class="muted">${t("loading")}</p>`;
   try {
@@ -2884,6 +2914,16 @@ function renderDayDetail(d) {
     (d.karana_transitions.length ? ` · ${transText(d.karana_transitions, (tr) => LANG === "ne" ? (KARANA_NE[tr.to_name] || tr.to_name) : tr.to_name)}` : "");
   const planetRows = d.planets.map((p) =>
     `<tr><td>${planetName(p.name)}</td><td>${signName(p.sign)}</td><td>${p.dms}</td></tr>`).join("");
+  const festSection = `<h4>${t("cal_fest_title")}</h4>` + ((d.festivals && d.festivals.length)
+    ? d.festivals.map((f) => {
+        const name = LANG === "ne" ? f.name_ne : f.name_en;
+        const scope = LANG === "ne" ? f.scope_ne : f.scope_en;
+        const cls = f.holiday ? "cal-holiday" : "cal-festival";
+        return `<p class="cal-fest-row"><span class="${cls}">${name}</span>` +
+          (f.holiday ? ` <span class="cal-holiday-flag">${t("cal_holiday_flag")}</span>` : "") +
+          (scope ? ` <span class="muted">(${scope})</span>` : "") + `</p>`;
+      }).join("")
+    : `<p class="muted">${t("cal_no_fest")}</p>`);
   el.innerHTML = `<h3 class="cal-detail-title">${bsFmt ? `${bsFmt} · ` : ""}${wdName} · ${adFmt}</h3>` +
     row(t("sunrise"), hms(d.sunrise)) + row(t("sunset"), hms(d.sunset)) +
     (d.moonrise ? row(t("moonrise"), hms(d.moonrise)) : "") +
@@ -2893,6 +2933,7 @@ function renderDayDetail(d) {
     row(t("moon_sign"), signName(d.moon_sign)) +
     row(t("ritu"), LANG === "ne" ? d.ritu_ne : d.ritu_en) +
     row(t("ayana"), LANG === "ne" ? d.ayana_ne : d.ayana_en) +
+    festSection +
     `<h4>${t("planets_title")}</h4><table class="cal-planet-table"><tbody>${planetRows}</tbody></table>`;
 }
 function calPlaceParams() {
@@ -2912,6 +2953,7 @@ async function loadCal() {
   const detailEl = document.getElementById("cal-day-detail");
   if (detailEl) { detailEl.hidden = true; detailEl.innerHTML = ""; }
   lastDetail = null;
+  selectedCalDate = null;
   const params = calPlaceParams();
   if (calSystem === "ad") { params.set("year", ySel.value); params.set("month", mSel.value); }
   else { params.set("bs_year", ySel.value); params.set("bs_month", mSel.value); }
