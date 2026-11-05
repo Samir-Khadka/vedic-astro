@@ -40,10 +40,31 @@ app = FastAPI(title="Vedic Astro", version="1.0.0")
 # PDF). A simple per-IP sliding-window limiter keeps one client from
 # saturating the single free-tier worker. Limit via VEDIC_RL_LIMIT
 # (requests per 60s per IP; default 60). /health and static are exempt.
-_RL_HEAVY = {("POST", "/api/kundali"), ("POST", "/api/match"),
-             ("POST", "/api/prashna"), ("GET", "/api/report.pdf")}
+# NOTE: keep this in sync with the endpoints that call
+# engine.compute_kundali / compute_match / the WeasyPrint PDF renderers
+# in main.py — every one of those is unauthenticated and heavy.
+_RL_HEAVY_PATHS = {
+    "/api/kundali", "/api/complete-report", "/api/match", "/api/prashna",
+    "/api/life-areas", "/api/ask-astrologer",
+    "/api/report.pdf", "/api/complete-report.pdf",
+}
 _RL_WINDOW_S = 60.0
 _RL_BUCKETS: dict[str, deque] = {}
+
+
+def _rl_is_heavy(method: str, path: str) -> bool:
+    # HEAD is normalised to GET: a HEAD request to a GET endpoint must
+    # never bypass the limiter for the heavier GET sibling.
+    if method == "HEAD":
+        method = "GET"
+    if method not in ("GET", "POST"):
+        return False
+    if path in _RL_HEAVY_PATHS:
+        return True
+    # POST /api/life-questions/<id>/answer computes a full kundali, but
+    # its path carries the question id, so no exact tuple can match it.
+    return (method == "POST" and path.startswith("/api/life-questions/")
+            and path.endswith("/answer"))
 
 
 def _rl_limit() -> int:
@@ -83,13 +104,16 @@ def _rl_allowed(key: str) -> bool:
 
 @app.middleware("http")
 async def security_middleware(request, call_next):
-    if (request.method, request.url.path) in _RL_HEAVY and not _rl_allowed(_rl_key(request)):
-        return JSONResponse(
+    if _rl_is_heavy(request.method, request.url.path) and not _rl_allowed(_rl_key(request)):
+        return _security_headers(JSONResponse(
             {"detail": "rate limit exceeded; please slow down and retry"},
             status_code=429,
             headers={"Retry-After": "60"},
-        )
-    response = await call_next(request)
+        ))
+    return _security_headers(await call_next(request))
+
+
+def _security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
@@ -156,7 +180,7 @@ class PrashnaInput(BaseModel):
     number: int
     question: str | None = Field(default=None, max_length=500)
     place_id: str | None = None
-    place_name: str | None = None
+    place_name: str | None = Field(default=None, max_length=200)
     lat: float | None = None
     lon: float | None = None
     tz: str | None = None
@@ -410,8 +434,8 @@ def tz_lookup(lat: float, lon: float):
 
 @app.get("/api/bs")
 def bs_convert(
-    date_str: str | None = Query(default=None, alias="date"),
-    bs: str | None = Query(default=None),
+    date_str: str | None = Query(default=None, alias="date", max_length=32),
+    bs: str | None = Query(default=None, max_length=32),
 ):
     """BS <-> AD conversion. Give ?date=YYYY-MM-DD for AD->BS, or
     ?bs=YYYY-MM-DD (BS) for BS->AD. Out-of-range dates return 400."""
@@ -426,7 +450,7 @@ def bs_convert(
 
 @app.get("/api/panchang")
 def panchang(
-    date_str: str = Query(default=None, alias="date"),
+    date_str: str = Query(default=None, alias="date", max_length=32),
     place_id: str | None = None,
     lat: float | None = None,
     lon: float | None = None,
@@ -446,7 +470,7 @@ def panchang(
 
 @app.get("/api/panchang-detail")
 def panchang_detail(
-    date_str: str = Query(default=None, alias="date"),
+    date_str: str = Query(default=None, alias="date", max_length=32),
     place_id: str | None = None,
     lat: float | None = None,
     lon: float | None = None,
@@ -475,8 +499,8 @@ def panchang_detail(
 
 @app.get("/api/muhurta")
 def muhurta(
-    date_from: str = Query(default=None),
-    date_to: str = Query(default=None),
+    date_from: str = Query(default=None, max_length=16),
+    date_to: str = Query(default=None, max_length=16),
     activity: str = "marriage",
     facing: str = "any",
     place_id: str | None = None,
@@ -485,8 +509,8 @@ def muhurta(
     tz: str | None = None,
     birth_nakshatra: int | None = None,
     birth_moon_sign: int | None = None,
-    birth_dob: str | None = None,
-    birth_tob: str | None = None,
+    birth_dob: str | None = Query(default=None, max_length=16),
+    birth_tob: str | None = Query(default=None, max_length=16),
     birth_place_id: str | None = None,
     birth_lat: float | None = None,
     birth_lon: float | None = None,
@@ -535,7 +559,7 @@ def muhurta(
 def horoscope(
     sign: int = Query(ge=0, le=11),
     span: str = "daily",
-    date_str: str = Query(default=None, alias="date"),
+    date_str: str = Query(default=None, alias="date", max_length=32),
     tz: str = "Asia/Kathmandu",
 ):
     from astro import horoscope as horoscope_module
@@ -651,9 +675,9 @@ def bs_month_length(bs_year: int, bs_month: int):
 def report_pdf(
     dob: str, tob: str,
     place_id: str | None = None,
-    place_name: str | None = None,
+    place_name: str | None = Query(default=None, max_length=200),
     lat: float | None = None, lon: float | None = None, tz: str | None = None,
-    name: str | None = None, lang: str = "en",
+    name: str | None = Query(default=None, max_length=200), lang: str = "en",
     ayanamsa: str | None = None, house_system: str | None = None,
 ):
     payload = {
@@ -679,9 +703,9 @@ def report_pdf(
 def complete_report_pdf(
     dob: str, tob: str,
     place_id: str | None = None,
-    place_name: str | None = None,
+    place_name: str | None = Query(default=None, max_length=200),
     lat: float | None = None, lon: float | None = None, tz: str | None = None,
-    name: str | None = None, lang: str = "en",
+    name: str | None = Query(default=None, max_length=200), lang: str = "en",
     ayanamsa: str | None = None, house_system: str | None = None,
     model: str = "detailed",
 ):

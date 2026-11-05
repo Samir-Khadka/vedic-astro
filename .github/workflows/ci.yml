@@ -15,7 +15,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest
+          pip install pytest pyyaml  # pyyaml: tests/test_deployment.py parses render.yaml + ci.yml
       - name: Python tests
         run: python -m pytest -q
       - uses: actions/setup-node@v4

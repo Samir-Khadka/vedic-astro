@@ -196,3 +196,56 @@ def test_rate_limit_trips_on_heavy_endpoints(monkeypatch):
     # /health is exempt and still answers.
     assert client.get("/health").status_code == 200
     main_module._RL_BUCKETS.clear()
+
+
+def test_rl_is_heavy_covers_every_compute_endpoint():
+    # Every unauthenticated endpoint that runs compute_kundali /
+    # compute_match / a WeasyPrint render must be rate-limited.
+    import main as main_module
+    heavy = main_module._rl_is_heavy
+    for method, path in [
+        ("POST", "/api/kundali"), ("POST", "/api/complete-report"),
+        ("POST", "/api/match"), ("POST", "/api/prashna"),
+        ("POST", "/api/life-areas"), ("POST", "/api/ask-astrologer"),
+        ("POST", "/api/life-questions/some-id/answer"),
+        ("GET", "/api/report.pdf"), ("GET", "/api/complete-report.pdf"),
+        # HEAD on a heavy GET must not bypass the limiter.
+        ("HEAD", "/api/report.pdf"),
+    ]:
+        assert heavy(method, path), (method, path)
+    for method, path in [
+        ("GET", "/health"), ("HEAD", "/health"),
+        ("GET", "/api/places"), ("GET", "/api/panchang"),
+        ("GET", "/api/life-questions"), ("GET", "/api/life-questions/some-id"),
+        ("POST", "/api/unknown"),
+    ]:
+        assert not heavy(method, path), (method, path)
+
+
+def test_rate_limit_trips_on_newly_covered_endpoints(monkeypatch):
+    import main as main_module
+    monkeypatch.setenv("VEDIC_RL_LIMIT", "1")
+    main_module._RL_BUCKETS.clear()
+    assert client.post("/api/complete-report", json={**SAMPLE}).status_code == 200
+    r = client.post("/api/life-areas", json={**SAMPLE})
+    assert r.status_code == 429
+    assert r.headers["Retry-After"] == "60"
+    # The 429 itself carries the security headers.
+    assert r.headers["X-Content-Type-Options"] == "nosniff"
+    assert r.headers["X-Frame-Options"] == "SAMEORIGIN"
+    main_module._RL_BUCKETS.clear()
+
+
+def test_oversized_date_and_name_params_rejected():
+    r = client.get("/api/bs", params={"date": "2" * 500})
+    assert r.status_code == 422
+    r = client.get("/api/muhurta", params={"date_from": "2" * 500})
+    assert r.status_code == 422
+    r = client.get("/api/report.pdf", params={
+        "dob": "1998-05-14", "tob": "06:30", "place_id": "kathmandu",
+        "name": "n" * 500})
+    assert r.status_code == 422
+    r = client.post("/api/prashna", json={
+        "number": 42, "question": "q", "place_name": "p" * 500,
+        "place_id": "kathmandu"})
+    assert r.status_code == 422
