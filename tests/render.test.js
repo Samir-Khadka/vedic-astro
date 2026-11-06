@@ -349,6 +349,43 @@ test("esc escapes HTML special characters", () => {
   assert.equal(h.esc(42), "42");
 });
 
+/* ---- 2026-11-06: Phase 4/5 sign-name bug ----
+   renderP4/renderP5 passed sign NAME strings ("Scorpio", "Aries", …) to
+   signName(), which indexes SIGNS_EN/SIGNS_NE by NUMBER — so the Ishta
+   Devta line, transit calendar, Ashtakavarga gochar and Arudha padas
+   all printed "undefined" instead of the sign. The fixture bundles
+   lacked these Phase 4/5 sections, which is why no test caught it. */
+test("Phase 4/5 sign names render as names, never \"undefined\"", () => {
+  const base = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "b_sample.json"), "utf8"));
+  base.ishta_devta = { deity_en: "Skanda (Subrahmanya)", deity_ne: "स्कन्द (सुब्रह्मण्य)",
+    indicator_planet: "Mars", jivanmuktamsa_en: "Scorpio", jivanmuktamsa_ne: "वृश्चिक" };
+  base.transit_calendar = { events: [{ planet: "Saturn", date: "2027-06-02",
+    from_sign_en: "Taurus", to_sign_en: "Aries", to_sign_ne: "मेष" }] };
+  base.ashtakavarga_gochar = { saturn: { sav: 30 }, jupiter: { sav: 28 },
+    days: [{ date: "2026-11-06", moon_sign_en: "Virgo", sav: 30, verdict: "favourable" }] };
+  base.arudha_padas = { padas: [{ house: 1, arudha_sign: 9,
+    arudha_en: "Capricorn", arudha_ne: "मकर", label: "A1" }] };
+  for (const lang of ["en", "ne"]) {
+    const { h, el } = loadApp({ lang });
+    h.STATE.bundle = JSON.parse(JSON.stringify(base));
+    h.STATE.birthPayload = { dob: "1998-05-14", tob: "06:30", place_id: "kathmandu" };
+    h.renderBundle();
+    const ne = lang === "ne";
+    const ishta = el("ishta-meta").textContent;
+    assert.ok(!ishta.includes("undefined"), `${lang}: Ishta Devta must not print undefined: ${ishta}`);
+    assert.ok(ishta.includes(ne ? "वृश्चिक" : "Scorpio"), `${lang}: Ishta Devta shows the sign: ${ishta}`);
+    const tcal = el("tcal-list").innerHTML;
+    assert.ok(!tcal.includes("undefined"), `${lang}: transit calendar must not print undefined`);
+    assert.ok(tcal.includes(ne ? "मेष" : "Aries"), `${lang}: transit calendar shows the sign`);
+    const gochar = el("av-gochar-list").innerHTML;
+    assert.ok(!gochar.includes("undefined"), `${lang}: AV gochar must not print undefined`);
+    assert.ok(gochar.includes(ne ? "कन्या" : "Virgo"), `${lang}: AV gochar shows the Moon sign`);
+    const arudha = el("arudha-list").innerHTML;
+    assert.ok(!arudha.includes("undefined"), `${lang}: Arudha padas must not print undefined`);
+    assert.ok(arudha.includes(ne ? "मकर" : "Capricorn"), `${lang}: Arudha padas show the sign`);
+  }
+});
+
 test("renderSavedList escapes user-controlled name/place (stored XSS guard)", () => {
   const { h, el, store } = loadApp({ lang: "en" });
   store.set("vedic-astro-charts", JSON.stringify([{

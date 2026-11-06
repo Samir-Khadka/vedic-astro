@@ -533,6 +533,13 @@ let LANG = localStorage.getItem("vedic-astro-lang") || "en";
 const t = (key) => (I18N[LANG] && I18N[LANG][key]) || I18N.en[key] || key;
 const planetName = (p) => (LANG === "ne" ? (PLANET_NE[p] || p) : p);
 const signName = (s) => (LANG === "ne" ? SIGNS_NE[s] : SIGNS_EN[s]);
+/* Some endpoints ship sign NAMES ("Leo") rather than indices — resolve
+   the English name back through the table, so the Nepali name still
+   renders instead of "undefined" (signName() indexes by number). */
+const signNameFromEn = (name) => {
+  const i = SIGNS_EN.indexOf(name);
+  return i >= 0 ? signName(i) : (name || "—");
+};
 const bi = (obj) => (obj ? (obj[LANG] || obj.en || "") : "");
 
 const STATE = { bundle: null, birthPayload: null, match: null, varga: "D1", completeReportModel: "detailed",
@@ -1727,7 +1734,7 @@ function renderP4(b) {
   if (b.transit_calendar) {
     document.getElementById("tcal-list").innerHTML = b.transit_calendar.events.map((e) =>
       `<div class="tl-row"><span class="tl-lord">${planetName(e.planet)}</span> ` +
-      `${e.date} → ${signName(e.to_sign_en)}</div>`).join("");
+      `${e.date} → ${LANG === "ne" ? (e.to_sign_ne || e.to_sign_en) : e.to_sign_en}</div>`).join("");
   }
   // Favourable periods
   if (b.favourable_periods) {
@@ -1747,7 +1754,7 @@ function renderP4(b) {
     const deity = (typeof LANG !== "undefined" && LANG === "ne") ? id.deity_ne : id.deity_en;
     document.getElementById("ishta-meta").textContent =
       `${deity} · ${L("via", "मार्फत")} ${planetName(id.indicator_planet)} ` +
-      `(${L("12th from Karakamsa", "कारकांशबाट १२औं")}: ${signName(id.jivanmuktamsa_en)})`;
+      `(${L("12th from Karakamsa", "कारकांशबाट १२औं")}: ${LANG === "ne" ? (id.jivanmuktamsa_ne || id.jivanmuktamsa_en) : id.jivanmuktamsa_en})`;
   }
   // Baby name
   if (b.baby_name) {
@@ -1795,7 +1802,7 @@ function renderP5(b) {
         const cls = d.verdict === "favourable" ? " is-current" : "";
         const mark = d.verdict === "favourable" ? "✓" : (d.verdict === "challenging" ? "✗" : "·");
         return `<div class="tl-row${cls}"><span class="tl-lord">${d.date}</span> ` +
-          `${mark} ${signName(d.moon_sign_en)} SAV ${d.sav}</div>`;
+          `${mark} ${signNameFromEn(d.moon_sign_en)} SAV ${d.sav}</div>`;
       }).join("");
   }
   // Arudha padas
@@ -1803,7 +1810,7 @@ function renderP5(b) {
     document.getElementById("arudha-list").innerHTML =
       b.arudha_padas.padas.map((p) =>
         `<div class="tl-row"><span class="tl-lord">${p.label}</span> ` +
-        `${L("House", "भाव")} ${p.house} → ${signName(p.arudha_en)}</div>`).join("");
+        `${L("House", "भाव")} ${p.house} → ${LANG === "ne" ? (p.arudha_ne || p.arudha_en) : p.arudha_en}</div>`).join("");
   }
 }
 /* ---------------- World-class layer: Chalit, Prastara, KP events, Sudarshana --- */
