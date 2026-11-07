@@ -9,11 +9,14 @@ Sources and method notes (our own wording of the published rules):
   uses one documented simplification, an 8-degree orb for every
   aspect, so every result is reproducible.
 * Ithasala: the faster of two planets is APPLYING toward an aspect
-  with the slower one (the angular distance to the aspect shrinks
-  over the next day). Isharpha/Eesarpha: the faster planet is
-  SEPARATING from the aspect (distance grows). Applying vs
-  separating is judged by linear extrapolation of the two planets'
-  signed daily speeds — this handles retrograde motion correctly.
+  with the slower one (the angular distance to the aspect shrinks).
+  Isharpha/Eesarpha: the faster planet is SEPARATING from the aspect
+  (distance grows). Applying vs separating is judged by a short-step
+  linear extrapolation of the two planets' signed speeds — this
+  handles retrograde motion correctly, and the short step matters:
+  the Moon moves ~13 deg/day, so a full-day step would carry it
+  THROUGH an aspect it is applying toward and misread it as
+  separating.
 * Nakta (translation of light): two planets with no mutual aspect,
   but a third planet faster than both aspects both of them.
 * Yamaya (collection of light): two planets with no mutual aspect,
@@ -59,6 +62,8 @@ from .names import (
 )
 
 ORB = 8.0
+# Short step (days) for the applying/separating test — see _applying.
+_APPLY_STEP_DAYS = 0.01
 ASPECTS = (0.0, 60.0, 90.0, 120.0, 180.0)
 GRAHAS_7 = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"]
 KENDRA = {1, 4, 7, 10}
@@ -100,9 +105,17 @@ def _in_aspect(lon_a: float, lon_b: float) -> bool:
 def _applying(faster_lon: float, faster_speed: float,
               slower_lon: float, slower_speed: float) -> bool:
     """True if the faster planet moves TOWARD the aspect with the slower
-    planet over the next day (linear extrapolation of signed speeds)."""
+    planet (linear extrapolation of signed speeds over a short step).
+
+    The step must be short: the Moon moves ~13 deg/day, so a full-day
+    step would carry it through an aspect it is applying toward and
+    misread the pair as separating. 0.01 day (~14 min) moves the Moon
+    only ~0.13 deg, so overshoot needs the pair within ~9 arc-minutes
+    of exact aspect, where applying/separating is a coin flip anyway.
+    """
     d0, _ = _aspect_distance(faster_lon, slower_lon)
-    d1, _ = _aspect_distance(faster_lon + faster_speed, slower_lon + slower_speed)
+    d1, _ = _aspect_distance(faster_lon + faster_speed * _APPLY_STEP_DAYS,
+                             slower_lon + slower_speed * _APPLY_STEP_DAYS)
     return d1 < d0
 
 
