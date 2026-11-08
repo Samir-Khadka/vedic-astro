@@ -248,3 +248,95 @@ def test_saturn_moon_span_retrograde_dip_boundaries():
     cur = next(p for p in lt["periods"] if p["status"] == "current")
     for key in ("start", "peak_start", "setting_start", "end"):
         assert span2[key] == cur[key], (key, span2[key], cur[key])
+
+
+def test_ingress_events_match_direct_walk():
+    """The shared ingress walk must return the exact JDs the direct
+    ingress_jd scan finds — same bisection, same tolerance, just
+    computed once instead of once per caller."""
+    from astro import transits
+    jd = ephemeris.to_julian_day(datetime(2026, 11, 2, 0, 0))
+    for planet in ("Saturn", "Jupiter", "Rahu"):
+        transits._INGRESS_MEMO.clear()
+        shared = transits._ingress_events(planet, jd, jd + 5 * 365.25)
+        transits._INGRESS_MEMO.clear()
+        direct = []
+        cursor = jd
+        while cursor < jd + 5 * 365.25:
+            njd = transits.ingress_jd(planet, cursor)
+            if njd > jd + 5 * 365.25:
+                break
+            direct.append((njd, transits._sign_at(planet, njd + 0.01)))
+            cursor = njd + 1.0
+        assert len(shared) == len(direct) and len(shared) > 0, planet
+        for (sj, ss), (dj, ds) in zip(shared, direct):
+            assert abs(sj - dj) < 1e-9 and ss == ds, (planet, sj, dj)
+
+
+def test_shared_saturn_walk_serves_span_and_chain():
+    """After the lifetime walk is built, the Sade Sati span, the Saturn
+    10-year chain and the next Saturn ingress must cost ~no new sign
+    lookups — they slice the same walk instead of re-scanning."""
+    from astro import ephemeris as eph
+    from astro import transits
+    jd_now = ephemeris.to_julian_day(datetime(2026, 11, 8, 0, 0))
+    jd_birth = ephemeris.to_julian_day(datetime(1998, 5, 14, 6, 30))
+    transits._INGRESS_MEMO.clear()
+    calls = [0]
+    orig = eph.planet_sign_at
+
+    def counting(name, jd):
+        calls[0] += 1
+        return orig(name, jd)
+
+    eph.planet_sign_at = counting
+    try:
+        transits.sade_sati_lifetime(11, jd_birth, jd_now)
+        assert calls[0] > 1000  # the walk itself still costs the scans
+        calls[0] = 0
+        span = transits.saturn_moon_span(11, jd_now)
+        chain = transits.ingress_chain("Saturn", jd_now, jd_now + 10.2 * 365.25)
+        nxt = transits.next_ingress("Saturn", jd_now)
+        assert span is not None and chain and nxt["date"] == chain[0]["date"]
+        assert calls[0] <= 10, calls[0]
+    finally:
+        eph.planet_sign_at = orig
+
+
+def test_next_ingress_fast_path_matches_direct_scan():
+    """next_ingress must agree whether it answers from a covering walk
+    or from its direct scan — including for a fast planet (Sun), where
+    the direct scan is the only correct route (a whole-window walk
+    would compute dozens of ingresses to answer 'the next one')."""
+    from astro import transits
+    jd = ephemeris.to_julian_day(datetime(2026, 11, 2, 0, 0))
+    transits._INGRESS_MEMO.clear()
+    direct = transits.next_ingress("Sun", jd)
+    transits.ingress_chain("Sun", jd, jd + 900.0)  # builds the covering walk
+    via_memo = transits.next_ingress("Sun", jd)
+    assert via_memo == direct
+    assert transits.next_ingress("Mars", jd)["date"] == (
+        transits.ingress_chain("Mars", jd, jd + 900.0)[0]["date"])
+
+
+def test_compute_kundali_lookup_budget():
+    """Regression guard for the shared-walk optimisation: one chart must
+    stay well under the ~11k single-planet sign lookups the unshared
+    scanners needed (measured ~9.0k after the change)."""
+    from astro import ephemeris as eph
+    from astro import transits
+    transits._INGRESS_MEMO.clear()
+    calls = [0]
+    orig = eph.planet_sign_at
+
+    def counting(name, jd):
+        calls[0] += 1
+        return orig(name, jd)
+
+    eph.planet_sign_at = counting
+    try:
+        engine.compute_kundali(SAMPLE, now=datetime(2026, 11, 8, 12, 0,
+                                                     tzinfo=ZoneInfo("Asia/Kathmandu")))
+    finally:
+        eph.planet_sign_at = orig
+    assert calls[0] < 10000, calls[0]

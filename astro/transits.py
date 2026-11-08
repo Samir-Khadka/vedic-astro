@@ -40,6 +40,35 @@ def _jd_to_date(jd: float) -> str:
 _BISECT_TOL = 1e-6
 
 
+# One cached ingress walk per planet: ingresses are global astronomical
+# events, so a walk built for one chart serves every later caller whose
+# range it covers. The lifetime walk (birth -> birth+100y) covers the
+# Sade Sati span, the 10-year chains, the transit calendar and the next
+# ingress lookups, so those stop re-scanning the same ingresses. A
+# range outside the cached walk is rebuilt for exactly that range —
+# never worse than the old per-call scans. One entry per planet, so
+# the cache is bounded; entries are (jd, to_sign) pairs, computed by
+# the same ingress_jd / bisection code as before.
+_INGRESS_MEMO: dict[str, dict] = {}
+
+
+def _ingress_events(planet: str, lo: float, hi: float) -> list[tuple[float, int]]:
+    """Consecutive ingresses of `planet` in [lo, hi] as (jd, to_sign)."""
+    memo = _INGRESS_MEMO.get(planet)
+    if memo is not None and memo["lo"] <= lo and memo["hi"] >= hi:
+        return [(jd, s) for jd, s in memo["events"] if lo <= jd <= hi]
+    events: list[tuple[float, int]] = []
+    cursor = lo
+    while cursor < hi:
+        njd = ingress_jd(planet, cursor)
+        if njd > hi:
+            break
+        events.append((njd, _sign_at(planet, njd + 0.01)))
+        cursor = njd + 1.0
+    _INGRESS_MEMO[planet] = {"lo": lo, "hi": hi, "events": events}
+    return events
+
+
 def _bisect_ingress(planet: str, lo: float, hi: float, start_sign: int,
                     forward: bool) -> float:
     """Canonical ingress moment inside the bracket [lo, hi].
@@ -68,6 +97,22 @@ def _bisect_ingress(planet: str, lo: float, hi: float, start_sign: int,
 
 def next_ingress(planet: str, jd_from: float, max_days: float = 900.0) -> dict:
     """Next moment after `jd_from` at which `planet` changes sign."""
+    memo = _INGRESS_MEMO.get(planet)
+    if memo is not None and memo["lo"] <= jd_from and memo["hi"] >= jd_from + max_days:
+        events = [(jd, s) for jd, s in memo["events"]
+                  if jd_from < jd <= jd_from + max_days]
+        if events:
+            jd_ing, to_sign = events[0]
+            return {
+                "planet": planet,
+                "from_sign": _sign_at(planet, jd_from),
+                "to_sign": to_sign,
+                "date": _jd_to_date(jd_ing),
+            }
+        raise ValueError(f"no ingress found for {planet}")
+    # No covering walk: scan directly for the one ingress (the shared
+    # walk builds a whole window, which for fast planets like the Sun
+    # would be dozens of ingresses just to answer "the next one").
     start_sign = _sign_at(planet, jd_from)
     step = _STEP_DAYS[planet]
     lo = jd_from
@@ -90,6 +135,21 @@ def next_ingress(planet: str, jd_from: float, max_days: float = 900.0) -> dict:
 def prev_ingress(planet: str, jd_from: float, max_days: float = 1200.0) -> dict:
     """The most recent sign ingress of `planet` at or before `jd_from` —
     i.e. when it entered the sign it occupies at `jd_from`."""
+    memo = _INGRESS_MEMO.get(planet)
+    if memo is not None and memo["lo"] <= jd_from - max_days and memo["hi"] >= jd_from:
+        events = [(jd, s) for jd, s in memo["events"]
+                  if jd_from - max_days <= jd <= jd_from]
+        if events:
+            jd_ing, _to_sign = events[-1]
+            return {
+                "planet": planet,
+                "from_sign": _sign_at(planet, jd_ing - 0.01),
+                "to_sign": _sign_at(planet, jd_from),
+                "date": _jd_to_date(jd_ing),
+                "jd": jd_ing,
+            }
+        raise ValueError(f"no previous ingress found for {planet}")
+    # No covering walk: scan directly for the one ingress.
     start_sign = _sign_at(planet, jd_from)
     step = _STEP_DAYS[planet]
     hi = jd_from
@@ -127,19 +187,20 @@ def ingress_jd(planet: str, jd_from: float) -> float:
 def ingress_chain(planet: str, jd_from: float, jd_to: float) -> list[dict]:
     """Every ingress of `planet` in (jd_from, jd_to], chronological:
     [{planet, from_sign, to_sign, date}]."""
+    events = _ingress_events(planet, jd_from, jd_to)
     out = []
-    cursor = jd_from
-    while cursor < jd_to:
-        njd = ingress_jd(planet, cursor)
-        if njd > jd_to:
-            break
+    # No sign change happens between jd_from and the first event, or
+    # between consecutive events, so the running sign is exact — the
+    # same from_sign the old per-row _sign_at(njd - 0.01) returned.
+    cur_sign = _sign_at(planet, jd_from)
+    for njd, to_sign in events:
         out.append({
             "planet": planet,
-            "from_sign": _sign_at(planet, njd - 0.01),
-            "to_sign": _sign_at(planet, njd + 0.01),
+            "from_sign": cur_sign,
+            "to_sign": to_sign,
             "date": _jd_to_date(njd),
         })
-        cursor = njd + 1.0
+        cur_sign = to_sign
     return out
 
 
@@ -167,25 +228,31 @@ def saturn_moon_span(moon_sign: int, jd_now: float) -> dict | None:
     beyond = (moon_sign + 3) % 12
     targets = (rising, peak, setting, end_target)
     found: dict[int, float] = {}
+    # One shared walk covers both directions (the lifetime walk already
+    # built it in the usual compute_kundali order, so this is a slice).
     # Backwards: entry dates for targets at or before now. Overwriting
     # as we walk back resolves retrograde re-entries to the FIRST entry.
-    back_jd = jd_now
-    for _ in range(12):
-        ing = prev_ingress("Saturn", back_jd)
-        if ing["to_sign"] in targets:
-            found[ing["to_sign"]] = ing["jd"]
-        back_jd = ing["jd"] - 1.0
-        if jd_now - back_jd > 3650:
-            break
+    # Same window as before: at most 12 ingresses, at most 3650 days back.
+    events = _ingress_events("Saturn", jd_now - 3650.0, jd_now + 20 * 365.25)
+    past = [e for e in events if e[0] <= jd_now]
+    for jd, to_sign in reversed(past[-12:]):
+        if to_sign in targets:
+            found[to_sign] = jd
     # Forwards: first future entries into the rising/peak/setting signs;
     # the END keeps updating until Saturn has moved past the span.
+    # Same cap as before: at most 16 ingresses forward; if the shared
+    # walk runs out first, fall back to direct scans for the remainder.
+    fwd_iter = iter(e for e in events if e[0] > jd_now)
     fwd_jd = jd_now
     past_end = False
     for _ in range(16):
         if all(t in found for t in targets) and past_end:
             break
-        njd = ingress_jd("Saturn", fwd_jd)
-        nsign = _sign_at("Saturn", njd + 0.01)
+        try:
+            njd, nsign = next(fwd_iter)
+        except StopIteration:
+            njd = ingress_jd("Saturn", fwd_jd)
+            nsign = _sign_at("Saturn", njd + 0.01)
         if nsign == end_target or (nsign in targets and nsign not in found):
             found[nsign] = njd
         if nsign == beyond and end_target in found:
@@ -257,15 +324,9 @@ def sade_sati_lifetime(moon_sign: int, jd_birth: float, jd_now: float,
     """
     in_set = {(moon_sign - 1) % 12, moon_sign, (moon_sign + 1) % 12}
     jd_end = jd_birth + years * 365.25
-    # Walk ingresses with their JDs.
-    events: list[tuple[float, int]] = []  # (jd, to_sign)
-    cursor = jd_birth
-    while cursor < jd_end:
-        njd = ingress_jd("Saturn", cursor)
-        if njd > jd_end:
-            break
-        events.append((njd, _sign_at("Saturn", njd + 0.01)))
-        cursor = njd + 1.0
+    # Walk ingresses with their JDs — the shared walk, so the span,
+    # chains and next-ingress lookups later reuse these same events.
+    events = _ingress_events("Saturn", jd_birth, jd_end)
     # Raw in-set intervals between consecutive events.
     intervals: list[tuple[float, float]] = []
     cur_sign = _sign_at("Saturn", jd_birth)

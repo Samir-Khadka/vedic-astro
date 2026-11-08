@@ -282,6 +282,12 @@ def compute_kundali(payload: dict, now: datetime | None = None,
                               birth_dt, place["lat"], place["lon"], place["tz"], jd)
     bb = bala_module.bhava_bala(planets, lagna_sign, cusps, sb)
     vs = bala_module.vimshopaka(planets, varga_charts)
+    # Lifetime Sade Sati FIRST: its 100-year Saturn walk is the widest
+    # one this chart needs, so the span, the 10-year chains, the transit
+    # calendar and the next-ingress lookups below all slice the same
+    # cached walk instead of re-scanning the same ingresses.
+    sade_lifetime = transits_module.sade_sati_lifetime(
+        planets["Moon"]["sign"], jd, jd_now)
     transit_tbl = transits_module.transit_table(jd_now, planets["Moon"]["sign"])
     lk = lk_module.lal_kitab(planets)
     yogini = dasha_module.yogini_periods(birth_dt, planets["Moon"]["longitude"], now)
@@ -410,7 +416,6 @@ def compute_kundali(payload: dict, now: datetime | None = None,
     is_day_birth = bool(rise and set_ and rise <= birth_dt <= set_)
     ashto_applies = dasha_module.ashtottari_applicability(
         planets, lagna_sign, is_day_birth, birth_panchang["paksha"])
-    sade_lifetime = transits_module.sade_sati_lifetime(natal_moon_sign, jd, jd_now)
     lk_dasha = lk_module.lal_kitab_dasha(birth_dt, now)
 
     planet_rows = []
