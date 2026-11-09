@@ -22,7 +22,7 @@ from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from . import ephemeris, transits as transits_module
-from .names import PLANET_NE, SIGNS_EN, SIGNS_NE
+from .names import PLANET_NE, SIGNS_EN, SIGNS_NE, ordinal_en
 
 _AREAS = {
     "career": {
@@ -138,8 +138,8 @@ def horoscope(moon_sign: int, span: str, ref_day: date, tz_name: str) -> dict:
         extra["ingresses"] = sorted(ingresses, key=lambda x: x["date"])
 
     moon_house = houses["Moon"]["house"]
-    summary_en = (f"With the Moon in your {moon_house}th house from your Moon sign and "
-                  f"Jupiter in the {houses['Jupiter']['house']}th, the {span} rhythm is set "
+    summary_en = (f"With the Moon in your {ordinal_en(moon_house)} house from your Moon sign and "
+                  f"Jupiter in the {ordinal_en(houses['Jupiter']['house'])}, the {span} rhythm is set "
                   f"by the Moon's movement and the slow planets' houses.")
     summary_ne = (f"चन्द्र तपाईंको चन्द्र राशिबाट {moon_house}औं भावमा र बृहस्पति "
                   f"{houses['Jupiter']['house']}औं भावमा रहेकाले {span} को लय चन्द्रमाको गति र "

@@ -3,7 +3,7 @@ be stated exactly. Each hit returns the yoga name and the factual basis."""
 from __future__ import annotations
 
 from .charts import dignity, house_of, house_lords, sign_of_house
-from .names import PLANETS_7, SIGN_LORDS
+from .names import PLANETS_7, SIGN_LORDS, ordinal_en as _ord
 
 MAHAPURUSHA = {
     "Mars": "Ruchaka", "Mercury": "Bhadra", "Jupiter": "Hamsa",
@@ -11,15 +11,6 @@ MAHAPURUSHA = {
 }
 KENDRA = {1, 4, 7, 10}
 TRIKONA = {1, 5, 9}
-
-
-def _ord(n: int) -> str:
-    """English ordinal: 1st, 2nd, 3rd, 4th, ..."""
-    if 10 <= n % 100 <= 20:
-        suffix = "th"
-    else:
-        suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
-    return f"{n}{suffix}"
 
 
 def _sign(planets: dict, name: str) -> int:

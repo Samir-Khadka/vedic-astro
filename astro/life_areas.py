@@ -33,7 +33,7 @@ which always adds a see-a-clinician line to health answers.
 
 from __future__ import annotations
 
-from .names import PLANET_NE, SIGNS_EN, SIGNS_NE, SIGN_LORDS
+from .names import PLANET_NE, SIGNS_EN, SIGNS_NE, SIGN_LORDS, ordinal_en as _ordinal_en
 
 PLANETS = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus",
            "Saturn", "Rahu", "Ketu"]
@@ -116,11 +116,6 @@ AREAS = {
 
 AREA_ORDER = ["personality", "career", "finance", "marriage",
               "health", "education", "family_home", "foreign"]
-
-
-def _ordinal_en(h: int) -> str:
-    suf = {1: "st", 2: "nd", 3: "rd"}.get(h, "th")
-    return f"{h}{suf}"
 
 
 def _house_of_sign(sign: int, lagna_sign: int) -> int:

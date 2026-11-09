@@ -20,7 +20,7 @@ treats a weak promise as "effort and remedy first".
 from __future__ import annotations
 
 from .charts import house_of
-from .names import PLANET_NE, SIGNS_EN, SIGNS_NE
+from .names import PLANET_NE, SIGNS_EN, SIGNS_NE, ordinal_en
 
 EVENTS = {
     "marriage": {"en": "Marriage", "ne": "विवाह", "houses": [2, 7, 11]},
@@ -83,7 +83,7 @@ def kp_event_analysis(kp: dict, dasha_tree: dict, transit_signs: dict,
                 transit_hits[planet] = h
 
         summary_en = (
-            f"Cuspal sub lord {sub_lord} of the {primary}th house signifies "
+            f"Cuspal sub lord {sub_lord} of the {ordinal_en(primary)} house signifies "
             f"{', '.join(map(str, fav_hits)) or 'none of the event houses'}"
             + (f" (negating: {', '.join(map(str, neg_hits))})" if neg_hits else "")
             + f". Verdict: {verdict}."

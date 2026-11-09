@@ -24,7 +24,7 @@ with the rest of the engine.
 from __future__ import annotations
 
 from .charts import house_of
-from .names import HOUSE_THEMES_EN, HOUSE_THEMES_NE, PLANET_NE
+from .names import HOUSE_THEMES_EN, HOUSE_THEMES_NE, PLANET_NE, ordinal_en
 
 MALEFICS = {"Sun", "Mars", "Saturn", "Rahu", "Ketu"}
 PLANETS_9 = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"]
@@ -97,15 +97,15 @@ def argala_for_house(house: int, planet_houses: dict[str, int]) -> dict:
     theme_en, theme_ne = HOUSE_THEMES_EN[house], HOUSE_THEMES_NE[house]
     if verdict == "argala":
         reading = _bi(
-            f"Argala prevails for the {house}th house ({theme_en}): {', '.join(_names(argala))} intervene in its favour.",
+            f"Argala prevails for the {ordinal_en(house)} house ({theme_en}): {', '.join(_names(argala))} intervene in its favour.",
             f"{house}औँ भाव ({theme_ne}) का लागि अर्गला प्रबल छ: {', '.join(_names(argala))} ले यसको पक्षमा हस्तक्षेप गर्छन्।")
     elif verdict == "obstructed":
         reading = _bi(
-            f"The {house}th house ({theme_en}) is obstructed: {', '.join(_names(virodh))} stand against its Argala.",
+            f"The {ordinal_en(house)} house ({theme_en}) is obstructed: {', '.join(_names(virodh))} stand against its Argala.",
             f"{house}औँ भाव ({theme_ne}) अवरुद्ध छ: {', '.join(_names(virodh))} यसको अर्गलाको विरुद्धमा उभिएका छन्।")
     else:
         reading = _bi(
-            f"No Argala or obstruction touches the {house}th house ({theme_en}).",
+            f"No Argala or obstruction touches the {ordinal_en(house)} house ({theme_en}).",
             f"{house}औँ भाव ({theme_ne}) मा कुनै अर्गला वा अवरोध छैन।")
     return {
         "house": house,

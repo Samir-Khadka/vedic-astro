@@ -42,7 +42,7 @@ verdict.
 from __future__ import annotations
 
 from .life_questions import DISCLAIMER_EN, DISCLAIMER_NE
-from .names import PLANET_NE
+from .names import PLANET_NE, ordinal_en as _ordinal
 
 # Questions whose answers must never read as deterministic medical,
 # legal or personal claims (see life_questions.py docstring).
@@ -88,17 +88,6 @@ EXPLAIN_NE = (
 )
 
 
-
-def _ordinal(h: int) -> str:
-    if h in (1, 21, 31):
-        suf = "st"
-    elif h in (2, 22):
-        suf = "nd"
-    elif h in (3, 23):
-        suf = "rd"
-    else:
-        suf = "th"
-    return f"{h}{suf}"
 
 def _class_of(house: int, q: dict) -> str:
     if house in (q.get("prime_houses") or []):

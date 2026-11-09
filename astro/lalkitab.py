@@ -46,7 +46,7 @@
 """
 from __future__ import annotations
 
-from .names import HOUSE_THEMES_EN, HOUSE_THEMES_NE, PLANET_NE, SIGNS_EN, SIGNS_NE
+from .names import HOUSE_THEMES_EN, HOUSE_THEMES_NE, PLANET_NE, SIGNS_EN, SIGNS_NE, ordinal_en
 
 PAKKA_GHAR = {
     "Sun": [1], "Moon": [4], "Mars": [3, 8], "Mercury": [6, 7],
@@ -171,7 +171,7 @@ def lal_kitab(planets: dict) -> dict:
         nature_en, nature_ne = _PLANET_NATURE[name]
         note = _CLASSICAL_NOTES.get((name, k))
         reading_en = (f"In the Lal Kitab frame, {name} in khana {k} ({SIGNS_EN[k-1]}) brings its themes of "
-                      f"{nature_en} into the matters of the {k}th khana ({HOUSE_THEMES_EN[k]}).")
+                      f"{nature_en} into the matters of the {ordinal_en(k)} khana ({HOUSE_THEMES_EN[k]}).")
         reading_ne = (f"लाल किताबको ढाँचामा, {PLANET_NE[name]} खाना {k} ({SIGNS_NE[k-1]}) मा हुँदा यसका विषय — "
                       f"{nature_ne} — {k}औँ खानाका मामिलामा ({HOUSE_THEMES_NE[k]}) ल्याउँछ।")
         if note:

@@ -45,7 +45,7 @@ import re
 import unicodedata
 
 from .life_areas import AREAS, AREA_ORDER, PLANETS, NATURE, analyse, aspected_houses, house_lords
-from .names import PLANET_NE, SIGNS_EN, SIGNS_NE
+from .names import PLANET_NE, SIGNS_EN, SIGNS_NE, ordinal_en as _ordinal_en
 
 try:
     from .life_answers import _score_evidence
@@ -369,10 +369,6 @@ def _disclaimer(area_id: str) -> tuple[str, str]:
 def _suggestions() -> list[dict]:
     return [{"id": a, "title_en": AREAS[a][1], "title_ne": AREAS[a][2]}
             for a in AREA_ORDER]
-
-
-def _ordinal_en(h: int) -> str:
-    return f"{h}{'st' if h == 1 else 'nd' if h == 2 else 'rd' if h == 3 else 'th'}"
 
 
 def build_answer(question_text: str, bundle_or_horary: dict, lang: str = "en") -> dict:

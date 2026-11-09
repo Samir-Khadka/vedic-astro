@@ -134,7 +134,7 @@ function loadApp({ lang = "en", throwOnSave = false, fetchScript = null } = {}) 
   vm.runInContext(fs.readFileSync(path.join(ROOT, "static/coords.js"), "utf8"), sandbox);
   Object.assign(sandbox, sandbox.module.exports);
   const appSrc = fs.readFileSync(path.join(ROOT, "static/app.js"), "utf8") +
-    "\n;globalThis.__harness = { STATE, renderBundle, saveCurrentChart, drawChartInto, renderMatch, renderPrashna, fetchKundaliWithRetry, isRetryableKundaliError, signColHeader, settlePlaceTz, PLACE_TZ_PENDING, ensureManualTz, renderSavedList, esc };";
+    "\n;globalThis.__harness = { STATE, renderBundle, saveCurrentChart, drawChartInto, renderMatch, renderPrashna, fetchKundaliWithRetry, isRetryableKundaliError, signColHeader, settlePlaceTz, PLACE_TZ_PENDING, ensureManualTz, renderSavedList, esc, ordEn };";
   vm.runInContext(appSrc, sandbox);
   // el(id) mirrors document.getElementById (creating the stub on demand);
   // the raw Map only holds ids the app code actually touched.
@@ -294,6 +294,19 @@ test("bindu-table headers show whole Nepali sign names, truncated English", () =
   assert.equal(hen.signColHeader(7), "Scor", "English keeps the 4-letter form");
   for (let i = 0; i < 12; i++) {
     assert.ok(hen.signColHeader(i).length <= 4, `en header ${i} fits the column`);
+  }
+});
+
+/* ---- 2026-11-09: ordinal fix ----
+   Chandrabala printed `${position}th` ("1th from Moon"); the same bare
+   `${n}th` pattern printed "1th/2th/3th house" in the horoscope summary,
+   Argala readings, KP event summaries and Lal Kitab khana readings
+   (backend sites fixed via astro.names.ordinal_en). */
+test("ordEn gives correct English ordinals (no 1th/2th/3th)", () => {
+  const { h } = loadApp({ lang: "en" });
+  const cases = { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 11: "11th", 12: "12th", 13: "13th", 21: "21st", 22: "22nd", 23: "23rd", 111: "111th" };
+  for (const [n, want] of Object.entries(cases)) {
+    assert.equal(h.ordEn(Number(n)), want, `ordEn(${n})`);
   }
 });
 

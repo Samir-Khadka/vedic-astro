@@ -168,3 +168,12 @@ HOUSE_THEMES_NE = {
     9: "भाग्य र धर्म", 10: "पेशा र प्रतिष्ठा", 11: "लाभ र सम्पर्क सञ्जाल",
     12: "विदेश र मुक्ति",
 }
+
+
+def ordinal_en(n: int) -> str:
+    """English ordinal: 1st, 2nd, 3rd, 4th, ... 11th, 12th, 13th, 21st."""
+    if 10 <= n % 100 <= 20:
+        suffix = "th"
+    else:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suffix}"

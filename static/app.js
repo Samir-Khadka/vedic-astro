@@ -10,6 +10,16 @@ function esc(s) {
   }[c]));
 }
 
+/* English ordinal: 1st, 2nd, 3rd, 4th, ... 11th, 12th, 13th, 21st.
+   (Bare `${n}th` printed "1th"/"2th"/"3th" — e.g. Chandrabala position.) */
+function ordEn(n) {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return String(n ?? "");
+  const suf = (v % 100 >= 11 && v % 100 <= 13) ? "th"
+    : ({ 1: "st", 2: "nd", 3: "rd" }[v % 10] || "th");
+  return `${v}${suf}`;
+}
+
 /* ---------------- i18n ---------------- */
 const SIGNS_EN = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"];
 const SIGNS_NE = ["मेष","वृष","मिथुन","कर्कट","सिंह","कन्या","तुला","वृश्चिक","धनु","मकर","कुम्भ","मीन"];
@@ -3368,7 +3378,7 @@ function crSectionHTML(sec) {
         + crSub(LANG === "ne" ? "अवस्था" : "Avasthas", crTable([t("cr_th_planet"), LANG === "ne" ? "बलादि" : "Balaadi", LANG === "ne" ? "जाग्रतादि" : "Jagratadi", t("cr_th_reading")], avRows))
         + crSub(LANG === "ne" ? "नव तारा" : "Nava Tara", `<p>${esc(LANG === "ne" ? `जन्म नक्षत्र: ${crBi({ en: nt.natal_nakshatra_en, ne: nt.natal_nakshatra_ne })}` : `Birth nakshatra: ${nt.natal_nakshatra_en || ""}`)}</p>` + crTable([t("cr_th_nakshatra"), LANG === "ne" ? "तारा" : "Tara", LANG === "ne" ? "निर्णय" : "Verdict"], taraRows))
         + (tb ? `<p>${esc(LANG === "ne" ? `आजको ताराबल: ${crBi({ en: tb.tara_en, ne: tb.tara_ne })} (${tb.verdict || ""})` : `Tarabala today: ${tb.tara_en || ""} (${tb.verdict || ""})`)}</p>` : "")
-        + (cb ? `<p>${esc(LANG === "ne" ? `आजको चन्द्रबल: ${cb.position || ""}औँ स्थान (${cb.verdict || ""})` : `Chandrabala today: ${cb.position || ""}th from Moon (${cb.verdict || ""})`)}</p>` : "");
+        + (cb ? `<p>${esc(LANG === "ne" ? `आजको चन्द्रबल: ${cb.position || ""}औँ स्थान (${cb.verdict || ""})` : `Chandrabala today: ${cb.position ? ordEn(cb.position) : ""} from Moon (${cb.verdict || ""})`)}</p>` : "");
     }
     case "sudarshan": {
       const s = d.sudarshana || {}, rings = s.rings || {};
