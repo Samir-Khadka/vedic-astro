@@ -44,6 +44,43 @@ def test_ghatasthapana_two_years():
     assert _keys(date(2026, 10, 11)) == ["ghatasthapana"]
 
 
+def test_phulpati_and_maha_ashtami_two_years():
+    # Morning-tithi rule (see astro/festivals.py): the tithi three
+    # hours after sunrise decides. Samiti via The Himalayan Times
+    # (16 Sep 2025): Phulpati 29 Sep 2025, Maha Ashtami 30 Sep
+    # 2025, Maha Navami 1 Oct 2025. Hamro Patro date pages:
+    # Phulpati 17 Oct 2026 (Ashwin 31), Maha Ashtami 18 Oct 2026
+    # (Kartik 1), Maha Navami 20 Oct 2026. The sunrise rule alone
+    # gives 18/19 Oct 2026 (one day late); the sunset rule alone
+    # gives 28/29 Sep 2025 (one day early) — that is how this bug
+    # shipped, with no test anchoring either year.
+    assert _keys(date(2025, 9, 29)) == ["phulpati"]
+    assert _keys(date(2025, 9, 30)) == ["maha_ashtami"]
+    assert _keys(date(2025, 10, 1)) == ["maha_navami"]
+    assert _keys(date(2026, 10, 17)) == ["phulpati"]
+    assert _keys(date(2026, 10, 18)) == ["maha_ashtami"]
+    assert _keys(date(2026, 10, 20)) == ["maha_navami"]
+    # The days either side carry no festival badge.
+    assert _keys(date(2025, 9, 28)) == []
+    assert _keys(date(2026, 10, 16)) == []
+
+
+def test_dashain_holiday_block_two_years():
+    # MOHA Dashain holiday block: Ashwin 13-18, 2082 (29 Sep-4 Oct
+    # 2025) and Kartik 1-6, 2083 (18-23 Oct 2026). Every day in
+    # the block carries a badge. Two days were unbadged before
+    # this fix: the long-Ashtami gap day (19 Oct 2026, sunrise
+    # tithi still Ashtami the day after Maha Ashtami) and the
+    # Dwadashi tail (4 Oct 2025, 23 Oct 2026 — the old
+    # first-occurrence check compared the shared "dashain_holiday"
+    # key, so the Ekadashi day always suppressed the Dwadashi day).
+    assert _keys(date(2025, 10, 3)) == ["dashain_holiday"]
+    assert _keys(date(2025, 10, 4)) == ["dashain_holiday"]
+    assert _keys(date(2026, 10, 19)) == ["dashain_holiday"]
+    assert _keys(date(2026, 10, 22)) == ["dashain_holiday"]
+    assert _keys(date(2026, 10, 23)) == ["dashain_holiday"]
+
+
 def test_laxmi_puja_two_years():
     # NPMC 2082: Laxmi Puja the evening of 20 Oct 2025 (Kartik 3,
     # same day as Kukur Tihar). NPMC 2083: Laxmi Puja 8 Nov 2026

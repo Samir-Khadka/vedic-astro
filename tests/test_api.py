@@ -249,3 +249,61 @@ def test_oversized_date_and_name_params_rejected():
         "number": 42, "question": "q", "place_name": "p" * 500,
         "place_id": "kathmandu"})
     assert r.status_code == 422
+
+
+def _muhurta_params(**over):
+    params = {"date_from": "2026-11-15", "date_to": "2026-11-15",
+              "place_id": "kathmandu"}
+    params.update(over)
+    return params
+
+
+def test_muhurta_unknown_activity_is_400_not_marriage_fallback():
+    # The module silently falls back to "marriage" for unknown names while
+    # echoing the caller's value — a typo got marriage scores labelled
+    # as the typo. The API must reject it instead.
+    r = client.get("/api/muhurta", params=_muhurta_params(activity="wedding"))
+    assert r.status_code == 400
+    assert "wedding" in r.json()["detail"]
+    r = client.get("/api/muhurta", params=_muhurta_params(activity="MARRIAGE"))
+    assert r.status_code == 400
+    r = client.get("/api/muhurta", params=_muhurta_params(activity="travel"))
+    assert r.status_code == 200
+    assert r.json()["activity"] == "travel"
+
+
+def test_muhurta_birth_sign_nakshatra_bounds_are_422_not_500():
+    # birth_moon_sign=99 used to reach chandrabala's SIGNS_EN[99] and 500;
+    # -1 silently wrapped to Pisces via Python negative indexing.
+    for bad in (99, 12, -1):
+        r = client.get("/api/muhurta", params=_muhurta_params(birth_moon_sign=bad))
+        assert r.status_code == 422, bad
+    for bad in (99, 27, -1):
+        r = client.get("/api/muhurta", params=_muhurta_params(birth_nakshatra=bad))
+        assert r.status_code == 422, bad
+    # Boundary values still work.
+    r = client.get("/api/muhurta", params=_muhurta_params(
+        birth_moon_sign=11, birth_nakshatra=26))
+    assert r.status_code == 200
+
+
+def test_ask_astrologer_prashna_place_is_validated_not_500():
+    # The prashna-mode place dict is raw JSON: it skipped the pydantic
+    # validators, so an out-of-range lat/lon or unknown tz reached the
+    # ephemeris and surfaced as a 500.
+    base = {"question": "Will I get the job?", "prashna_number": 42}
+    bad_places = [
+        {"lat": 999, "lon": 85.3, "tz": "Asia/Kathmandu"},
+        {"lat": 27.7, "lon": 999, "tz": "Asia/Kathmandu"},
+        {"lat": 27.7, "lon": 85.3, "tz": "Mars/Olympus"},
+        {"lat": "abc", "lon": 85.3, "tz": "Asia/Kathmandu"},
+        {"lat": True, "lon": 85.3, "tz": "Asia/Kathmandu"},
+        {"lat": 27.7, "lon": 85.3, "tz": 42},
+    ]
+    for place in bad_places:
+        r = client.post("/api/ask-astrologer", json={**base, "place": place})
+        assert r.status_code == 422, place
+    r = client.post("/api/ask-astrologer", json={
+        **base, "place": {"lat": 27.7, "lon": 85.3, "tz": "Asia/Kathmandu"}})
+    assert r.status_code == 200
+    assert r.json()["source"] == "prashna"

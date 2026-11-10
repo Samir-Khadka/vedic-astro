@@ -158,12 +158,19 @@ class BirthInput(BaseModel):
 
 
 def _validate_coords_tz(lat: float | None, lon: float | None, tz: str | None) -> None:
-    """422 guard for the GET endpoints (query params skip pydantic models)."""
-    if lat is not None and not -90.0 <= lat <= 90.0:
-        raise HTTPException(status_code=422, detail="lat must be between -90 and 90")
-    if lon is not None and not -180.0 <= lon <= 180.0:
-        raise HTTPException(status_code=422, detail="lon must be between -180 and 180")
+    """422 guard for the GET endpoints (query params skip pydantic models)
+    and for raw place dicts (e.g. /api/ask-astrologer prashna mode), where
+    the values arrive untyped JSON — a non-numeric lat/lon or a non-string
+    tz must be a 422, not a TypeError 500 further down the call chain."""
+    for v, lo, hi, name in ((lat, -90.0, 90.0, "lat"), (lon, -180.0, 180.0, "lon")):
+        if v is not None:
+            if isinstance(v, bool) or not isinstance(v, (int, float)):
+                raise HTTPException(status_code=422, detail=f"{name} must be a number")
+            if not lo <= v <= hi:
+                raise HTTPException(status_code=422, detail=f"{name} must be between {lo} and {hi}")
     if tz is not None:
+        if not isinstance(tz, str):
+            raise HTTPException(status_code=422, detail="tz must be a string")
         try:
             ZoneInfo(tz)
         except Exception:
@@ -390,6 +397,11 @@ def ask_astrologer(body: dict):
             place_dict = body.get("place")
             if not isinstance(place_dict, dict):
                 raise HTTPException(status_code=400, detail="prashna mode requires a place (place_id or lat/lon/tz)")
+            # The place dict is raw JSON, unlike BirthInput/PrashnaInput it
+            # skips pydantic validation: an out-of-range lat/lon or an
+            # unknown tz used to reach the ephemeris and surface as a 500.
+            _validate_coords_tz(place_dict.get("lat"), place_dict.get("lon"),
+                                place_dict.get("tz"))
             place = engine.resolve_place(place_dict)
             moment = datetime.now(ZoneInfo(place["tz"]))
             horary = prashna_module.horary(number, place, moment, question)
@@ -507,8 +519,8 @@ def muhurta(
     lat: float | None = None,
     lon: float | None = None,
     tz: str | None = None,
-    birth_nakshatra: int | None = None,
-    birth_moon_sign: int | None = None,
+    birth_nakshatra: int | None = Query(default=None, ge=0, le=26),
+    birth_moon_sign: int | None = Query(default=None, ge=0, le=11),
     birth_dob: str | None = Query(default=None, max_length=16),
     birth_tob: str | None = Query(default=None, max_length=16),
     birth_place_id: str | None = None,
@@ -528,6 +540,11 @@ def muhurta(
 
     _validate_coords_tz(lat, lon, tz)
     _validate_coords_tz(birth_lat, birth_lon, birth_tz)
+    if activity not in muhurta_module.ACTIVITIES:
+        # The module silently falls back to "marriage" for unknown names
+        # while echoing the caller's value — a typo'd activity would get
+        # marriage scores labelled as the typo. Reject it instead.
+        raise HTTPException(status_code=400, detail=f"unknown activity: {activity}")
     if facing not in ("any", "east", "west", "north", "south"):
         raise HTTPException(status_code=400, detail=f"unknown facing: {facing}")
     try:

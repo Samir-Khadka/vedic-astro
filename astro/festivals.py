@@ -26,6 +26,12 @@ SOURCES (what each one established):
   Dashami 21 Oct 2026) and Tihar 2083 (Kag 7 Nov, Kukur + Laxmi
   8 Nov, Bhai Tika 11 Nov 2026, MOHA 2083 Tihar holiday
   Kartik 22-26).
+- Hamro Patro's own date pages for 2083, verified 2026-11-10:
+  Phulpati 17 Oct 2026 (Ashwin 31, 2083), Maha Ashtami
+  18 Oct 2026 (Kartik 1, 2083); and the Samiti's Dashain 2082
+  dates via The Himalayan Times (16 Sep 2025): Phulpati
+  29 Sep 2025, Maha Ashtami 30 Sep 2025, Maha Navami 1 Oct
+  2025, Vijaya Dashami 2 Oct 2025.
 - Getty Images news captions for Indra Jatra 2025: the festival
   starts from Bhadra Shukla Chaturdashi, procession 6 Sep 2025.
 - The classical tithi rules themselves (e.g. Teej = Bhadra Shukla
@@ -55,10 +61,32 @@ CONVENTIONS (documented, not hidden):
   their eves the sunset/pradosh tithi is already Purnima
   (11 May 2025 pradosh, 8 Aug 2025 sunset) while the gazette
   dates are the next days (12 May, 9 Aug).
+  Phulpati and Maha Ashtami use the MORNING tithi (the tithi
+  three hours after sunrise — the first prahar of the day).
+  That is the only rule that gives both years' Samiti dates:
+  in 2083 Saptami begins 06:09 on 17 Oct and Ashtami 08:43
+  on 18 Oct, both inside the morning, so the festivals fall
+  those days; in 2082 Saptami begins 14:42 on 28 Sep and
+  Ashtami 16:47 on 29 Sep, both in the afternoon, so the
+  festivals fall on the next (sunrise) days, 29 and 30 Sep.
+  Neither the pure sunrise rule (wrong in 2083: Phulpati
+  18 Oct, Ashtami 19 Oct) nor the pure sunset rule (wrong in
+  2082: Phulpati 28 Sep, Ashtami 29 Sep) reproduces both
+  years. Maha Navami and Vijaya Dashami stay on sunrise:
+  their 2083 starts (Navami 11:07 on 19 Oct, Dashami 13:05
+  on 20 Oct) are after the morning window, and their 2082
+  starts are in the evening, so sunrise gives the Samiti
+  dates in both years (Navami 1 Oct 2025 / 20 Oct 2026,
+  Dashami 2 Oct 2025 / 21 Oct 2026).
   Gai Tihar is the civil day after Laxmi Puja, Chhath Usha
   Arghya the civil day after Chhath Sandhya Arghya, and Terai
   Holi the civil day after Fagu Purnima, matching the published
   2082/2083 sequences.
+- When Maha Ashtami is long enough that the sunrise tithi is
+  still Ashtami the day after it (19 Oct 2026, Kartik 2),
+  that day is a Dashain Holiday: it sits inside the MOHA
+  Dashain holiday block (Kartik 1-6, 2083) and the (7,10)/(7,11)
+  Ekadashi/Dwadashi rules alone would leave it unbadged.
 - A tithi can occasionally repeat at sunrise (long tithi) or be
   skipped at sunrise (short tithi). When it repeats, only the
   FIRST day in the sequence carries the festival; when it is
@@ -127,8 +155,10 @@ LUNAR_NE = ["चैत्र", "वैशाख", "ज्येष्ठ", "आ�
 def _e(key, en, ne, holiday, scope_en=None, scope_ne=None, kind="festival",
        prevailing="sunrise"):
     """One festival/holiday entry. `prevailing` is the time of day
-    whose tithi decides the date: "sunrise" (default), "sunset" or
-    "pradosh" (sunset + 2 hours). See the module docstring."""
+    whose tithi decides the date: "sunrise" (default), "morning"
+    (sunrise + 3 hours, the first prahar — Phulpati and Maha
+    Ashtami), "sunset" or "pradosh" (sunset + 2 hours). See the
+    module docstring."""
     return {"key": key, "name_en": en, "name_ne": ne, "kind": kind,
             "holiday": holiday, "scope_en": scope_en, "scope_ne": scope_ne,
             "prevailing": prevailing}
@@ -156,8 +186,10 @@ _TITHI_RULES = [
     ((6, 22), _e("krishna_janmashtami", "Krishna Janmashtami",
                  "श्रीकृष्ण जन्माष्टमी", True)),
     ((7, 0), _e("ghatasthapana", "Ghatasthapana", "घटस्थापना", True)),
-    ((7, 6), _e("phulpati", "Phulpati", "फूलपाती", True)),
-    ((7, 7), _e("maha_ashtami", "Maha Ashtami", "महा अष्टमी", True)),
+    ((7, 6), _e("phulpati", "Phulpati", "फूलपाती", True,
+                prevailing="morning")),
+    ((7, 7), _e("maha_ashtami", "Maha Ashtami", "महा अष्टमी", True,
+                prevailing="morning")),
     ((7, 8), _e("maha_navami", "Maha Navami", "महा नवमी", True)),
     ((7, 9), _e("vijaya_dashami", "Vijaya Dashami", "विजया दशमी", True)),
     ((7, 10), _e("dashain_holiday", "Dashain Holiday", "दशैं बिदा", True,
@@ -287,19 +319,23 @@ class _CycleTracker:
         return bs["month"] % 12 + 1
 
 
-def _evening_tithis(day: date, lat: float, lon: float, tz_name: str):
-    """(sunset tithi, pradosh tithi) for a civil date. Pradosh is
-    sunset + 2 hours, the classical evening worship hour. Either
-    may be None when no sunset exists (polar fallback)."""
-    _rise, set_ = sunrise_sunset(day, lat, lon, tz_name)
-    if set_ is None:
-        return None, None
+def _day_tithis(day: date, lat: float, lon: float, tz_name: str):
+    """(morning tithi, sunset tithi, pradosh tithi) for a civil
+    date. Morning is sunrise + 3 hours (the first prahar);
+    pradosh is sunset + 2 hours, the classical evening worship
+    hour. Any may be None when no sunrise/sunset exists
+    (polar fallback)."""
+    rise, set_ = sunrise_sunset(day, lat, lon, tz_name)
 
     def _tithi(moment):
         sun, moon = sun_moon_longitudes(to_julian_day(moment))
         return int(((moon - sun) % 360.0) // 12.0)
 
-    return _tithi(set_), _tithi(set_ + timedelta(hours=2))
+    morning = (_tithi(rise + timedelta(hours=3))
+               if rise is not None else None)
+    if set_ is None:
+        return morning, None, None
+    return morning, _tithi(set_), _tithi(set_ + timedelta(hours=2))
 
 
 def _noon_sun_sign(day: date, tz_name: str) -> int:
@@ -339,29 +375,50 @@ def festivals_for_days(day_infos, lat, lon, tz_name):
         if tracker is None:
             tracker = _CycleTracker(day, tz_name)
         fest_month = tracker.festival_month(day, info["tithi_index"])
-        sunset, pradosh = _evening_tithis(day, lat, lon, tz_name)
+        morning, sunset, pradosh = _day_tithis(day, lat, lon, tz_name)
         prev_sun = info.get("prev_sun_sign")
         if prev_sun is None:
             prev_sun = (_noon_sun_sign(day - timedelta(days=1), tz_name)
                         if prev is None else prev["info"]["sun_sign"])
         entries = []
         seen_keys = set()
+        seen_pairs = set()
         if fest_month is not None:
             for (month, tithi), entry in _TITHI_RULES:
                 if month != fest_month:
                     continue
                 prevailing = entry.get("prevailing", "sunrise")
                 active = {"sunrise": info["tithi_index"] == tithi,
+                          "morning": morning == tithi,
                           "sunset": sunset == tithi,
                           "pradosh": pradosh == tithi}[prevailing]
                 if not active:
                     continue
                 # First occurrence wins when a tithi repeats at the
-                # prevailing time: skip if the previous day had it.
-                if prev and entry["key"] in prev["keys"]:
+                # prevailing time: skip if the previous day had the
+                # SAME (month, tithi) rule. The key alone is not
+                # enough — Dashain Holiday is one key carried by
+                # two rules (Ekadashi (7,10) and Dwadashi (7,11)),
+                # and a key check would wrongly suppress the
+                # Dwadashi day every year.
+                if prev and (month, tithi) in prev["rule_pairs"]:
                     continue
                 entries.append(entry)
                 seen_keys.add(entry["key"])
+                seen_pairs.add((month, tithi))
+            # Dashain Holiday gap day: when Maha Ashtami is long
+            # enough that the sunrise tithi is still Ashtami the
+            # day after it (19 Oct 2026), that day is inside the
+            # MOHA Dashain holiday block but no tithi rule badges
+            # it — the Ekadashi/Dwadashi rules only cover the
+            # block's tail. Fires once: the next day's previous
+            # day is this gap day, not Maha Ashtami.
+            if (fest_month == 7 and info["tithi_index"] == 7
+                    and prev and "maha_ashtami" in prev["keys"]
+                    and "dashain_holiday" not in seen_keys):
+                entries.append(_e("dashain_holiday", "Dashain Holiday",
+                                  "दशैं बिदा", True, kind="holiday"))
+                seen_keys.add("dashain_holiday")
             # Evening rituals whose tithi has no sunrise rule of
             # its own: first day the tithi prevails at sunset, in
             # the Kartik span.
@@ -415,7 +472,7 @@ def festivals_for_days(day_infos, lat, lon, tz_name):
             seen_keys.add(fixed_ad["key"])
         out.append(entries)
         prev = {"info": info, "keys": seen_keys, "sunset": sunset,
-                "fest_month": fest_month}
+                "fest_month": fest_month, "rule_pairs": seen_pairs}
     return [[_public(e) for e in entries] for entries in out]
 
 
