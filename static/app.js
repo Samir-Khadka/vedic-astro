@@ -2079,7 +2079,7 @@ function buildBookPages(b) {
   const yogas = b.yogas || [];
   P.push(`<div class="bk-h">${bkesc(t("yogas_title"))} (${yogas.length})</div>` +
     (yogas.length ? yogas.slice(0, 8).map((y) =>
-      `<p class="bk-yoga"><b>${bkesc(y.name)}</b><br><span style="font-size:11px;color:#6b4a26">${bkesc(y.basis || "").slice(0, 140)}</span></p>`).join("")
+      `<p class="bk-yoga"><b>${bkesc(y.name)}</b><br><span style="font-size:11px;color:#6b4a26">${bkesc((y.basis || "").slice(0, 140))}</span></p>`).join("")
       : `<p>${bkesc(t("no_yogas"))}</p>`));
   /* p7 — doshas */
   const dz = b.doshas || {}, dl = [];

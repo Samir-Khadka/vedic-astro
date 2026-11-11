@@ -134,7 +134,7 @@ function loadApp({ lang = "en", throwOnSave = false, fetchScript = null } = {}) 
   vm.runInContext(fs.readFileSync(path.join(ROOT, "static/coords.js"), "utf8"), sandbox);
   Object.assign(sandbox, sandbox.module.exports);
   const appSrc = fs.readFileSync(path.join(ROOT, "static/app.js"), "utf8") +
-    "\n;globalThis.__harness = { STATE, renderBundle, saveCurrentChart, drawChartInto, renderMatch, renderPrashna, fetchKundaliWithRetry, isRetryableKundaliError, signColHeader, settlePlaceTz, PLACE_TZ_PENDING, ensureManualTz, renderSavedList, esc, ordEn };";
+    "\n;globalThis.__harness = { STATE, renderBundle, saveCurrentChart, drawChartInto, renderMatch, renderPrashna, fetchKundaliWithRetry, isRetryableKundaliError, signColHeader, settlePlaceTz, PLACE_TZ_PENDING, ensureManualTz, renderSavedList, esc, ordEn, BK, buildBookPages };";
   vm.runInContext(appSrc, sandbox);
   // el(id) mirrors document.getElementById (creating the stub on demand);
   // the raw Map only holds ids the app code actually touched.
@@ -412,4 +412,21 @@ test("renderSavedList escapes user-controlled name/place (stored XSS guard)", ()
   assert.ok(!html.includes("<svg onload"), "raw injected markup must not appear");
   assert.ok(html.includes("&lt;img src=x"), "injected markup must be escaped");
   assert.ok(html.includes("&quot;&gt;&lt;svg"), "quote-breakout must be escaped");
+});
+
+/* ---- 2026-11-11: book yoga-basis truncation ----
+   buildBookPages truncated the yoga basis AFTER HTML-escaping it, so a
+   basis with "&" near the 140-char cut could split the "&amp;" entity
+   and print a literal "&am" fragment. The basis is now sliced first,
+   then escaped, so entities always survive intact. */
+test("flipbook yoga basis keeps HTML entities intact at the 140-char cut", () => {
+  const { h } = loadApp({ lang: "en" });
+  const bundle = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "b_sample.json"), "utf8"));
+  bundle.yogas = [{ name: "Test Yoga",
+    basis: "A".repeat(136) + " & B" + "C".repeat(50) }];
+  const pages = h.buildBookPages(bundle);
+  const yogasPage = pages.join("\n");
+  assert.ok(yogasPage.includes("&amp;"), `escaped ampersand must survive the cut:\n${yogasPage.slice(0, 400)}`);
+  assert.ok(!yogasPage.includes("&am<"), `truncated entity must not print literally:\n${yogasPage.slice(0, 400)}`);
+  assert.ok(yogasPage.includes("Test Yoga"), "yoga name still rendered");
 });

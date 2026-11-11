@@ -20,6 +20,15 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
+  /* English ordinal: 1st/2nd/3rd/4th… — a bare `${n}th` printed
+     "1th house"/"2th house"/"3th house" in the planet table. */
+  function ordEn(n) {
+    var v = Math.trunc(Number(n));
+    if (!Number.isFinite(v)) return String(n);
+    var suf = (v % 100 >= 11 && v % 100 <= 13) ? "th"
+      : ({ 1: "st", 2: "nd", 3: "rd" }[v % 10] || "th");
+    return v + suf;
+  }
   /* Bilingual field: tries base_en/base_ne, then base.title_en style, then plain base. */
   function t(obj, base) {
     if (!obj) return "";
@@ -76,7 +85,7 @@
     var head = "<tr><th>" + (L === "ne" ? "ग्रह" : "Planet") + "</th><th>" + (L === "ne" ? "राशि / भाव" : "Sign / House") + "</th><th>" + (L === "ne" ? "यस क्षेत्रमा प्रभाव" : "Effect on this area") + "</th></tr>";
     var body = rows.map(function (r) {
       var sign = r.sign_en != null ? (L === "ne" ? (r.sign_ne || r.sign_en) : r.sign_en) : (r.sign || "");
-      var house = r.house != null ? (r.house + (L === "ne" ? "औँ भाव" : "th house")) : "";
+      var house = r.house != null ? (L === "ne" ? (r.house + "औँ भाव") : (ordEn(r.house) + " house")) : "";
       var effect = t(r, "effect");
       return "<tr><td><strong>" + esc(r.planet || r.name || "") + "</strong></td><td>" + esc(sign) + (house ? " · " + esc(house) : "") + "</td><td>" + esc(effect) + "</td></tr>";
     }).join("");
