@@ -75,8 +75,9 @@ def _bisect_ingress(planet: str, lo: float, hi: float, start_sign: int,
 
     The bracket holds exactly one sign change: sign(lo) == start_sign
     and sign(hi) != start_sign when scanning forward (reversed when
-    scanning back). Returns the bracket midpoint, so every caller
-    converges to the same JD for the same ingress.
+    scanning back). Returns the bracket midpoint; callers bisecting the
+    same bracket get the identical JD, and callers from different
+    brackets agree to within _BISECT_TOL (and on the UTC date).
     """
     for _ in range(64):
         mid = (lo + hi) / 2.0
