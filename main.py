@@ -75,10 +75,20 @@ def _rl_limit() -> int:
 
 
 def _rl_key(request) -> str:
-    # Behind Render, the real client IP is the first X-Forwarded-For entry.
+    # Render is the single proxy in front of this app, and proxies APPEND
+    # the address they received the request from. The FIRST XFF entry is
+    # therefore client-controlled: anyone could rotate it per request to
+    # get a fresh rate-limit bucket (verified live: 3 requests with
+    # different first entries and the same appended IP all returned 200
+    # at a limit of 2), or frame a victim's IP to 429 them. The LAST
+    # entry is the one Render appended — the IP that actually connected
+    # to Render — so it cannot be spoofed from outside. Trade-off: users
+    # behind one shared egress (corporate NAT / mobile CGNAT) share a
+    # bucket, but 60 heavy requests/minute per egress IP is generous
+    # for real use (a kundali compute is a deliberate user action).
     xff = request.headers.get("x-forwarded-for")
     if xff:
-        return xff.split(",")[0].strip()[:64] or "unknown"
+        return xff.split(",")[-1].strip()[:64] or "unknown"
     client = request.client
     return client.host if client else "unknown"
 
@@ -102,6 +112,37 @@ def _rl_allowed(key: str) -> bool:
     return True
 
 
+# Every legitimate API body is a small JSON object (a birth chart is
+# < 1 KiB; the largest, an ask-astrologer question, < 3 KiB). Starlette
+# has no default body-size limit, so one oversized POST could spike the
+# single free-tier worker's memory (verified live: a 70 KiB body —
+# Content-Length and chunked alike — was accepted and computed).
+_MAX_BODY_BYTES = 64 * 1024
+_BODY_METHODS = ("POST", "PUT", "PATCH")
+
+
+async def _read_body_capped(request) -> bytes | None:
+    """Read the request body up to _MAX_BODY_BYTES; None when larger.
+
+    Streams via request.stream() and aborts as soon as the cap is
+    passed, so a huge body never buffers fully — whichever way its
+    length was declared. The bytes read are cached on the request in
+    the same slot Starlette's own body() uses, so downstream handlers
+    still see the full body (BaseHTTPMiddleware replays a cached _body
+    to the endpoint). A client disconnect mid-body raises
+    ClientDisconnect, exactly as today's endpoint body() read would.
+    """
+    total = 0
+    chunks: list[bytes] = []
+    async for chunk in request.stream():
+        total += len(chunk)
+        if total > _MAX_BODY_BYTES:
+            return None
+        chunks.append(chunk)
+    request._body = b"".join(chunks)
+    return request._body
+
+
 @app.middleware("http")
 async def security_middleware(request, call_next):
     if _rl_is_heavy(request.method, request.url.path) and not _rl_allowed(_rl_key(request)):
@@ -110,6 +151,12 @@ async def security_middleware(request, call_next):
             status_code=429,
             headers={"Retry-After": "60"},
         ))
+    if request.method in _BODY_METHODS:
+        if await _read_body_capped(request) is None:
+            return _security_headers(JSONResponse(
+                {"detail": "request body too large (max 64 KiB)"},
+                status_code=413,
+            ))
     return _security_headers(await call_next(request))
 
 
@@ -381,6 +428,12 @@ def ask_astrologer(body: dict):
     question = body.get("question")
     if not isinstance(question, str) or not question.strip():
         raise HTTPException(status_code=400, detail="question must be a non-empty string")
+    # The raw-dict path has no pydantic model, so unlike PrashnaInput's
+    # question (max_length=500) this field was unbounded — a 5.6k-char
+    # question was accepted live. 2000 chars is generous for a real
+    # question and bounds the echoed text and the regex/classify work.
+    if len(question.strip()) > 2000:
+        raise HTTPException(status_code=400, detail="question must be at most 2000 characters")
     lang = body.get("lang", "en")
     if lang not in ("en", "ne"):
         raise HTTPException(status_code=400, detail="lang must be 'en' or 'ne'")

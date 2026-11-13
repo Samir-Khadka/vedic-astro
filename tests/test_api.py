@@ -236,6 +236,92 @@ def test_rate_limit_trips_on_newly_covered_endpoints(monkeypatch):
     main_module._RL_BUCKETS.clear()
 
 
+def test_rate_limit_key_is_last_xff_entry_not_first(monkeypatch):
+    # Render appends the real client IP as the LAST X-Forwarded-For
+    # entry; the first entry is client-controlled. Keying on the first
+    # entry let an attacker rotate it per request for a fresh bucket
+    # (verified live: 3 requests, limit 2, all 200). Rotating the
+    # spoofed prefix while the appended IP stays constant must trip it.
+    import main as main_module
+    monkeypatch.setenv("VEDIC_RL_LIMIT", "2")
+    main_module._RL_BUCKETS.clear()
+    payload = {**SAMPLE}
+    assert client.post("/api/kundali", json=payload,
+                       headers={"X-Forwarded-For": "10.0.0.1, 9.9.9.9"}).status_code == 200
+    assert client.post("/api/kundali", json=payload,
+                       headers={"X-Forwarded-For": "10.0.0.2, 9.9.9.9"}).status_code == 200
+    r = client.post("/api/kundali", json=payload,
+                    headers={"X-Forwarded-For": "10.0.0.3, 9.9.9.9"})
+    assert r.status_code == 429
+    main_module._RL_BUCKETS.clear()
+
+
+def test_rate_limit_xff_spoof_cannot_frame_victim(monkeypatch):
+    # An attacker sending the victim's IP as the (spoofable) first entry
+    # must not fill the victim's bucket: Render appends the attacker's
+    # real IP last, so the attacker only ever fills their own bucket.
+    import main as main_module
+    monkeypatch.setenv("VEDIC_RL_LIMIT", "2")
+    main_module._RL_BUCKETS.clear()
+    payload = {**SAMPLE}
+    for _ in range(2):
+        assert client.post("/api/kundali", json=payload,
+                           headers={"X-Forwarded-For": "8.8.8.8, 1.2.3.4"}).status_code == 200
+    assert client.post("/api/kundali", json=payload,
+                       headers={"X-Forwarded-For": "8.8.8.8, 1.2.3.4"}).status_code == 429
+    # The victim's own request (Render delivers it as a single entry)
+    # still answers — it keys on a different bucket.
+    assert client.post("/api/kundali", json=payload,
+                       headers={"X-Forwarded-For": "8.8.8.8"}).status_code == 200
+    main_module._RL_BUCKETS.clear()
+
+
+def test_oversized_request_body_is_413(monkeypatch):
+    # Starlette has no default body-size limit; a 70 KiB body used to be
+    # accepted and computed. The cap is 64 KiB, Content-Length and
+    # chunked alike, and the 413 carries the security headers.
+    import main as main_module
+    monkeypatch.setenv("VEDIC_RL_LIMIT", "1000")
+    main_module._RL_BUCKETS.clear()
+    big = {**SAMPLE, "junk": "x" * (70 * 1024)}
+    r = client.post("/api/kundali", json=big)
+    assert r.status_code == 413
+    assert "64 KiB" in r.json()["detail"]
+    assert r.headers["X-Content-Type-Options"] == "nosniff"
+
+    def chunks():
+        yield b'{"dob": "1998-05-14", "tob": "06:30", "place_id": "kathmandu", "junk": "'
+        yield b"x" * (70 * 1024)
+        yield b'"}'
+    r = client.post("/api/kundali", content=chunks(),
+                    headers={"Content-Type": "application/json"})
+    assert r.status_code == 413
+    # Just under the cap still computes — and the middleware's cached
+    # body reaches the endpoint intact (full bundle, not an empty body).
+    ok = {**SAMPLE, "junk": "x" * (60 * 1024)}
+    r = client.post("/api/kundali", json=ok)
+    assert r.status_code == 200
+    assert "lagna" in r.json() and "planets" in r.json()
+    main_module._RL_BUCKETS.clear()
+
+
+def test_ask_astrologer_question_length_capped(monkeypatch):
+    # The raw-dict path has no pydantic model, so unlike PrashnaInput's
+    # question (max_length=500) this field was unbounded — a 5.6k-char
+    # question was accepted live. The cap is 2000 characters.
+    import main as main_module
+    monkeypatch.setenv("VEDIC_RL_LIMIT", "1000")
+    main_module._RL_BUCKETS.clear()
+    r = client.post("/api/ask-astrologer",
+                    json={"question": "Will I get a job? " * 400, "birth": {**SAMPLE}})
+    assert r.status_code == 400
+    assert "2000" in r.json()["detail"]
+    r = client.post("/api/ask-astrologer",
+                    json={"question": "x" * 1999, "birth": {**SAMPLE}})
+    assert r.status_code == 200
+    main_module._RL_BUCKETS.clear()
+
+
 def test_oversized_date_and_name_params_rejected():
     r = client.get("/api/bs", params={"date": "2" * 500})
     assert r.status_code == 422
