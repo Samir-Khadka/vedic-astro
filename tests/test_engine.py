@@ -54,6 +54,25 @@ def test_true_node_rahu_ketu():
     assert abs(((by_name["Ketu"]["longitude"] - by_name["Rahu"]["longitude"]) % 360.0) - 180.0) < 1e-9
 
 
+def test_node_speeds_share_the_true_node_rate():
+    """Ketu's speed is the true node's speed, not its negation: both
+    nodes are retrograde and their longitudes decrease at the same
+    rate. (Regression: Ketu used to report +0.03 deg/day while its
+    longitude actually fell, contradicting its own retrograde flag.)"""
+    jd = swe.julday(1998, 5, 14, 0.75)  # sample chart instant (UTC)
+    pl = ephemeris.planet_longitudes(jd)
+    assert pl["Rahu"]["speed"] < 0
+    assert pl["Ketu"]["speed"] == pl["Rahu"]["speed"]
+    assert pl["Rahu"]["retrograde"] and pl["Ketu"]["retrograde"]
+    # Cross-check against the motion itself: both longitudes fall over
+    # the next ten days. (No rate check: the true node's instantaneous
+    # speed wobbles too much for a 10-day average to track it closely.)
+    later = ephemeris.planet_longitudes(jd + 10)
+    for name in ("Rahu", "Ketu"):
+        moved = (later[name]["longitude"] - pl[name]["longitude"] + 540) % 360 - 180
+        assert moved < 0
+
+
 def test_nakshatra_and_pada_boundaries():
     assert ephemeris.nakshatra_of(0.0) == (0, 1)          # Ashwini pada 1
     assert ephemeris.nakshatra_of(3.34) == (0, 2)         # second pada

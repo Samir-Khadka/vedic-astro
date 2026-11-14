@@ -106,10 +106,8 @@ def pitra(planets: dict, lagna_sign: int) -> dict:
     same_sign_nodes = sun["sign"] in (rahu["sign"], ketu["sign"])
     if same_sign_nodes:
         patterns.append("Sun conjoins Rahu/Ketu (eclipse affliction to the father significator)")
-    ninth_lord_sign = None
     from .names import SIGN_LORDS
     ninth_lord = SIGN_LORDS[house9_sign]
     if planets[ninth_lord]["sign"] in (rahu["sign"], ketu["sign"]):
         patterns.append("The 9th lord conjoins Rahu/Ketu")
-        ninth_lord_sign = planets[ninth_lord]["sign"]
     return {"present": len(patterns) > 0, "patterns": patterns}

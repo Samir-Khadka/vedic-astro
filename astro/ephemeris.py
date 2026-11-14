@@ -101,6 +101,10 @@ def planet_longitudes(jd: float) -> dict[str, dict]:
         }
     # Rahu = TRUE node (the convention Hamro Patro and Jagannatha Hora
     # print, i.e. what Nepali janma-patris use); Ketu is exactly opposite.
+    # Both nodes share the true node's speed: it is negative (retrograde)
+    # and Ketu's longitude decreases at exactly the same rate as Rahu's,
+    # so negating it for Ketu would report a direct speed that contradicts
+    # both the retrograde flag and the actual motion.
     res, _ret = swe.calc_ut(jd, swe.TRUE_NODE, _FLAGS)
     rahu_lon = res[0] % 360.0
     for name, lon in (("Rahu", rahu_lon), ("Ketu", (rahu_lon + 180.0) % 360.0)):
@@ -112,7 +116,7 @@ def planet_longitudes(jd: float) -> dict[str, dict]:
             "nakshatra": nak,
             "pada": pada,
             "retrograde": True,  # nodes move retrograde by nature
-            "speed": res[3] if name == "Rahu" else -res[3],
+            "speed": res[3],
         }
     return out
 

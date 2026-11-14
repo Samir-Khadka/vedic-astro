@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 
 from astro import ayanamsa as ayanamsa_module
 from astro.ephemeris import planet_longitudes, sun_moon_longitudes, to_julian_day
-from astro.panchang import day_detail, panchang_at, ritu_ayana
+from astro.panchang import _dms_parts, day_detail, panchang_at, ritu_ayana
 from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
 
@@ -130,6 +130,17 @@ def test_detail_400_on_bad_date():
     assert r.status_code == 400
     r = client.get("/api/panchang-detail", params={"date": "2026-13-40", **PLACE})
     assert r.status_code == 400
+
+
+def test_dms_parts_rolls_30_degree_carry_into_next_sign():
+    # A longitude a fraction of an arc-second short of a sign boundary
+    # rounds up to 30°0'0" — which is 0°0'0" of the NEXT sign, never
+    # degree 30 of this one. (Regression: day_detail printed "30".)
+    assert _dms_parts(5, 29.9999) == (6, 0, 0, 0)
+    assert _dms_parts(11, 29.99999) == (0, 0, 0, 0)  # Pisces -> Aries wrap
+    assert _dms_parts(5, 29.999) == (5, 29, 59, 56)
+    assert _dms_parts(5, 14.5) == (5, 14, 30, 0)
+    assert _dms_parts(0, 0.0) == (0, 0, 0, 0)
 
 
 def test_detail_outside_bs_range_still_works():

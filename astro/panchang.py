@@ -266,6 +266,28 @@ def _limb_indices(sun: float, moon: float) -> tuple[int, int, int, str]:
             karana_of(int(elong // 6.0)))
 
 
+def _dms_parts(sign: int, degree_in_sign: float) -> tuple[int, int, int, int]:
+    """(sign, degree, minute, second) for display from a degree-in-sign.
+
+    Seconds are rounded, so a longitude a fraction of an arc-second
+    short of a sign boundary rounds up to 30°0'0" — which is really
+    0°0'0" of the NEXT sign, not degree 30 of this one. Roll the carry
+    into the sign (wrapping Pisces -> Aries) so the patro table never
+    prints an invalid "30" degree.
+    """
+    d = int(degree_in_sign)
+    mnt = int((degree_in_sign - d) * 60)
+    sec = int(round(((degree_in_sign - d) * 60 - mnt) * 60))
+    if sec == 60:
+        sec, mnt = 0, mnt + 1
+    if mnt == 60:
+        mnt, d = 0, d + 1
+    if d == 30:
+        d = 0
+        sign = (sign + 1) % 12
+    return sign, d, mnt, sec
+
+
 def day_detail(day: date, lat: float, lon: float, tz_name: str) -> dict:
     """Full patro day detail for one civil date, all values computed here.
 
@@ -335,18 +357,11 @@ def day_detail(day: date, lat: float, lon: float, tz_name: str) -> dict:
     for name in ("Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus",
                  "Saturn", "Rahu", "Ketu"):
         pl = planet_longitudes(to_julian_day(base))[name]
-        deg_total = pl["degree_in_sign"]
-        d = int(deg_total)
-        mnt = int((deg_total - d) * 60)
-        sec = int(round(((deg_total - d) * 60 - mnt) * 60))
-        if sec == 60:
-            sec, mnt = 0, mnt + 1
-        if mnt == 60:
-            mnt, d = 0, d + 1
+        sign, d, mnt, sec = _dms_parts(pl["sign"], pl["degree_in_sign"])
         planets.append({
-            "name": name, "sign": pl["sign"], "degree": d,
+            "name": name, "sign": sign, "degree": d,
             "minute": mnt, "second": sec,
-            "dms": f"{pl['sign']}:{d}:{mnt}:{sec}",
+            "dms": f"{sign}:{d}:{mnt}:{sec}",
             "longitude": pl["longitude"],
         })
     out = {
