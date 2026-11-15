@@ -73,6 +73,43 @@ def test_node_speeds_share_the_true_node_rate():
         assert moved < 0
 
 
+def test_ephemeris_out_of_range_date_is_value_error():
+    """Past ~AD 3000 the built-in Moshier ephemeris has no data and
+    swe.calc_ut raises swisseph.Error; the API layer only converts
+    ValueError to 400, so an out-of-range date used to surface as a
+    500 on /api/kundali, /api/panchang, /api/horoscope and
+    /api/panchang-month. _calc_ut translates it here, once, for every
+    caller (houses_ex / rise_trans need no ephemeris files and are
+    unaffected)."""
+    import pytest
+
+    jd = swe.julday(4000, 6, 15, 12.0)
+    with pytest.raises(ValueError, match="outside the supported ephemeris range"):
+        ephemeris.sun_moon_longitudes(jd)
+    with pytest.raises(ValueError, match="outside the supported ephemeris range"):
+        ephemeris.planet_longitudes(jd)
+    with pytest.raises(ValueError, match="outside the supported ephemeris range"):
+        ephemeris.planet_longitude_at("Saturn", jd)
+    # Inside the range still computes (AD 3000 is the last good year probed).
+    sun, moon = ephemeris.sun_moon_longitudes(swe.julday(3000, 6, 15, 12.0))
+    assert 0.0 <= sun < 360.0 and 0.0 <= moon < 360.0
+
+
+def test_to_julian_day_at_datetime_boundary_is_value_error():
+    """datetime(1, 1, 1, 00:00, +05:45) converts to a year-0 UTC instant
+    (Dec 31, year 0, 18:15), which Python cannot represent: astimezone
+    raises OverflowError. The API only converts ValueError to 400, so
+    a /api/panchang-month ?year=1 request used to 500 on this instead
+    of 400ing. (Noon the same day converts fine — only the early hours
+    cross the year boundary.)"""
+    import pytest
+
+    with pytest.raises(ValueError, match="outside the supported range"):
+        ephemeris.to_julian_day(datetime(1, 1, 1, 0, 0, tzinfo=ZoneInfo("Asia/Kathmandu")))
+    # Noon the same day is representable and still computes.
+    assert ephemeris.to_julian_day(datetime(1, 1, 1, 12, 0, tzinfo=ZoneInfo("Asia/Kathmandu"))) > 0
+
+
 def test_nakshatra_and_pada_boundaries():
     assert ephemeris.nakshatra_of(0.0) == (0, 1)          # Ashwini pada 1
     assert ephemeris.nakshatra_of(3.34) == (0, 2)         # second pada

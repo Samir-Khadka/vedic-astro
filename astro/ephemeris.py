@@ -55,9 +55,44 @@ _SWE_PLANETS = {
 _SINGLE_IDS = {**_SWE_PLANETS, "Rahu": swe.TRUE_NODE}
 
 
+def _calc_ut(jd: float, pid: int, flags: int):
+    """swe.calc_ut with out-of-range dates converted to ValueError.
+
+    This deployment ships no .se1 ephemeris files, so pyswisseph falls
+    back to its built-in Moshier ephemeris, which only covers roughly
+    AD 1-3000. Past that, calc_ut raises swisseph.Error ("SwissEph
+    file 'sepl_XX.se1' not found") — and main.py only converts
+    ValueError to 400, so a bad date surfaced as a 500 on every
+    endpoint. A bad date is a client error, not a server error, so
+    translate it here, at the one place every position call routes
+    through. houses_ex and rise_trans need no ephemeris files
+    (verified: ascendant still answers at year 9999, sunrise/sunset
+    degrade to None at year 4000), and _rise_trans already swallows
+    swe.Error, so they need no wrapper.
+    """
+    try:
+        return swe.calc_ut(jd, pid, flags)
+    except swe.Error as e:
+        raise ValueError(
+            "date is outside the supported ephemeris range "
+            "(the built-in Swiss Ephemeris data covers roughly AD 1-3000)"
+        ) from e
+
+
 def to_julian_day(local_dt: datetime) -> float:
     """Julian day (UT) for a timezone-aware local datetime."""
-    ut = local_dt.astimezone(timezone.utc)
+    try:
+        ut = local_dt.astimezone(timezone.utc)
+    except OverflowError as e:
+        # A datetime at the very start of year 1 (or end of 9999) in a
+        # positive-offset (resp. negative-offset) timezone converts to a
+        # UTC year Python cannot represent (0 / 10000). Same family as
+        # the ephemeris-range error below: the API only converts
+        # ValueError to 400, so without this the request 500s.
+        raise ValueError(
+            "date is outside the supported range "
+            "(the app supports dates within roughly AD 1-3000)"
+        ) from e
     hour = ut.hour + ut.minute / 60.0 + ut.second / 3600.0 + ut.microsecond / 3.6e9
     return swe.julday(ut.year, ut.month, ut.day, hour)
 
@@ -87,7 +122,7 @@ def planet_longitudes(jd: float) -> dict[str, dict]:
     _ensure_ayanamsa()
     out: dict[str, dict] = {}
     for name, pid in _SWE_PLANETS.items():
-        res, _ret = swe.calc_ut(jd, pid, _FLAGS)
+        res, _ret = _calc_ut(jd, pid, _FLAGS)
         lon, speed = res[0], res[3]
         nak, pada = nakshatra_of(lon)
         out[name] = {
@@ -105,7 +140,7 @@ def planet_longitudes(jd: float) -> dict[str, dict]:
     # and Ketu's longitude decreases at exactly the same rate as Rahu's,
     # so negating it for Ketu would report a direct speed that contradicts
     # both the retrograde flag and the actual motion.
-    res, _ret = swe.calc_ut(jd, swe.TRUE_NODE, _FLAGS)
+    res, _ret = _calc_ut(jd, swe.TRUE_NODE, _FLAGS)
     rahu_lon = res[0] % 360.0
     for name, lon in (("Rahu", rahu_lon), ("Ketu", (rahu_lon + 180.0) % 360.0)):
         nak, pada = nakshatra_of(lon)
@@ -214,8 +249,8 @@ def sunrise_sunset(local_date: date, lat: float, lon: float, tz_name: str) -> tu
 
 def sun_moon_longitudes(jd: float) -> tuple[float, float]:
     _ensure_ayanamsa()
-    sun, _ = swe.calc_ut(jd, swe.SUN, _FLAGS)
-    moon, _ = swe.calc_ut(jd, swe.MOON, _FLAGS)
+    sun, _ = _calc_ut(jd, swe.SUN, _FLAGS)
+    moon, _ = _calc_ut(jd, swe.MOON, _FLAGS)
     return sun[0] % 360.0, moon[0] % 360.0
 
 
@@ -229,7 +264,7 @@ def declinations(jd: float) -> dict[str, float]:
     flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | swe.FLG_EQUATORIAL
     out: dict[str, float] = {}
     for name, pid in _SWE_PLANETS.items():
-        res, _ret = swe.calc_ut(jd, pid, flags)
+        res, _ret = _calc_ut(jd, pid, flags)
         out[name] = res[1]
     return out
 
@@ -245,7 +280,7 @@ def latitudes(jd: float) -> dict[str, float]:
     flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL
     out: dict[str, float] = {}
     for name, pid in _SWE_PLANETS.items():
-        res, _ret = swe.calc_ut(jd, pid, flags)
+        res, _ret = _calc_ut(jd, pid, flags)
         out[name] = res[1]
     return out
 
@@ -260,9 +295,9 @@ def planet_longitude_at(name: str, jd: float) -> float:
     """
     _ensure_ayanamsa()
     if name == "Ketu":
-        res, _ret = swe.calc_ut(jd, swe.TRUE_NODE, _FLAGS)
+        res, _ret = _calc_ut(jd, swe.TRUE_NODE, _FLAGS)
         return (res[0] + 180.0) % 360.0
-    res, _ret = swe.calc_ut(jd, _SINGLE_IDS[name], _FLAGS)
+    res, _ret = _calc_ut(jd, _SINGLE_IDS[name], _FLAGS)
     return res[0] % 360.0
 
 

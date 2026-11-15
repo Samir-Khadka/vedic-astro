@@ -209,17 +209,40 @@ def test_rl_is_heavy_covers_every_compute_endpoint():
         ("POST", "/api/life-areas"), ("POST", "/api/ask-astrologer"),
         ("POST", "/api/life-questions/some-id/answer"),
         ("GET", "/api/report.pdf"), ("GET", "/api/complete-report.pdf"),
+        # Multi-day compute GETs: a 31-day muhurta range costs ~2s, a
+        # full panchang/bs month ~1s — as heavy as a kundali.
+        ("GET", "/api/muhurta"), ("GET", "/api/panchang-month"),
+        ("GET", "/api/bs-month"),
         # HEAD on a heavy GET must not bypass the limiter.
-        ("HEAD", "/api/report.pdf"),
+        ("HEAD", "/api/report.pdf"), ("HEAD", "/api/panchang-month"),
     ]:
         assert heavy(method, path), (method, path)
     for method, path in [
         ("GET", "/health"), ("HEAD", "/health"),
         ("GET", "/api/places"), ("GET", "/api/panchang"),
+        ("GET", "/api/panchang-detail"), ("GET", "/api/horoscope"),
         ("GET", "/api/life-questions"), ("GET", "/api/life-questions/some-id"),
         ("POST", "/api/unknown"),
     ]:
         assert not heavy(method, path), (method, path)
+
+
+def test_rate_limit_trips_on_month_and_muhurta_endpoints(monkeypatch):
+    # The month/muhurta GETs were not rate-limited although they cost
+    # ~1-2s each (a full month of panchang, a 31-day muhurta range) —
+    # one client could saturate the single free-tier worker exactly as
+    # the un-limited kundali endpoints could before the 11-05 fix.
+    import main as main_module
+    monkeypatch.setenv("VEDIC_RL_LIMIT", "1")
+    main_module._RL_BUCKETS.clear()
+    assert client.get("/api/muhurta",
+                      params={"date_from": "2026-11-01", "date_to": "2026-11-02",
+                              "place_id": "kathmandu"}).status_code == 200
+    r = client.get("/api/panchang-month",
+                   params={"year": 2026, "month": 11, "place_id": "kathmandu"})
+    assert r.status_code == 429
+    assert r.headers["Retry-After"] == "60"
+    main_module._RL_BUCKETS.clear()
 
 
 def test_rate_limit_trips_on_newly_covered_endpoints(monkeypatch):
@@ -370,6 +393,37 @@ def test_muhurta_birth_sign_nakshatra_bounds_are_422_not_500():
     # Boundary values still work.
     r = client.get("/api/muhurta", params=_muhurta_params(
         birth_moon_sign=11, birth_nakshatra=26))
+    assert r.status_code == 200
+
+
+def test_out_of_range_dates_are_400_not_500():
+    # No .se1 ephemeris files ship with this deployment, so the
+    # built-in Moshier data ends around AD 3000; past that, swe
+    # raised swisseph.Error, which main.py did not convert — every
+    # one of these answered 500 instead of 400.
+    r = client.post("/api/kundali", json={**SAMPLE, "dob": "4000-01-01"})
+    assert r.status_code == 400, r.text[:120]
+    r = client.get("/api/panchang", params={"date": "4000-01-01", "place_id": "kathmandu"})
+    assert r.status_code == 400, r.text[:120]
+    r = client.get("/api/panchang-detail", params={"date": "4000-01-01", "place_id": "kathmandu"})
+    assert r.status_code == 400, r.text[:120]
+    r = client.get("/api/horoscope", params={"sign": 0, "date": "4000-01-01"})
+    assert r.status_code == 400, r.text[:120]
+    # The span arithmetic itself overflowed for Dec 9999 (weekly +6d and
+    # monthly +32d both run past datetime.max) before any ephemeris call.
+    r = client.get("/api/horoscope", params={"sign": 0, "span": "monthly", "date": "9999-12-15"})
+    assert r.status_code == 400, r.text[:120]
+    r = client.get("/api/horoscope", params={"sign": 0, "span": "weekly", "date": "9999-12-30"})
+    assert r.status_code == 400, r.text[:120]
+    r = client.get("/api/muhurta", params=_muhurta_params(date_from="4000-01-01", date_to="4000-01-01"))
+    assert r.status_code == 400, r.text[:120]
+    for year, month in ((1, 1), (9999, 12), (4000, 6)):
+        r = client.get("/api/panchang-month",
+                       params={"year": year, "month": month, "place_id": "kathmandu"})
+        assert r.status_code == 400, (year, month, r.text[:120])
+    # In-range dates still work.
+    r = client.get("/api/panchang-month",
+                   params={"year": 2026, "month": 11, "place_id": "kathmandu"})
     assert r.status_code == 200
 
 

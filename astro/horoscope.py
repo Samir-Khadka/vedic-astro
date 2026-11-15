@@ -18,6 +18,7 @@ ingress dates (Saturn/Jupiter/Rahu/Mars/Sun).
 """
 from __future__ import annotations
 
+import calendar
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
@@ -100,10 +101,20 @@ def horoscope(moon_sign: int, span: str, ref_day: date, tz_name: str) -> dict:
     if span == "daily":
         start, end = ref_day, ref_day
     elif span == "weekly":
-        start, end = ref_day, ref_day + timedelta(days=6)
+        start = ref_day
+        try:
+            end = ref_day + timedelta(days=6)
+        except OverflowError as e:
+            # ref_day is 9999-12-26 or later: there is no 7th day in
+            # datetime. Same family as the ephemeris-range error: the
+            # API only converts ValueError to 400.
+            raise ValueError("date is outside the supported range") from e
     else:
         start = ref_day.replace(day=1)
-        end = (start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+        # (start + 32d) overflows for Dec 9999; monthrange is pure
+        # arithmetic and cannot overflow.
+        end = date(ref_day.year, ref_day.month,
+                   calendar.monthrange(ref_day.year, ref_day.month)[1])
 
     def jd_noon(d: date) -> float:
         return ephemeris.to_julian_day(datetime.combine(d, time(12, 0), tzinfo=tz))

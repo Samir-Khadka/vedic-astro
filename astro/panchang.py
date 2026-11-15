@@ -204,16 +204,18 @@ def month_panchang(year: int, month: int, lat: float, lon: float, tz_name: str) 
     astro.festivals.attach_festivals (called from main.py), so
     this function's shape stays unchanged.
     """
-    from datetime import timedelta
+    import calendar
 
     from .ephemeris import sun_moon_longitudes, to_julian_day
 
-    first = date(year, month, 1)
-    nxt = (first + timedelta(days=32)).replace(day=1)
     days = []
     prev_sun_sign = None
-    d = first
-    while d < nxt:
+    # Iterate by day number, not by adding timedeltas: (first + 32d) and
+    # the d += 1d step both overflow for Dec 9999 (there is no Jan 10000
+    # in datetime), so the request 500d with OverflowError instead of
+    # 400ing via the ephemeris-range ValueError.
+    for day_no in range(1, calendar.monthrange(year, month)[1] + 1):
+        d = date(year, month, day_no)
         p = daily_panchang(d, lat, lon, tz_name)
         sun, _moon = sun_moon_longitudes(to_julian_day(
             datetime.combine(d, time(12, 0), tzinfo=ZoneInfo(tz_name))))
@@ -231,7 +233,6 @@ def month_panchang(year: int, month: int, lat: float, lon: float, tz_name: str) 
         p["markers"] = markers
         days.append(p)
         prev_sun_sign = sun_sign
-        d += timedelta(days=1)
     return {"year": year, "month": month, "days": days}
 
 

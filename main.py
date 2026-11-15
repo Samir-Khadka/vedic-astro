@@ -42,11 +42,16 @@ app = FastAPI(title="Vedic Astro", version="1.0.0")
 # (requests per 60s per IP; default 60). /health and static are exempt.
 # NOTE: keep this in sync with the endpoints that call
 # engine.compute_kundali / compute_match / the WeasyPrint PDF renderers
-# in main.py — every one of those is unauthenticated and heavy.
+# in main.py — every one of those is unauthenticated and heavy — AND
+# with the multi-day compute GETs below: a 31-day muhurta range costs
+# ~2s and a full panchang/bs month ~1s, as heavy as a kundali, so they
+# get the same bucket. Single-day panchang / panchang-detail /
+# horoscope stay exempt (tens of ms).
 _RL_HEAVY_PATHS = {
     "/api/kundali", "/api/complete-report", "/api/match", "/api/prashna",
     "/api/life-areas", "/api/ask-astrologer",
     "/api/report.pdf", "/api/complete-report.pdf",
+    "/api/muhurta", "/api/panchang-month", "/api/bs-month",
 }
 _RL_WINDOW_S = 60.0
 _RL_BUCKETS: dict[str, deque] = {}
@@ -526,9 +531,9 @@ def panchang(
     try:
         place = engine.resolve_place(payload)
         day = date.fromisoformat(date_str) if date_str else date.today()
+        result = panchang_module.daily_panchang(day, place["lat"], place["lon"], place["tz"])
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    result = panchang_module.daily_panchang(day, place["lat"], place["lon"], place["tz"])
     result["place"] = place
     return result
 
@@ -550,15 +555,15 @@ def panchang_detail(
     try:
         place = engine.resolve_place({"place_id": place_id, "lat": lat, "lon": lon, "tz": tz})
         day = date.fromisoformat(date_str) if date_str else date.today()
+        result = panchang_module.day_detail(day, place["lat"], place["lon"], place["tz"])
+        # Additive: festivals/holidays for this day (computed from the
+        # same sunrise tithi + lunar-cycle rule as the month grids).
+        result["festivals"] = festivals_module.festivals_for_day(
+            day, place["lat"], place["lon"], place["tz"],
+            sunrise_tithi=result["tithi_index"], sun_sign=result["sun_sign"])
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    result = panchang_module.day_detail(day, place["lat"], place["lon"], place["tz"])
     result["place"] = place
-    # Additive: festivals/holidays for this day (computed from the
-    # same sunrise tithi + lunar-cycle rule as the month grids).
-    result["festivals"] = festivals_module.festivals_for_day(
-        day, place["lat"], place["lon"], place["tz"],
-        sunrise_tithi=result["tithi_index"], sun_sign=result["sun_sign"])
     return result
 
 
@@ -661,14 +666,16 @@ def panchang_month(
     try:
         place = engine.resolve_place({"place_id": place_id, "lat": lat, "lon": lon, "tz": tz})
         result = panchang_module.month_panchang(year, month, place["lat"], place["lon"], place["tz"])
+        # Additive: a `festivals` list per day (month_panchang's own
+        # shape is untouched); computed from the already-computed
+        # per-day tithi/sun-sign, plus a short lookback for rules that
+        # depend on neighbouring days. Inside the try: the lookback
+        # calls daily_panchang, so a month at the ephemeris edge must
+        # 400 like the month itself, not 500.
+        festivals_module.attach_festivals(result["days"], place["lat"], place["lon"], place["tz"])
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     result["place"] = place
-    # Additive: a `festivals` list per day (month_panchang's own
-    # shape is untouched); computed from the already-computed
-    # per-day tithi/sun-sign, plus a short lookback for rules that
-    # depend on neighbouring days.
-    festivals_module.attach_festivals(result["days"], place["lat"], place["lon"], place["tz"])
     return result
 
 
