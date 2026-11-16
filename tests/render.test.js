@@ -17,6 +17,7 @@ class StubEl {
     this.innerHTML = ""; this.textContent = ""; this.value = "";
     this.hidden = false; this.dataset = {}; this.type = ""; this.className = "";
     this.children = []; this.options = []; this.open = false; this.checked = false;
+    this._listeners = {};
     this._cls = new Set(); this._attrs = {};
     const self = this;
     this.classList = {
@@ -31,7 +32,8 @@ class StubEl {
     };
     this.style = { setProperty: () => {}, removeProperty: () => {} };
   }
-  addEventListener() {}
+  addEventListener(ev, fn) { (this._listeners[ev] ||= []).push(fn); }
+  fire(ev, arg) { for (const fn of this._listeners[ev] || []) fn(arg); }
   removeEventListener() {}
   remove() {} // intro auto-hide calls intro.remove() after a timeout
   appendChild(c) { this.children.push(c); return c; }
@@ -134,11 +136,11 @@ function loadApp({ lang = "en", throwOnSave = false, fetchScript = null } = {}) 
   vm.runInContext(fs.readFileSync(path.join(ROOT, "static/coords.js"), "utf8"), sandbox);
   Object.assign(sandbox, sandbox.module.exports);
   const appSrc = fs.readFileSync(path.join(ROOT, "static/app.js"), "utf8") +
-    "\n;globalThis.__harness = { STATE, renderBundle, saveCurrentChart, drawChartInto, renderMatch, renderPrashna, fetchKundaliWithRetry, isRetryableKundaliError, signColHeader, settlePlaceTz, PLACE_TZ_PENDING, ensureManualTz, renderSavedList, esc, ordEn, BK, buildBookPages };";
+    "\n;globalThis.__harness = { STATE, renderBundle, saveCurrentChart, drawChartInto, renderMatch, renderPrashna, fetchKundaliWithRetry, isRetryableKundaliError, signColHeader, settlePlaceTz, PLACE_TZ_PENDING, ensureManualTz, renderSavedList, esc, ordEn, BK, buildBookPages, parseShareParams };";
   vm.runInContext(appSrc, sandbox);
   // el(id) mirrors document.getElementById (creating the stub on demand);
   // the raw Map only holds ids the app code actually touched.
-  return { h: sandbox.__harness, elements, document, store, el: getEl };
+  return { h: sandbox.__harness, elements, document, store, el: getEl, navigator: sandbox.navigator };
 }
 
 function loadBundles() {
@@ -429,4 +431,34 @@ test("flipbook yoga basis keeps HTML entities intact at the 140-char cut", () =>
   assert.ok(yogasPage.includes("&amp;"), `escaped ampersand must survive the cut:\n${yogasPage.slice(0, 400)}`);
   assert.ok(!yogasPage.includes("&am<"), `truncated entity must not print literally:\n${yogasPage.slice(0, 400)}`);
   assert.ok(yogasPage.includes("Test Yoga"), "yoga name still rendered");
+});
+
+/* ---- 2026-11-16: share link drops the gazetteer place name ----
+   The share button copied buildShareUrl(birthPayload), but a gazetteer
+   payload holds only place_id — no place_name — so the link opened
+   with an empty place box. The name now travels in the URL (from the
+   computed bundle's birth place, falling back to the place input). */
+test("share button copies a link carrying the gazetteer place name", async () => {
+  const { h, el, navigator } = loadApp({ lang: "en" });
+  let copied = null;
+  navigator.clipboard.writeText = async (t) => { copied = t; };
+  h.STATE.birthPayload = { dob: "1998-05-14", tob: "06:30", place_id: "kathmandu" };
+  h.STATE.bundle = { birth: { place: { name: "Kathmandu" } } };
+  el("f-place").value = ""; // blank input: the name must come from the bundle
+  el("share-btn").fire("click");
+  await new Promise((r) => setTimeout(r, 50));
+  assert.ok(copied && copied.includes("place_name=Kathmandu"),
+    `copied link must carry the place name: ${copied}`);
+  assert.equal(h.parseShareParams(new URL(copied).search).place_name, "Kathmandu");
+  // Fallback: no bundle yet, the typed place label is used instead.
+  const ctx2 = loadApp({ lang: "en" });
+  let copied2 = null;
+  ctx2.navigator.clipboard.writeText = async (t) => { copied2 = t; };
+  ctx2.h.STATE.birthPayload = { dob: "1998-05-14", tob: "06:30", place_id: "kathmandu" };
+  ctx2.h.STATE.bundle = null;
+  ctx2.el("f-place").value = "Kathmandu";
+  ctx2.el("share-btn").fire("click");
+  await new Promise((r) => setTimeout(r, 50));
+  assert.ok(copied2 && copied2.includes("place_name=Kathmandu"),
+    `fallback link must carry the typed place label: ${copied2}`);
 });

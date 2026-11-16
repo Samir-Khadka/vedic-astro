@@ -19,6 +19,10 @@ function shareParams(payload) {
   if (payload.house_system && payload.house_system !== "placidus") q.house_system = payload.house_system;
   if (payload.place_id) {
     q.place_id = payload.place_id;
+    // Display name for the place box on open: without it a shared link
+    // for a gazetteer place opens with an empty place field (the chart
+    // still generates, but the user cannot see which place was used).
+    if (payload.place_name) q.place_name = payload.place_name;
   } else {
     q.lat = String(payload.lat);
     q.lon = String(payload.lon);
@@ -47,7 +51,11 @@ function parseShareParams(search) {
   const hs = q.get("house_system");
   if (hs && ["placidus", "equal", "whole", "sripati"].includes(hs)) extra.house_system = hs;
   if (place_id) {
-    return { name: q.get("name") || "", dob, tob, place_id, ...extra };
+    // place_name only when the link carries one, so a plain place_id
+    // link still round-trips to exactly {name, dob, tob, place_id}.
+    const placeName = q.get("place_name");
+    return { name: q.get("name") || "", dob, tob, place_id,
+             ...(placeName ? { place_name: placeName } : {}), ...extra };
   }
   const lat = parseFloat(q.get("lat"));
   const lon = parseFloat(q.get("lon"));

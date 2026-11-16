@@ -2544,8 +2544,14 @@ const shareBtn = document.getElementById("share-btn");
 if (shareBtn) shareBtn.addEventListener("click", async () => {
   const p = STATE.birthPayload;
   if (!p || typeof buildShareUrl !== "function") return;
+  /* Carry the place display name in the link: the birth payload for a
+     gazetteer place holds only place_id, so without this the link opens
+     with an empty place box. Same source as saveCurrentChart. */
+  const placeName = (STATE.bundle && STATE.bundle.birth && STATE.bundle.birth.place && STATE.bundle.birth.place.name) ||
+    (document.getElementById("f-place") || {}).value || p.place_name || "";
+  const shared = placeName && !p.place_name ? { ...p, place_name: placeName } : p;
   try {
-    await navigator.clipboard.writeText(buildShareUrl(window.location.origin, p));
+    await navigator.clipboard.writeText(buildShareUrl(window.location.origin, shared));
     shareBtn.textContent = t("share_copied");
     setTimeout(() => { shareBtn.textContent = t("share_btn"); }, 2500);
   } catch { /* clipboard unavailable — user can copy from the address bar */ }

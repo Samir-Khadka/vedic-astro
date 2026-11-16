@@ -11,6 +11,21 @@ test("share round-trip for gazetteer and custom places", () => {
   assert.deepEqual(parseShareParams(new URL(buildShareUrl("https://x", b)).search), b);
 });
 
+test("share round-trip carries the place name for a gazetteer place", () => {
+  // A shared link for a gazetteer place used to drop the display name,
+  // so the link opened with an empty place box (the chart still
+  // generated). The name now travels in the URL like it already did
+  // for custom coordinates.
+  const a = { name: "A", dob: "1998-05-14", tob: "06:30", place_id: "kathmandu", place_name: "Kathmandu" };
+  const url = buildShareUrl("https://x", a);
+  assert.ok(url.includes("place_name=Kathmandu"), "link carries the display name");
+  assert.deepEqual(parseShareParams(new URL(url).search), a);
+  // Without a name the link is unchanged (no empty param).
+  assert.equal(shareParams({ dob: "2000-01-01", tob: "06:30", place_id: "kathmandu" }).place_name, undefined);
+  assert.deepEqual(parseShareParams("?dob=1998-05-14&tob=06:30&place_id=kathmandu"),
+    { name: "", dob: "1998-05-14", tob: "06:30", place_id: "kathmandu" });
+});
+
 test("parse rejects bad input", () => {
   assert.equal(parseShareParams("?dob=1998-05-14"), null);
   assert.equal(parseShareParams("?dob=14-05-1998&tob=06:30"), null);
