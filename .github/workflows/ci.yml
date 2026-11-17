@@ -15,7 +15,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pyyaml  # pyyaml: tests/test_deployment.py parses render.yaml + ci.yml
+          pip install pytest pyyaml httpx2  # pyyaml: tests/test_deployment.py parses render.yaml + ci.yml; httpx2: starlette>=1.10 TestClient requires it
       - name: Python tests
         run: python -m pytest -q
       - uses: actions/setup-node@v4
