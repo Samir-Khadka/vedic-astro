@@ -352,6 +352,21 @@ def test_shorten_empty_and_single_part():
     assert geocode._shorten("Paris, Paris") == ("Paris", "Paris", "Paris")
 
 
+def test_photon_rank_prefers_type_when_no_osm_key():
+    # Rank 1: a settlement type with no place/boundary osm_key still
+    # outranks a POI (rank 2) but loses to a place/boundary (rank 0).
+    raw = {"features": [
+        {"properties": {"type": "house", "name": "Somewhere Station",
+                        "country": "Iceland"},
+         "geometry": {"coordinates": [-21.9, 64.1]}},
+        {"properties": {"type": "city", "name": "Reykjavík",
+                        "country": "Iceland"},
+         "geometry": {"coordinates": [-21.942635, 64.146582]}},
+    ]}
+    results = geocode.parse_photon(raw)
+    assert [r["name"] for r in results] == ["Reykjavík", "Somewhere Station"]
+
+
 def test_fetch_photon_and_nominatim_build_requests(monkeypatch):
     # The fetchers themselves are always monkeypatched in the chain tests,
     # so their URL-building bodies need a direct call with a stubbed _get_json.
