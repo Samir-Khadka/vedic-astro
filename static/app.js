@@ -798,6 +798,16 @@ async function searchPlaces(inputEl) {
     if (el.value.trim().length >= 2 && !PLACE_SELECTED[id]) searchPlaces(el);
   });
   el.addEventListener("blur", () => setTimeout(() => closeSuggest(el), 150));
+  // Enter with suggestions open picks the first one instead of submitting
+  // the form with no place selected (the most common way to hit err_place).
+  el.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Enter") return;
+    const box = suggestBox(el);
+    const first = box && !box.hidden ? box.querySelector(".place-item") : null;
+    if (!first) return; // no suggestions yet: submit runs the auto-resolve
+    ev.preventDefault();
+    first.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
+  });
 });
 document.addEventListener("click", (ev) => {
   ["f-place", "m1-place", "m2-place", "p-place", "u-place", "c-place"].forEach((id) => {
@@ -814,6 +824,31 @@ function resolvePlace(placeInputId) {
     return { place_name: sel.place_name, lat: sel.lat, lon: sel.lon, tz: sel.tz };
   }
   return null;
+}
+
+/* Typed but never picked: the user typed a place name and hit Enter or
+   tapped Generate without clicking a suggestion, so PLACE_SELECTED is
+   empty and the form would fail with err_place. Resolve it now instead:
+   an exact name match (or a single result) is unambiguous enough to
+   pick; anything else still falls through to err_place. */
+async function autoResolveTypedPlace(inputId) {
+  const inputEl = document.getElementById(inputId);
+  if (!inputEl) return null;
+  const q = inputEl.value.trim();
+  if (q.length < 2 || PLACE_SELECTED[inputId]) return resolvePlace(inputId);
+  let places;
+  try {
+    const res = await fetch("/api/places?q=" + encodeURIComponent(q));
+    if (!res.ok) return null;
+    places = (await res.json()).places || [];
+  } catch (e) { return null; }
+  const norm = (s) => (s || "").trim().toLowerCase();
+  const exact = places.find((p) => norm(p.name) === norm(q) || norm(p.label) === norm(q));
+  const pick = exact || (places.length === 1 ? places[0] : null);
+  if (!pick) return null;
+  selectPlace(inputEl, pick);
+  await settlePlaceTz(inputId);
+  return resolvePlace(inputId);
 }
 
 /* Manual coordinates: free-form text + N/S/E/W selects, resolved by the
@@ -947,6 +982,11 @@ document.getElementById("birth-form").addEventListener("submit", async (ev) => {
     // yet (or the manual-coords debounce hadn't fired): resolve it now.
     await ensureManualTz();
     place = resolvePlace("f-place");
+  }
+  if (!place) {
+    // Typed but never picked from the list (Enter / tap Generate):
+    // resolve an exact or single match instead of failing the user.
+    place = await autoResolveTypedPlace("f-place");
   }
   if (place) {
     payload = { ...payload, ...place };
@@ -2342,7 +2382,8 @@ document.getElementById("match-form").addEventListener("submit", async (ev) => {
   }
   function person(prefix) {
     return settlePlaceTz(prefix + "-place").then(async () => {
-      const place = resolvePlace(prefix + "-place");
+      let place = resolvePlace(prefix + "-place");
+      if (!place) place = await autoResolveTypedPlace(prefix + "-place");
       const dob = de ? await de.resolveAdDate(prefix) : document.getElementById(prefix + "-dob").value;
       const tob = document.getElementById(prefix + "-tob").value;
       if (!dob || !tob || !place) return null;
@@ -3107,7 +3148,8 @@ document.getElementById("prashna-form").addEventListener("submit", async (ev) =>
     errEl.textContent = LANG === "ne" ? "कृपया १ देखि २४९ बीचको अङ्क भर्नुहोस्।" : "Please enter a number between 1 and 249.";
     errEl.hidden = false; return;
   }
-  const place = await settlePlaceTz("p-place").then(() => resolvePlace("p-place"));
+  let place = await settlePlaceTz("p-place").then(() => resolvePlace("p-place"));
+  if (!place) place = await autoResolveTypedPlace("p-place");
   if (!place) { errEl.textContent = t("err_place"); errEl.hidden = false; return; }
   const btn = document.getElementById("prashna-btn");
   btn.disabled = true; btn.textContent = t("casting");
