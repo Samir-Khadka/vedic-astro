@@ -65,3 +65,80 @@ def test_arudha_padas():
     a1 = ap["padas"][0]
     assert a1["label"] == "A1"
     assert a1["arudha_sign"] != 0  # not Aries
+
+
+def test_score_planet_shadbala_branches():
+    # Mercury in the 2nd, neutral dignity: base 0.5 + 0.25 = 0.75.
+    planets = {"Mercury": {"house": 2, "dignity": "neutral"}}
+    assert p5._score_planet("Mercury", planets, {}) == 0.75
+    # Strong shadbala (>= 6.5 rupas) adds 0.5; weak (<= 5.0) subtracts 0.5.
+    assert p5._score_planet("Mercury", planets, {"Mercury": {"total": 7.0}}) == 1.25
+    assert p5._score_planet("Mercury", planets, {"Mercury": {"total": 6.5}}) == 1.25
+    assert p5._score_planet("Mercury", planets, {"Mercury": {"total": 4.0}}) == 0.25
+    assert p5._score_planet("Mercury", planets, {"Mercury": {"total": 5.0}}) == 0.25
+    # A non-dict shadbala entry defaults to 6.0 (no adjustment).
+    assert p5._score_planet("Mercury", planets, {"Mercury": "strong"}) == 0.75
+
+
+def test_period_at_unparseable_dates_fall_back_to_current():
+    now = datetime.now(timezone.utc)
+    # Dates that do not parse are skipped; the 'current' block is the fallback.
+    tree = {"mahadashas": [{"lord": "Sun", "start": "not-a-date",
+                            "end": "also-not-a-date"}],
+            "current": {"mahadasha": {"lord": "Sun"}}}
+    assert p5._period_at(tree, now) == {"lord": "Sun"}
+    # No covering period and no usable 'current' block: None.
+    assert p5._period_at({"mahadashas": [{"lord": "Sun", "start": "not-a-date",
+                                          "end": "also-not-a-date"}]}, now) is None
+    assert p5._period_at({"current": {"mahadasha": {"start": "2020-01-01"}}},
+                         now) is None
+
+
+def test_dasha_consensus_skips_uncovered_and_valueless_systems():
+    # No system covers "now" and there is no 'current' fallback: the month
+    # is skipped entirely, so the timeline is empty.
+    bundle = {"planets": [], "dasha": {
+        "mahadashas": [{"lord": "Sun", "start": "2010-01-01",
+                        "end": "2016-01-01", "antardashas": []}]},
+        "chara_dasha": {"periods": [{"sign_en": "Aries",
+                                     "start": "2010-01-01",
+                                     "end": "2016-01-01"}]}}
+    c = p5.dasha_consensus(bundle, months=3)
+    assert c["timeline"] == [] and c["highlights"] == []
+    # A period covering now but carrying no lord/sign value is skipped too.
+    bundle["dasha"] = {"mahadashas": [{"start": "2000-01-01",
+                                       "end": "2100-01-01"}]}
+    bundle["chara_dasha"] = {"periods": [{"start": "2000-01-01",
+                                          "end": "2100-01-01"}]}
+    assert p5.dasha_consensus(bundle, months=1)["timeline"] == []
+
+
+def test_yoga_fructification_skips_yogas_without_planets():
+    bundle = {"yogas": [{"name": "Nameless Yoga",
+                         "basis": "A yoga whose basis names no planet."}],
+              "dasha": {"mahadashas": []}}
+    assert p5.yoga_fructification(bundle)["yogas"] == []
+
+
+def test_yoga_fructification_skips_unparseable_dates():
+    # MD dates that do not parse, and AD dates that do not parse, are
+    # skipped — the yoga gets no activation windows and drops out.
+    bundle = {
+        "yogas": [{"name": "Gajakesari Yoga",
+                   "basis": "Jupiter in kendra from Moon."}],
+        "dasha": {"mahadashas": [
+            {"lord": "Jupiter", "start": "garbage", "end": "garbage",
+             "antardashas": []},
+            {"lord": "Jupiter", "start": "2000-01-01", "end": "2100-01-01",
+             "antardashas": [{"lord": "Moon", "start": "garbage",
+                              "end": "garbage"}]},
+        ]},
+    }
+    assert p5.yoga_fructification(bundle, years=5)["yogas"] == []
+
+
+def test_ashtakavarga_gochar_without_sav():
+    assert p5.ashtakavarga_gochar({}) == {"days": [], "note": "SAV unavailable."}
+    # A short SAV list is just as unavailable as a missing one.
+    assert p5.ashtakavarga_gochar(
+        {"ashtakavarga": {"Sarvashtakavarga": [28] * 5}})["days"] == []

@@ -118,23 +118,12 @@ AREA_ORDER = ["personality", "career", "finance", "marriage",
               "health", "education", "family_home", "foreign"]
 
 
-def _house_of_sign(sign: int, lagna_sign: int) -> int:
-    return (sign - lagna_sign) % 12 + 1
-
-
 def aspected_houses(planet: str, house: int) -> list[int]:
     """Classical Graha Drishti from a planet's house (1..12)."""
     out = {((house + 5) % 12) + 1}  # 7th from itself
     for offset in _SPECIAL_ASPECTS.get(planet, ()):
         out.add(((house + offset - 2) % 12) + 1)
     return sorted(out)
-
-
-def _get(d: dict, *keys):
-    for k in keys:
-        if isinstance(d, dict) and d.get(k) is not None:
-            return d[k]
-    return None
 
 
 def _planet_rows(bundle: dict) -> list[dict]:
@@ -400,7 +389,10 @@ def analyse(bundle: dict) -> list[dict]:
                         f"{PLANET_NE[p]} {r['sign_ne']}मा "
                         f"{_ordinal_en(r['house'])} भावमा रहेकाले स्वभाव र "
                         f"जीवनशक्तिमा प्रभाव पर्छ।")
-        if dasha and dasha["mahadasha_lord"]:
+        if dasha and dasha["mahadasha_lord"] and dasha["antardasha_lord"]:
+            # Both lords are required: a current block with a Mahadasha
+            # but no Antardasha (e.g. a partial dasha tree) must not crash
+            # on PLANET_NE[None] — the area simply gets no dasha sentence.
             md_hits = dasha_influence["mahadasha_signifies_area_houses"]
             ad_hits = dasha_influence["antardasha_signifies_area_houses"]
             en_lines.append(

@@ -109,6 +109,87 @@ def test_analyse_aspects_follow_classical_drishti():
     assert la.aspected_houses("Venus", 1) == [7]
 
 
+def _mini_bundle(**over):
+    """Smallest bundle analyse() accepts: two planets, Aries lagna."""
+    bundle = {
+        "planets": [
+            {"planet": "Sun", "sign": 0, "sign_en": "Aries", "sign_ne": "मेष",
+             "house": 1},
+            {"planet": "Moon", "sign": 3, "sign_en": "Cancer", "sign_ne": "कर्कट",
+             "house": 4},
+        ],
+        "lagna": {"sign": 0},
+    }
+    bundle.update(over)
+    return bundle
+
+
+def test_analyse_tolerates_mahadasha_without_antardasha():
+    # Regression: a dasha.current with a Mahadasha lord but no Antardasha
+    # used to crash with KeyError: None (PLANET_NE[None]) in the dasha
+    # sentence. _resolve() can return exactly this shape when no AD covers
+    # the instant, so analyse() must not assume both lords exist.
+    bundle = _mini_bundle(dasha={"current": {
+        "mahadasha": {"lord": "Sun", "start": "2020-01-01",
+                      "end": "2026-01-01"}}})
+    areas = la.analyse(bundle)
+    assert len(areas) == 8
+    assert areas[0]["dasha_influence"]["mahadasha_lord"] == "Sun"
+    assert areas[0]["dasha_influence"]["antardasha_lord"] is None
+    # No dasha sentence is emitted; the other lines still render.
+    assert "Mahadasha" not in areas[0]["reading_en"]
+    assert "Sun in the 1st house" in areas[0]["reading_en"]
+
+
+def test_analyse_skips_planet_rows_without_a_house():
+    bundle = _mini_bundle(planets=[
+        {"planet": "Sun", "sign": 0, "house": 1},  # no sign_en: falls back
+        {"planet": "Moon", "sign": 3, "kp": {"house": 4}},  # kp house
+        {"planet": "Mars", "sign": 4},  # no house anywhere: skipped
+    ])
+    areas = la.analyse(bundle)
+    assert areas[0]["planets_in"]["Sun"]["sign_en"] == "Aries"
+    assert areas[5]["planets_in"]["Moon"]["house"] == 4  # education: house 4
+    assert "Mars" not in {p for a in areas for p in a["planets_in"]}
+
+
+def test_lagna_sign_and_cusp_signs_fallbacks():
+    # Lagna missing, first cusp carries the sign.
+    assert la._lagna_sign({"house_cusps": [{"sign": 5}]}) == 5
+    assert la._lagna_sign({}) is None
+    # Whole-sign fallback from Lagna when cusps are absent/incomplete.
+    assert la._cusp_signs({"lagna": {"sign": 0}}) == list(range(12))
+    assert la._cusp_signs({}) == []
+    assert la.house_lords({}) == {}
+    # Full cusp list wins over the fallback.
+    assert la.house_lords({"house_cusps": [{"sign": s} for s in range(12)]})[1] == "Mars"
+
+
+def test_empty_house_lord_missing_from_planets():
+    # Finance house 2 is empty and its lord Venus is absent from the rows:
+    # the "its lord carries the reading" line (not the placed-lord line).
+    areas = la.analyse(_mini_bundle())
+    finance = next(a for a in areas if a["id"] == "finance")
+    assert "The 2nd house is empty, so its lord Venus carries the reading" \
+        in finance["reading_en"]
+    assert "शुक्रले धन र परिवारको फल दिन्छ" in finance["reading_ne"]
+
+
+def test_dasha_current_accepts_object_periods():
+    # _lord/_span take the getattr path for non-dict period objects.
+    class _Period:
+        def __init__(self, lord):
+            self.lord = lord
+
+    bundle = _mini_bundle(dasha={"current": {
+        "mahadasha": _Period("Sun"), "antardasha": _Period("Moon")}})
+    areas = la.analyse(bundle)
+    d = areas[0]["dasha_influence"]
+    assert d["mahadasha_lord"] == "Sun" and d["antardasha_lord"] == "Moon"
+    assert d["mahadasha_period"] is None and d["antardasha_period"] is None
+    assert "Sun Mahadasha and Moon Antardasha" in areas[0]["reading_en"]
+
+
 def test_build_answer_career_full_structure():
     ans = aa.build_answer("Will I get a promotion in my job?", _bundle(), "en")
     assert ans["area_id"] == "career"

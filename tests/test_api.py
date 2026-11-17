@@ -447,3 +447,186 @@ def test_ask_astrologer_prashna_place_is_validated_not_500():
         **base, "place": {"lat": 27.7, "lon": 85.3, "tz": "Asia/Kathmandu"}})
     assert r.status_code == 200
     assert r.json()["source"] == "prashna"
+
+
+# ---------------- main.py error-branch coverage ---------------------------
+# (2026-11-17 coverage run: these branches were the bulk of main.py's
+# remaining 40 missed lines — endpoint ValueError->400 conversions,
+# validator rejections, and the rate-limiter's bucket shed.)
+
+def test_rl_is_heavy_rejects_other_methods():
+    import main as main_module
+
+    assert main_module._rl_is_heavy("PUT", "/api/kundali") is False
+    assert main_module._rl_is_heavy("DELETE", "/api/kundali") is False
+    assert main_module._rl_is_heavy("HEAD", "/api/kundali") is True
+
+
+def test_rl_limit_invalid_env_falls_back_to_60(monkeypatch):
+    import main as main_module
+
+    monkeypatch.setenv("VEDIC_RL_LIMIT", "not-a-number")
+    assert main_module._rl_limit() == 60
+    monkeypatch.setenv("VEDIC_RL_LIMIT", "0")
+    assert main_module._rl_limit() == 1  # max(1, ...) floor
+
+
+def test_rl_bucket_shed_caps_map():
+    # Fill past the 8192-bucket cap with stale (empty) buckets; one more
+    # allowed request must shed the 4096 stalest instead of growing forever.
+    import main as main_module
+    from collections import deque
+
+    saved = dict(main_module._RL_BUCKETS)
+    try:
+        main_module._RL_BUCKETS.clear()
+        for i in range(8193):
+            main_module._RL_BUCKETS[f"key-{i}"] = deque()
+        assert main_module._rl_allowed("fresh-key") is True
+        assert len(main_module._RL_BUCKETS) == 8193 - 4096 + 1
+        assert "fresh-key" in main_module._RL_BUCKETS
+    finally:
+        main_module._RL_BUCKETS.clear()
+        main_module._RL_BUCKETS.update(saved)
+
+
+def test_prashna_input_field_validators_are_422():
+    base = {"number": 42, "question": "Will I get the job?",
+            "lat": 27.7, "lon": 85.3, "tz": "Asia/Kathmandu"}
+    for bad in ({"lat": 91}, {"lat": -91}, {"lon": 200}, {"lon": -181},
+                {"tz": "Bad/Zone"}):
+        r = client.post("/api/prashna", json={**base, **bad})
+        assert r.status_code == 422, bad
+
+
+def test_prashna_unknown_place_is_400_not_500():
+    r = client.post("/api/prashna", json={
+        "number": 42, "question": "Will I get the job?",
+        "place_id": "no-such-place"})
+    assert r.status_code == 400
+
+
+def test_complete_report_out_of_range_date_is_400(monkeypatch):
+    monkeypatch.setenv("VEDIC_RL_LIMIT", "1000")
+    r = client.post("/api/complete-report",
+                    json={**SAMPLE, "dob": "4000-01-01"})
+    assert r.status_code == 400
+
+
+def test_match_out_of_range_date_is_400(monkeypatch):
+    monkeypatch.setenv("VEDIC_RL_LIMIT", "1000")
+    r = client.post("/api/match", json={
+        "groom": {**SAMPLE, "dob": "4000-01-01"}, "bride": SAMPLE})
+    assert r.status_code == 400
+
+
+def test_ask_astrologer_birth_value_error_is_400(monkeypatch):
+    monkeypatch.setenv("VEDIC_RL_LIMIT", "1000")
+    r = client.post("/api/ask-astrologer", json={
+        "question": "Will I get a promotion?",
+        "birth": {**SAMPLE, "dob": "4000-01-01"}})
+    assert r.status_code == 400
+
+
+def test_places_skips_global_hit_near_a_local_entry(monkeypatch):
+    from astro import geocode
+
+    geocode._cache.clear()
+    monkeypatch.setattr(geocode, "_fetch_open_meteo", lambda q: {"results": [{
+        "name": "Kathmandu City", "latitude": 27.72, "longitude": 85.32,
+        "country": "Nepal", "timezone": "Asia/Kathmandu"}]})
+    r = client.get("/api/places", params={"q": "kathmandu"})
+    names = [p["name"] for p in r.json()["places"]]
+    assert "Kathmandu City" not in names
+    assert names.count("Kathmandu") == 1
+
+
+def test_tz_lookup_no_timezone_is_422(monkeypatch):
+    from astro import geocode
+
+    # timezonefinder answers an Etc/GMT zone for every ocean point, so the
+    # None branch is pinned by stubbing the lookup rather than by coords.
+    monkeypatch.setattr(geocode, "timezone_at", lambda lat, lon: None)
+    r = client.get("/api/tz", params={"lat": 0, "lon": -160})
+    assert r.status_code == 422
+
+
+def test_bs_convert_bad_inputs_are_400():
+    assert client.get("/api/bs", params={"bs": "2083-13-40"}).status_code == 400
+    assert client.get("/api/bs", params={"bs": "not-a-date"}).status_code == 400
+    assert client.get("/api/bs", params={"date": "garbage"}).status_code == 400
+
+
+def test_bs_convert_ad_to_bs_success():
+    r = client.get("/api/bs", params={"date": "2026-11-04"})
+    assert r.status_code == 200
+    assert r.json()["iso"] == "2083-07-18"
+
+
+def test_non_dict_body_rejected_direct_call():
+    # FastAPI validates `body: dict` before the handler runs, so a JSON
+    # array reaches the endpoint as a 422 — these guards are only reachable
+    # by calling the handler directly. Pinned here so the defensive
+    # branches stay covered if the signature ever loosens.
+    import main as main_module
+    from fastapi import HTTPException
+
+    for fn, args in ((main_module.ask_astrologer, ([1, 2],)),
+                     (main_module.life_question_answer,
+                      ("marriage_timing", [1, 2]))):
+        try:
+            fn(*args)
+        except HTTPException as e:
+            assert e.status_code == 400
+        else:
+            raise AssertionError(f"{fn.__name__} accepted a non-dict body")
+
+
+def test_horoscope_bad_date_is_400():
+    r = client.get("/api/horoscope", params={"sign": 3, "date": "garbage"})
+    assert r.status_code == 400
+
+
+def test_muhurta_defaults_birth_moon_sign_from_natal_chart(monkeypatch):
+    monkeypatch.setenv("VEDIC_RL_LIMIT", "1000")
+    r = client.get("/api/muhurta", params={
+        "date_from": "2026-11-20", "date_to": "2026-11-21",
+        "activity": "marriage", "place_id": "kathmandu",
+        "birth_dob": "1998-05-14", "birth_tob": "06:30",
+        "birth_place_id": "kathmandu"})
+    assert r.status_code == 200
+
+
+def test_report_pdf_out_of_range_date_is_400(monkeypatch):
+    monkeypatch.setenv("VEDIC_RL_LIMIT", "1000")
+    r = client.get("/api/report.pdf", params={
+        "dob": "4000-01-01", "tob": "06:30", "place_id": "kathmandu"})
+    assert r.status_code == 400
+
+
+def test_complete_report_pdf_out_of_range_date_is_400(monkeypatch):
+    monkeypatch.setenv("VEDIC_RL_LIMIT", "1000")
+    r = client.get("/api/complete-report.pdf", params={
+        "dob": "4000-01-01", "tob": "06:30", "place_id": "kathmandu"})
+    assert r.status_code == 400
+
+
+def test_complete_report_pdf_render_failure_is_500(monkeypatch):
+    from astro import complete_pdf
+
+    monkeypatch.setenv("VEDIC_RL_LIMIT", "1000")
+    monkeypatch.setattr(
+        complete_pdf, "render_complete_pdf",
+        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("no fonts")))
+    r = client.get("/api/complete-report.pdf", params={
+        "dob": "1998-05-14", "tob": "06:30", "place_id": "kathmandu"})
+    assert r.status_code == 500
+
+
+def test_index_and_service_worker_serve():
+    r = client.get("/")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    r = client.get("/sw.js")
+    assert r.status_code == 200
+    assert "javascript" in r.headers["content-type"]

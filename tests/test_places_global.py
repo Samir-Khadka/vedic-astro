@@ -301,3 +301,107 @@ def test_panchang_invalid_tz_is_422():
     r = client.get("/api/panchang", params={
         "date": "2026-10-23", "lat": 10, "lon": 10, "tz": "Bad/Zone"})
     assert r.status_code == 422
+
+
+# ---------------- parser malformed-item skips ------------------------------
+
+def test_open_meteo_parsing_skips_malformed_items():
+    raw = {"results": [
+        {"name": "NoCoords", "country": "Nowhere"},          # no lat/lon
+        {"name": "BadLat", "latitude": "abc", "longitude": 1.0},
+        {"latitude": 47.9, "longitude": 106.9, "country": "Mongolia"},  # no name
+        {"name": "   ", "latitude": 47.9, "longitude": 106.9},  # blank name
+        {"name": "Ulaanbaatar", "latitude": 47.90771, "longitude": 106.88324,
+         "country": "Mongolia", "timezone": "Asia/Ulaanbaatar"},
+    ]}
+    results = geocode.parse_open_meteo(raw)
+    assert [r["name"] for r in results] == ["Ulaanbaatar"]
+
+
+def test_photon_parsing_skips_malformed_features():
+    raw = {"features": [
+        {"properties": {"name": "TooShort"}, "geometry": {"coordinates": [1.0]}},
+        {"properties": {"name": "BadCoords"},
+         "geometry": {"coordinates": ["x", "y"]}},
+        {"properties": {"country": "Iceland"},  # no name or city
+         "geometry": {"coordinates": [-21.9, 64.1]}},
+        {"properties": {"name": "Reykjavík", "country": "Iceland"},
+         "geometry": {"coordinates": [-21.942635, 64.146582]}},
+    ]}
+    results = geocode.parse_photon(raw)
+    assert [r["name"] for r in results] == ["Reykjavík"]
+
+
+def test_nominatim_parsing_skips_malformed_items():
+    raw = [
+        {"lon": "106.9", "display_name": "NoLat, Mongolia"},
+        {"lat": "47.9", "lon": "abc", "display_name": "BadLon, Mongolia"},
+        {"lat": "47.9", "lon": "106.9", "display_name": ""},  # empty name
+        {"lat": "47.9184678", "lon": "106.9177016",
+         "display_name": "Ulaanbaatar, Mongolia"},
+    ]
+    results = geocode.parse_nominatim(raw)
+    assert [r["name"] for r in results] == ["Ulaanbaatar"]
+
+
+def test_shorten_empty_and_single_part():
+    assert geocode._shorten("") == ("", "", "")
+    assert geocode._shorten("   ") == ("", "", "")
+    assert geocode._shorten("Kathmandu") == ("Kathmandu", "", "Kathmandu")
+    # Region equal to the name collapses the label to the name alone.
+    assert geocode._shorten("Paris, Paris") == ("Paris", "Paris", "Paris")
+
+
+def test_fetch_photon_and_nominatim_build_requests(monkeypatch):
+    # The fetchers themselves are always monkeypatched in the chain tests,
+    # so their URL-building bodies need a direct call with a stubbed _get_json.
+    seen = {}
+
+    def fake_get_json(url):
+        seen["url"] = url
+        return {"ok": True}
+
+    monkeypatch.setattr(geocode, "_get_json", fake_get_json)
+    assert geocode._fetch_photon("reykjavik") == {"ok": True}
+    assert "photon.komoot.io" in seen["url"] and "q=reykjavik" in seen["url"]
+    assert geocode._fetch_nominatim("ulaanbaatar") == {"ok": True}
+    assert "nominatim.openstreetmap.org" in seen["url"]
+    assert "q=ulaanbaatar" in seen["url"]
+    monkeypatch.setattr(geocode, "_get_finder",
+                        lambda: (_ for _ in ()).throw(RuntimeError("no data")))
+    assert geocode.timezone_at(27.7172, 85.3240) is None
+
+
+# ---------------- search_global cache --------------------------------------
+
+def test_search_global_caches_results(monkeypatch):
+    calls = []
+
+    def fetch(q):
+        calls.append(q)
+        return RAW_OM_ULAANBAATAR
+
+    monkeypatch.setattr(geocode, "_fetch_open_meteo", fetch)
+    first = geocode.search_global("ulaanbaatar")
+    second = geocode.search_global("Ulaanbaatar")  # same key, cached
+    assert first == second
+    assert calls == ["ulaanbaatar"]  # second call never touched the fetcher
+
+
+def test_search_global_cache_evicts_oldest(monkeypatch):
+    monkeypatch.setattr(geocode, "_CACHE_MAX", 2)
+    calls = []
+
+    def fetch(q):
+        calls.append(q)
+        return RAW_OM_ULAANBAATAR
+
+    monkeypatch.setattr(geocode, "_fetch_open_meteo", fetch)
+    geocode.search_global("alpha")
+    geocode.search_global("bravo")
+    geocode.search_global("charlie")  # evicts "alpha" (oldest)
+    assert calls == ["alpha", "bravo", "charlie"]
+    geocode.search_global("bravo")   # still cached
+    assert calls == ["alpha", "bravo", "charlie"]
+    geocode.search_global("alpha")   # evicted: fetched again
+    assert calls == ["alpha", "bravo", "charlie", "alpha"]
