@@ -147,3 +147,127 @@ def test_saturn_moon_span_returns_none_when_targets_unfindable(monkeypatch):
     monkeypatch.setattr(transits, "_ingress_events", lambda planet, lo, hi: [])
     monkeypatch.setattr(transits, "ingress_jd", lambda planet, jd: JD_SPAN + 100000.0)
     assert transits.saturn_moon_span(11, JD_SPAN) is None
+
+
+# --- Illinois false-position bisection (2026-11-18) -------------------------
+#
+# _bisect_ingress used to halve the bracket on the sign (~24 calc_ut for
+# Saturn's 10-day step); it now interpolates on the sidereal longitude's
+# distance to the sign boundary (Illinois false position, ~9 evals).
+# These tests pin the equivalence: same crossing, same UTC date.
+
+
+def _plain_bisect(planet, lo, hi, start_sign, forward):
+    """The pre-2026-11-18 implementation, kept as the reference: pure
+    midpoint bisection on the sign."""
+    for _ in range(64):
+        mid = (lo + hi) / 2.0
+        past = transits._sign_at(planet, mid) != start_sign
+        if past:
+            if forward:
+                hi = mid
+            else:
+                lo = mid
+        elif forward:
+            lo = mid
+        else:
+            hi = mid
+        if hi - lo < transits._BISECT_TOL:
+            break
+    return (lo + hi) / 2.0
+
+
+def _forward_brackets(planet, jd0, jd1):
+    """(lo, hi, start_sign) triples holding a sign change, forward scan."""
+    step = transits._STEP_DAYS[planet]
+    out = []
+    lo, s0 = jd0, transits._sign_at(planet, jd0)
+    while lo < jd1:
+        hi = lo + step
+        s1 = transits._sign_at(planet, hi)
+        if s1 != s0:
+            out.append((lo, hi, s0))
+            s0 = s1
+        lo = hi
+    return out
+
+
+def _backward_brackets(planet, jd0, jd1):
+    """(lo, hi, start_sign) triples holding a sign change, backward scan:
+    sign(lo) != start_sign, sign(hi) == start_sign."""
+    step = transits._STEP_DAYS[planet]
+    out = []
+    hi, s1 = jd1, transits._sign_at(planet, jd1)
+    while hi > jd0:
+        lo = hi - step
+        s0 = transits._sign_at(planet, lo)
+        if s0 != s1:
+            out.append((lo, hi, s1))
+            s1 = s0
+        hi = lo
+    return out
+
+
+def _assert_same_crossing(a, b):
+    # Same UTC date (what the API reports) and within ~90 seconds — the
+    # true node wobbles across the boundary, so two methods can land on
+    # adjacent genuine crossings up to ~20 s apart (measured over a
+    # 12-year sweep); a wrong crossing would be days off.
+    assert ephemeris.jd_to_date_str(a) == ephemeris.jd_to_date_str(b)
+    assert abs(a - b) < 1e-3
+
+
+@pytest.mark.parametrize("planet", ["Saturn", "Jupiter", "Rahu", "Ketu",
+                                    "Mars", "Sun", "Venus", "Mercury", "Moon"])
+def test_bisect_forward_matches_plain_bisection(planet):
+    """Every ingress bracket in 2024-2027 must bisect to the same
+    crossing as plain bisection — including retrograde dips (Mars,
+    Mercury, Venus) and the backwards-moving nodes (Rahu/Ketu)."""
+    jd0 = ephemeris.to_julian_day(datetime(2024, 1, 1, 0, 0))
+    jd1 = ephemeris.to_julian_day(datetime(2027, 1, 1, 0, 0))
+    brackets = _forward_brackets(planet, jd0, jd1)
+    assert brackets, f"fixture must hold an ingress for {planet}"
+    for lo, hi, start_sign in brackets:
+        new = transits._bisect_ingress(planet, lo, hi, start_sign, True)
+        old = _plain_bisect(planet, lo, hi, start_sign, True)
+        _assert_same_crossing(new, old)
+
+
+@pytest.mark.parametrize("planet", ["Saturn", "Mars", "Ketu", "Moon"])
+def test_bisect_backward_matches_plain_bisection(planet):
+    """The prev_ingress direction (forward=False) must agree too."""
+    jd0 = ephemeris.to_julian_day(datetime(2024, 1, 1, 0, 0))
+    jd1 = ephemeris.to_julian_day(datetime(2027, 1, 1, 0, 0))
+    brackets = _backward_brackets(planet, jd0, jd1)
+    assert brackets, f"fixture must hold an ingress for {planet}"
+    for lo, hi, start_sign in brackets:
+        new = transits._bisect_ingress(planet, lo, hi, start_sign, False)
+        old = _plain_bisect(planet, lo, hi, start_sign, False)
+        _assert_same_crossing(new, old)
+
+
+def test_bisect_iteration_budget(monkeypatch):
+    """The speedup itself, pinned: one bisection must cost far fewer
+    ephemeris evaluations than the ~24 that halving Saturn's 10-day
+    bracket needed. Counts every planet_longitude_at call (the sign
+    checks route through it too), so a revert to plain bisection
+    fails this test."""
+    calls = {"n": 0}
+    orig = ephemeris.planet_longitude_at
+
+    def counting(name, jd):
+        calls["n"] += 1
+        return orig(name, jd)
+
+    monkeypatch.setattr(ephemeris, "planet_longitude_at", counting)
+    jd0 = ephemeris.to_julian_day(datetime(2026, 1, 1, 0, 0))
+    jd1 = ephemeris.to_julian_day(datetime(2027, 1, 1, 0, 0))
+    evals = []
+    for planet in ("Saturn", "Jupiter", "Sun", "Mercury", "Ketu"):
+        for lo, hi, start_sign in _forward_brackets(planet, jd0, jd1):
+            before = calls["n"]
+            transits._bisect_ingress(planet, lo, hi, start_sign, True)
+            evals.append(calls["n"] - before)
+    assert evals, "fixture must hold ingress brackets"
+    assert max(evals) <= 20, f"slowest bisection took {max(evals)} evals"
+    assert sum(evals) / len(evals) <= 12, f"mean {sum(evals)/len(evals):.1f} evals"

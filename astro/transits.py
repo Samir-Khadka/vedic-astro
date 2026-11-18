@@ -69,6 +69,11 @@ def _ingress_events(planet: str, lo: float, hi: float) -> list[tuple[float, int]
     return events
 
 
+def _wrap180(deg: float) -> float:
+    """Signed angular distance to a longitude, wrapped to (-180, 180]."""
+    return (deg + 180.0) % 360.0 - 180.0
+
+
 def _bisect_ingress(planet: str, lo: float, hi: float, start_sign: int,
                     forward: bool) -> float:
     """Canonical ingress moment inside the bracket [lo, hi].
@@ -78,19 +83,92 @@ def _bisect_ingress(planet: str, lo: float, hi: float, start_sign: int,
     scanning back). Returns the bracket midpoint; callers bisecting the
     same bracket get the identical JD, and callers from different
     brackets agree to within _BISECT_TOL (and on the UTC date).
+
+    The root is found by Illinois false position on the sidereal
+    longitude's distance to the sign boundary, not by plain bisection
+    on the sign: the longitude is nearly linear over a bracket (a few
+    degrees), so the secant step lands within ~1e-6 days in ~5
+    evaluations instead of the ~24 that halving the bracket needs
+    (Saturn's 10-day step: log2(10/1e-6)). Each evaluation is still a
+    single swe.calc_ut — the same call planet_sign_at() makes — so a
+    bisection costs ~7 calc_ut instead of ~24. The bracket update
+    itself stays sign-based, exactly as before, so a retrograde dip
+    inside the bracket converges to the same crossing pure bisection
+    would find; if the longitude interpolation is ever unusable
+    (multi-sign jump, same-signed endpoints), it falls back to plain
+    midpoint bisection.
     """
+    far_sign = _sign_at(planet, hi) if forward else _sign_at(planet, lo)
+    if (far_sign - start_sign) % 12 == 1:
+        boundary = ((start_sign + 1) * 30.0) % 360.0
+    elif (start_sign - far_sign) % 12 == 1:
+        boundary = (start_sign * 30.0) % 360.0
+    else:
+        boundary = None
+    flo = fhi = None
+    if boundary is not None:
+        flo = _wrap180(ephemeris.planet_longitude_at(planet, lo) - boundary)
+        fhi = _wrap180(ephemeris.planet_longitude_at(planet, hi) - boundary)
+        if flo * fhi >= 0.0 or abs(flo) > 90.0 or abs(fhi) > 90.0:
+            flo = fhi = None  # unusable bracket: plain bisection
+    side = 0  # endpoint updated last: -1 lo, +1 hi
+    # Last evaluated point, for the local slope: the secant step can land
+    # on the root to machine precision (fm ~ 1e-12 deg) while the bracket
+    # is still wide — without a function-value stop the loop then stalls,
+    # re-evaluating the same mid while Illinois halving drags the next
+    # step to the midpoint (~20 wasted evals). So stop as soon as the
+    # evaluated point is within _BISECT_TOL of the root in *time*,
+    # estimated from the local slope between the last two evaluations.
+    prev_jd, prev_f = hi, fhi
     for _ in range(64):
-        mid = (lo + hi) / 2.0
-        past = _sign_at(planet, mid) != start_sign
+        if flo is not None:
+            mid = lo - flo * (hi - lo) / (fhi - flo) if fhi != flo else (lo + hi) / 2.0
+            if not (lo < mid < hi):
+                mid = (lo + hi) / 2.0
+            lon = ephemeris.planet_longitude_at(planet, mid)
+            fm = _wrap180(lon - boundary)
+            if fm == 0.0:
+                return mid
+            if prev_jd is not None and mid != prev_jd:
+                slope = (fm - prev_f) / (mid - prev_jd)
+                if slope != 0.0 and abs(fm / slope) < _BISECT_TOL:
+                    return mid
+            prev_jd, prev_f = mid, fm
+            past = ephemeris.sign_of(lon) != start_sign
+        else:
+            mid = (lo + hi) / 2.0
+            past = _sign_at(planet, mid) != start_sign
+            fm = None
         if past:
             if forward:
                 hi = mid
+                if fm is not None:
+                    fhi = fm
+                new_side = 1
             else:
                 lo = mid
+                if fm is not None:
+                    flo = fm
+                new_side = -1
         elif forward:
             lo = mid
+            if fm is not None:
+                flo = fm
+            new_side = -1
         else:
             hi = mid
+            if fm is not None:
+                fhi = fm
+            new_side = 1
+        if flo is not None and new_side == side:
+            # Illinois: the same endpoint was updated twice running, so
+            # the retained endpoint's value is halved to keep the
+            # secant step from stagnating on one side.
+            if new_side == -1:
+                fhi /= 2.0
+            else:
+                flo /= 2.0
+        side = new_side
         if hi - lo < _BISECT_TOL:
             break
     return (lo + hi) / 2.0
