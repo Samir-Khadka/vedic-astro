@@ -342,6 +342,25 @@ def test_vimshottari_sookshma_prana_chain():
     b = _sample_bundle()
     cur = b["dasha"]["current"]
     assert cur["sookshma"] is not None and cur["prana"] is not None
+    # Bundle boundaries are DATE strings (engine serialises .date().isoformat()),
+    # so a sub-day period collapses: on 2026-11-19 the Venus prana starts and
+    # ends on the same day the Sun sookshma ends, and strict `<` on the date
+    # strings fails although the datetimes nest correctly. At date granularity
+    # the nesting invariant is `<=` on the end comparisons.
+    assert cur["pratyantardasha"]["start"] <= cur["sookshma"]["start"] <= cur["pratyantardasha"]["end"]
+    assert cur["sookshma"]["start"] <= cur["prana"]["start"] <= cur["sookshma"]["end"]
+
+
+def test_vimshottari_sookshma_prana_chain_datetimes():
+    # Same nesting invariant at full datetime precision, at a fixed instant
+    # reproducing the 2026-11-19 boundary (prana starts on the sookshma's
+    # last day): strict nesting must hold on the raw datetimes.
+    planets, jd = _sample_planets()
+    birth_dt = ephemeris.make_local_datetime(date(1998, 5, 14), time(6, 30), "Asia/Kathmandu")
+    now = datetime(2026, 11, 19, 7, 44, tzinfo=ZoneInfo("Asia/Kathmandu"))
+    tree = dasha_module.vimshottari_tree(birth_dt, planets["Moon"]["longitude"], now)
+    cur = tree["current"]
+    assert cur["sookshma"] is not None and cur["prana"] is not None
     assert cur["pratyantardasha"]["start"] <= cur["sookshma"]["start"] < cur["pratyantardasha"]["end"]
     assert cur["sookshma"]["start"] <= cur["prana"]["start"] < cur["sookshma"]["end"]
 

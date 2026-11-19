@@ -89,3 +89,26 @@ def test_fallback_degrees_to_reportlab_without_fonts(monkeypatch):
     monkeypatch.setattr(pdf_module, "_fallback_font_paths", lambda: None)
     data = pdf_module._render_pdf_fallback(BUNDLE, "ne")
     assert data[:5] == b"%PDF-"
+
+
+def test_reportlab_fallback_escapes_place_name_markup(monkeypatch):
+    """A custom place name is user free text: markup in it must render
+    literally, never as ReportLab tags. Unescaped, a malformed tag
+    (e.g. 'a <b') raised ValueError inside Paragraph and 500d
+    /api/report.pdf on this last-resort fallback path; a well-formed tag
+    ('<b>') silently injected formatting and dropped text."""
+    import copy
+
+    monkeypatch.setattr(pdf_module, "_fallback_font_paths", lambda: None)
+    for bad_name in ("Foo <b>bar</b>", "a <b", "<<b>>", "<font color=red>x",
+                     "<b><i>x</b>", "<para>x</para>"):
+        bundle = copy.deepcopy(BUNDLE)
+        bundle["birth"]["place"]["name"] = bad_name
+        data = pdf_module._render_pdf_fallback(bundle, "en")
+        assert data[:5] == b"%PDF-", bad_name
+    if shutil.which("pdftotext") is None:
+        pytest.skip("pdftotext not available")
+    bundle = copy.deepcopy(BUNDLE)
+    bundle["birth"]["place"]["name"] = "Foo <b>bar</b>"
+    text = _extract(pdf_module._render_pdf_fallback(bundle, "en"))
+    assert "Foo <b>bar</b>" in text

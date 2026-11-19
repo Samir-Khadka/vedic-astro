@@ -938,7 +938,12 @@ def _render_pdf_reportlab(bundle: dict) -> bytes:
     story = [Paragraph("Vedic Astro — Premium Report", styles["Title"])]
     birth = bundle["birth"]
     story.append(Paragraph(
-        f"Born {birth['date']} at {birth['time']} — {birth['place']['name']}", styles["Normal"]))
+        # Place name is user free text: escape it like every other string
+        # in this function — unescaped ReportLab markup in a custom place
+        # name either injected formatting or raised ValueError (malformed
+        # tags) and 500d /api/report.pdf on this last-resort fallback path.
+        html.escape(f"Born {birth['date']} at {birth['time']} — {birth['place']['name']}"),
+        styles["Normal"]))
     story.append(Spacer(1, 10))
 
     def add_section(title: str, facts):
