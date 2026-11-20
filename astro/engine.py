@@ -1,7 +1,7 @@
 """Engine facade — assembles the complete kundali bundle from birth data."""
 from __future__ import annotations
 
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from . import (
@@ -268,6 +268,13 @@ def compute_kundali(payload: dict, now: datetime | None = None,
     yoga_list = yogas_module.detect_yogas(planets, lagna_sign)
     birth_panchang = panchang_module.panchang_at(birth_dt, place["lat"], place["lon"], place["tz"])
     rise, set_ = ephemeris.sunrise_sunset(dob, place["lat"], place["lon"], place["tz"])
+    # Neighbouring days' rise/set: the upagrahas are computed for the
+    # Vedic day (sunrise to sunrise), so a pre-sunrise birth needs the
+    # previous day and an evening birth's Mandi needs the next sunrise.
+    prev_rise, prev_set = ephemeris.sunrise_sunset(
+        dob - timedelta(days=1), place["lat"], place["lon"], place["tz"])
+    next_rise, _next_set = ephemeris.sunrise_sunset(
+        dob + timedelta(days=1), place["lat"], place["lon"], place["tz"])
 
     ctx = {
         "planets": planets, "lagna_sign": lagna_sign,
@@ -309,7 +316,7 @@ def compute_kundali(payload: dict, now: datetime | None = None,
         classical_lagnas = None
     upagrahas = upagrahas_module.compute_upagrahas(
         planets["Sun"]["longitude"], birth_dt, rise, set_,
-        place["lat"], place["lon"])
+        place["lat"], place["lon"], prev_rise, prev_set, next_rise)
     chara = chara_module.chara_periods(birth_dt, planets, lagna_sign, now)
     # Phase 3 dashas: Narayana (Jaimini), Shodshottari (116-yr),
     # Mudda (Tajika annual), Kalachakra.

@@ -17,6 +17,13 @@ Day segments (1-based from sunrise): Sun 7, Mon 6, Tue 5, Wed 4, Thu 3,
 Fri 2, Sat 1. Night segments: the first segment is ruled by the weekday
 lord 5th from the day's lord (Sun day -> Jupiter), then in weekday order;
 the 8th segment is lordless in both cases.
+
+The weekday is the VEDIC weekday: a Vedic day (vara) runs sunrise to
+sunrise, so a birth before today's sunrise belongs to the previous
+civil day, and both Gulika and Mandi are computed for that day (its
+daytime segments and its night segments). A pre-sunrise birth therefore
+needs the previous day's sunrise/sunset, and an evening birth's Mandi
+needs the next sunrise; see gulika_mandi().
 """
 from __future__ import annotations
 
@@ -52,11 +59,26 @@ def _asc_at(dt: datetime, lat: float, lon: float) -> float:
 
 
 def gulika_mandi(birth_dt: datetime, sunrise: datetime | None,
-                 sunset: datetime | None, lat: float, lon: float) -> dict[str, dict | None]:
+                 sunset: datetime | None, lat: float, lon: float,
+                 prev_sunrise: datetime | None = None,
+                 prev_sunset: datetime | None = None,
+                 next_sunrise: datetime | None = None) -> dict[str, dict | None]:
     """Gulika (day) and Mandi (night) longitudes + the segment used.
 
-    Each entry is {longitude, sign, segment, segment_start} or None when
+    Each entry is {longitude, sign, segment, at} or None when
     sunrise/sunset is unavailable (polar day/night).
+
+    Both are computed for the birth's VEDIC day (sunrise to sunrise):
+    a birth before today's sunrise belongs to the previous civil day,
+    so its Gulika comes from the previous day's daytime segments and
+    its Mandi from the previous night (previous sunset -> today's
+    sunrise). A birth after sunset uses today's sunset -> next sunrise.
+    The neighbouring rise/set values are parameters because this module
+    does not know the place's timezone name; when a needed neighbour is
+    missing the affected entry is None rather than silently computed
+    for the wrong day. (An evening birth with no next sunrise — polar
+    transition days — falls back to sunrise + 1 day, the previous
+    approximation, instead of going None.)
     """
     def entry(dt: datetime | None) -> dict | None:
         if dt is None:
@@ -68,35 +90,52 @@ def gulika_mandi(birth_dt: datetime, sunrise: datetime | None,
     if sunrise is None or sunset is None:
         return {"gulika": None, "mandi": None}
 
-    weekday = birth_dt.weekday()  # Mon=0..Sun=6
-    day_len = (sunset - sunrise).total_seconds()
-    seg = DAY_GULIKA_SEGMENT[weekday]
-    gulika_start = sunrise + (seg - 1) * (day_len / 8) * timedelta(seconds=1)
+    pre_sunrise = birth_dt < sunrise
+    weekday = ephemeris.vedic_weekday(birth_dt, sunrise)
 
-    # Night: first segment ruled by the weekday lord 5th from the day lord.
+    # Gulika: daytime segments of the Vedic day.
+    if pre_sunrise:
+        day_start, day_end = prev_sunrise, prev_sunset
+    else:
+        day_start, day_end = sunrise, sunset
+    gulika = None
+    if day_start is not None and day_end is not None:
+        seg = DAY_GULIKA_SEGMENT[weekday]
+        day_len = (day_end - day_start).total_seconds()
+        gulika = entry(day_start + (seg - 1) * (day_len / 8) * timedelta(seconds=1))
+        if gulika:
+            gulika["segment"] = seg
+
+    # Mandi: night segments of the Vedic day.
     sun0 = (weekday + 1) % 7  # Sun=0..Sat=6
     first_lord = (sun0 + 4) % 7
     sat_segment = next(i for i in range(1, 8) if (first_lord + i - 1) % 7 == 6)
-    night_len = (sunrise + timedelta(days=1) - sunset).total_seconds()
-    mandi_start = sunset + (sat_segment - 1) * (night_len / 8) * timedelta(seconds=1)
-
-    g = entry(gulika_start)
-    if g:
-        g["segment"] = seg
-    m = entry(mandi_start)
-    if m:
-        m["segment"] = sat_segment
-    return {"gulika": g, "mandi": m}
+    if pre_sunrise:
+        night_start, night_end = prev_sunset, sunrise
+    else:
+        night_start = sunset
+        night_end = next_sunrise if next_sunrise is not None else sunrise + timedelta(days=1)
+    mandi = None
+    if night_start is not None and night_end is not None:
+        night_len = (night_end - night_start).total_seconds()
+        mandi = entry(night_start + (sat_segment - 1) * (night_len / 8) * timedelta(seconds=1))
+        if mandi:
+            mandi["segment"] = sat_segment
+    return {"gulika": gulika, "mandi": mandi}
 
 
 def compute_upagrahas(sun_longitude: float, birth_dt: datetime,
                       sunrise: datetime | None, sunset: datetime | None,
-                      lat: float, lon: float) -> dict[str, dict | None]:
+                      lat: float, lon: float,
+                      prev_sunrise: datetime | None = None,
+                      prev_sunset: datetime | None = None,
+                      next_sunrise: datetime | None = None) -> dict[str, dict | None]:
     """All six upagrahas as {key: {longitude, sign} | None}."""
     out: dict[str, dict | None] = {}
     for key, longitude in solar_upagrahas(sun_longitude).items():
         out[key] = {"longitude": round(longitude, 4), "sign": int(longitude // 30) % 12}
-    gm = gulika_mandi(birth_dt, sunrise, sunset, lat, lon)
+    gm = gulika_mandi(birth_dt, sunrise, sunset, lat, lon,
+                      prev_sunrise, prev_sunset, next_sunrise)
     out["gulika"] = gm["gulika"]
     out["mandi"] = gm["mandi"]
     return out

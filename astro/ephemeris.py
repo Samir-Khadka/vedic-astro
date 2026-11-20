@@ -247,6 +247,18 @@ def sunrise_sunset(local_date: date, lat: float, lon: float, tz_name: str) -> tu
     return to_local(rise_jd), to_local(set_jd)
 
 
+def vedic_weekday(moment: datetime, sunrise: datetime | None) -> int:
+    """Python weekday (Mon=0..Sun=6) of the Vedic day containing `moment`.
+
+    A Vedic day (vara) runs sunrise to sunrise, so a moment before
+    today's sunrise belongs to the previous civil day's vara. When the
+    sunrise is unknown (polar day/night) the civil weekday is returned.
+    """
+    if sunrise is not None and moment < sunrise:
+        return (moment.date() - timedelta(days=1)).weekday()
+    return moment.weekday()
+
+
 def sun_moon_longitudes(jd: float) -> tuple[float, float]:
     _ensure_ayanamsa()
     sun, _ = _calc_ut(jd, swe.SUN, _FLAGS)

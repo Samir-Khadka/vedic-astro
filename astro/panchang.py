@@ -22,7 +22,8 @@ from __future__ import annotations
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
-from .ephemeris import nakshatra_of, sunrise_sunset, sun_moon_longitudes, to_julian_day
+from .ephemeris import (nakshatra_of, sunrise_sunset, sun_moon_longitudes,
+                       to_julian_day, vedic_weekday)
 
 _MOVABLE = ["Bava", "Balava", "Kaulava", "Taitila", "Garaja", "Vanija", "Vishti"]
 
@@ -163,6 +164,10 @@ def panchang_at(moment: datetime, lat: float, lon: float, tz_name: str) -> dict:
     nak_idx, pada = nakshatra_of(moon)
     yoga_idx = int(((sun + moon) % 360.0) // (360.0 / 27.0))
     lm = lunar_month_at(moment, lat, lon, tz_name)
+    # The vara is the Vedic weekday (sunrise to sunrise): a birth before
+    # today's sunrise belongs to the previous day. Callers that evaluate
+    # at sunrise are unaffected (moment == rise -> civil weekday).
+    rise, _set = sunrise_sunset(moment.date(), lat, lon, tz_name)
     return {
         "tithi_index": tithi_idx,
         "paksha": "Shukla" if tithi_idx < 15 else "Krishna",
@@ -170,7 +175,7 @@ def panchang_at(moment: datetime, lat: float, lon: float, tz_name: str) -> dict:
         "nakshatra_pada": pada,
         "yoga_index": yoga_idx,
         "karana": karana_of(half_idx),
-        "weekday": moment.weekday(),
+        "weekday": vedic_weekday(moment, rise),
         "lunar_month_index": lm["lunar_month_index"],
         "lunar_month_en": lm["lunar_month_en"],
         "lunar_month_ne": lm["lunar_month_ne"],
