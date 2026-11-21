@@ -4,6 +4,7 @@ lifetime Sade Sati, gemstone guide and Muhurta v2."""
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
+import pytest
 from fastapi.testclient import TestClient
 
 from astro import (
@@ -363,6 +364,66 @@ def test_vimshottari_sookshma_prana_chain_datetimes():
     assert cur["sookshma"] is not None and cur["prana"] is not None
     assert cur["pratyantardasha"]["start"] <= cur["sookshma"]["start"] < cur["pratyantardasha"]["end"]
     assert cur["sookshma"]["start"] <= cur["prana"]["start"] < cur["sookshma"]["end"]
+
+
+def test_vimshottari_tree_repeats_past_120_years():
+    # A birth in 1900 is 126 years before today: the old single-cycle
+    # tree ended ~2020, `current` was None, and engine.py crashed on
+    # it with a 500. The 120-year sequence repeats, so the tree now
+    # spans enough cycles to cover `now`.
+    birth_dt = ephemeris.make_local_datetime(date(1900, 1, 1), time(6, 30), "Asia/Kathmandu")
+    jd = ephemeris.to_julian_day(birth_dt)
+    moon_lon = ephemeris.planet_longitudes(jd)["Moon"]["longitude"]
+    now = datetime(2026, 11, 19, 7, 44, tzinfo=ZoneInfo("Asia/Kathmandu"))
+    tree = dasha_module.vimshottari_tree(birth_dt, moon_lon, now)
+    assert len(tree["mahadashas"]) == 18
+    assert [m["lord"] for m in tree["mahadashas"][:9]] == [m["lord"] for m in tree["mahadashas"][9:]]
+    cur = tree["current"]
+    assert cur is not None
+    assert cur["mahadasha"]["start"] <= now < cur["mahadasha"]["end"]
+    assert cur["mahadasha"]["lord"] == "Venus"
+    assert cur["antardasha"] is not None
+
+
+def test_vimshottari_tree_future_birth_current_none():
+    # Moon at a nakshatra boundary (traversed 0) puts the first
+    # mahadasha's start at the birth itself, so `now` precedes the
+    # whole tree and `current` is None — the engine must handle that
+    # (pravesh None) instead of crashing.
+    birth_dt = ephemeris.make_local_datetime(date(2030, 1, 1), time(6, 30), "Asia/Kathmandu")
+    now = datetime(2026, 11, 19, 7, 44, tzinfo=ZoneInfo("Asia/Kathmandu"))
+    tree = dasha_module.vimshottari_tree(birth_dt, 0.0, now)
+    assert tree["current"] is None
+    bundle = compute_kundali(
+        {"dob": "2030-01-01", "tob": "06:30", "place_id": "kathmandu"}, now=now)
+    assert bundle["dasha"]["current"] is None
+    assert bundle["dasha_pravesh"] is None
+
+
+def test_old_birth_bundle_resolves_current_dasha_and_pravesh():
+    # Engine-level companion to the /api/kundali 1900 test: the
+    # cycle-2 current dasha resolves and pravesh is cast for its
+    # start (2021-07-10), not left None.
+    now = datetime(2026, 11, 19, 7, 44, tzinfo=ZoneInfo("Asia/Kathmandu"))
+    bundle = compute_kundali(
+        {"dob": "1900-01-01", "tob": "06:30", "place_id": "kathmandu"}, now=now)
+    assert len(bundle["dasha"]["mahadashas"]) == 18
+    cur = bundle["dasha"]["current"]
+    assert cur is not None and cur["mahadasha"]["lord"] == "Venus"
+    assert bundle["dasha_pravesh"] is not None
+    assert bundle["dasha_pravesh"]["dasha_start"] == "2021-07-10"
+
+
+def test_dasha_trees_year1_birth_is_supported_range_error():
+    # A birth in AD 1 whose current period began before year 1 has no
+    # representable start date: all four builders must raise the
+    # supported-range ValueError (a 400), not OverflowError (a 500).
+    birth_dt = ephemeris.make_local_datetime(date(1, 1, 1), time(6, 30), "Asia/Kathmandu")
+    now = datetime(2026, 11, 19, 7, 44, tzinfo=ZoneInfo("Asia/Kathmandu"))
+    for fn in (dasha_module.vimshottari_tree, dasha_module.yogini_periods,
+               dasha_module.tribhagi_periods, dasha_module.ashtottari_tree):
+        with pytest.raises(ValueError, match="outside the supported range"):
+            fn(birth_dt, 6.6667, now)
 
 
 # ---------------------------------------------------------------- Gemstones

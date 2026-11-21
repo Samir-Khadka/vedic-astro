@@ -271,10 +271,19 @@ def compute_kundali(payload: dict, now: datetime | None = None,
     # Neighbouring days' rise/set: the upagrahas are computed for the
     # Vedic day (sunrise to sunrise), so a pre-sunrise birth needs the
     # previous day and an evening birth's Mandi needs the next sunrise.
-    prev_rise, prev_set = ephemeris.sunrise_sunset(
-        dob - timedelta(days=1), place["lat"], place["lon"], place["tz"])
-    next_rise, _next_set = ephemeris.sunrise_sunset(
-        dob + timedelta(days=1), place["lat"], place["lon"], place["tz"])
+    # At the calendar edges (dob 0001-01-01 / 9999-12-31) the neighbour
+    # day does not exist: that yields None, which compute_upagrahas
+    # already treats as a missing neighbour, instead of a crash.
+    try:
+        prev_rise, prev_set = ephemeris.sunrise_sunset(
+            dob - timedelta(days=1), place["lat"], place["lon"], place["tz"])
+    except OverflowError:
+        prev_rise, prev_set = None, None
+    try:
+        next_rise, _next_set = ephemeris.sunrise_sunset(
+            dob + timedelta(days=1), place["lat"], place["lon"], place["tz"])
+    except OverflowError:
+        next_rise, _next_set = None, None
 
     ctx = {
         "planets": planets, "lagna_sign": lagna_sign,
@@ -350,10 +359,15 @@ def compute_kundali(payload: dict, now: datetime | None = None,
                   "Venus", "Saturn", "Rahu", "Ketu")
     }
     sbc = phase4_module.sarvatobhadra(sbc_natal, sbc_transits)
-    # Dasha pravesh for the current Vimshottari MD.
-    _md_now = dasha_tree["current"]["mahadasha"]
-    pravesh = phase4_module.dasha_pravesh(
-        birth_dt, _md_now["start"], place["lat"], place["lon"])
+    # Dasha pravesh for the current Vimshottari MD. `current` is None
+    # for a birth whose first mahadasha starts after `now` (a birth
+    # more than ~20 years in the future): there is no running dasha
+    # yet, so pravesh is None rather than a crash — every consumer
+    # already treats a missing pravesh as absent.
+    _cur = dasha_tree["current"]
+    pravesh = (phase4_module.dasha_pravesh(
+        birth_dt, _cur["mahadasha"]["start"], place["lat"], place["lon"])
+        if _cur else None)
     p4_calendar = phase4_module.transit_calendar(now)
     p4_favourable = phase4_module.favourable_periods(
         birth_dt, birth_panchang["nakshatra_index"], dasha_tree, now)

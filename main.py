@@ -184,6 +184,18 @@ class BirthInput(BaseModel):
     ayanamsa: str | None = None  # lahiri (default), raman, krishnamurti, yukteshwar
     house_system: str | None = None  # placidus (default), equal, whole, sripati
 
+    @field_validator("lat", "lon", mode="before")
+    @classmethod
+    def _coords_not_bool(cls, v):
+        # JSON `true`/`false` are not numbers: pydantic's lax mode
+        # coerces True to 1.0, so `{"lat": true}` silently became
+        # latitude 1.0. The raw-dict ask-astrologer path already
+        # rejects bools (see _validate_coords_tz); reject them here
+        # too so both paths agree.
+        if isinstance(v, bool):
+            raise ValueError("must be a number")
+        return v
+
     @field_validator("lat")
     @classmethod
     def _lat_in_range(cls, v: float | None) -> float | None:
@@ -244,11 +256,28 @@ class PrashnaInput(BaseModel):
     lon: float | None = None
     tz: str | None = None
 
+    @field_validator("number", mode="before")
+    @classmethod
+    def _number_not_bool(cls, v):
+        # `{"number": true}` coerced to horary number 1; `false` to 0
+        # (then failed the range check). Reject bools outright so a
+        # JSON boolean never silently becomes a chart number.
+        if isinstance(v, bool):
+            raise ValueError("horary number must be between 1 and 249")
+        return v
+
     @field_validator("number")
     @classmethod
     def _number_in_range(cls, v: int) -> int:
         if not 1 <= v <= 249:
             raise ValueError("horary number must be between 1 and 249")
+        return v
+
+    @field_validator("lat", "lon", mode="before")
+    @classmethod
+    def _coords_not_bool(cls, v):
+        if isinstance(v, bool):
+            raise ValueError("must be a number")
         return v
 
     @field_validator("lat")

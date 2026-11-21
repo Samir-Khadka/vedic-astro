@@ -1,6 +1,7 @@
 """API smoke tests via FastAPI TestClient, incl. premium report and PDF."""
 import re
 
+import pytest
 from fastapi.testclient import TestClient
 
 from main import app
@@ -602,6 +603,65 @@ def test_report_pdf_out_of_range_date_is_400(monkeypatch):
     r = client.get("/api/report.pdf", params={
         "dob": "4000-01-01", "tob": "06:30", "place_id": "kathmandu"})
     assert r.status_code == 400
+
+
+def test_kundali_birth_over_120_years_ago_returns_200(monkeypatch):
+    # A birth in 1900 is 126 years before today: the old single-cycle
+    # Vimshottari tree ended ~2020, `current` was None and the chart
+    # 500'd. The 120-year sequence repeats, so the tree now spans two
+    # cycles and the current dasha resolves.
+    import datetime as _dt
+
+    monkeypatch.setenv("VEDIC_RL_LIMIT", "1000")
+    r = client.post("/api/kundali", json={**SAMPLE, "dob": "1900-01-01"})
+    assert r.status_code == 200
+    dasha = r.json()["dasha"]
+    assert len(dasha["mahadashas"]) == 18
+    cur = dasha["current"]
+    assert cur is not None
+    today = _dt.date.today().isoformat()
+    assert cur["mahadasha"]["start"] <= today < cur["mahadasha"]["end"]
+
+
+def test_kundali_year1_birth_is_400_not_500(monkeypatch):
+    # The dasha tree's first period starts before year 1: a
+    # supported-range 400, not an OverflowError 500. (The muhurta
+    # birth path and the PDFs raise the same way; the engine-level
+    # cases are pinned in test_worldclass2.)
+    monkeypatch.setenv("VEDIC_RL_LIMIT", "1000")
+    r = client.post("/api/kundali", json={**SAMPLE, "dob": "0001-01-01"})
+    assert r.status_code == 400
+    assert "outside the supported range" in r.json()["detail"]
+
+
+def test_prashna_number_bool_is_422():
+    # `{"number": true}` coerced to horary number 1; a JSON boolean
+    # must never silently become a chart number. Model-level: the
+    # endpoint is rate-limited, so pin the validation without HTTP.
+    from pydantic import ValidationError
+
+    from main import PrashnaInput
+
+    with pytest.raises(ValidationError):
+        PrashnaInput(number=True, place_id="kathmandu")
+    assert PrashnaInput(number=5, place_id="kathmandu").number == 5
+
+
+def test_kundali_bool_coords_are_422():
+    # Same bool-coercion hole on the chart path: `{"lat": true}`
+    # silently became latitude 1.0. The ask-astrologer raw-dict path
+    # already rejects bools; the pydantic models must agree.
+    # Model-level: the endpoint is rate-limited, so pin the
+    # validation without HTTP.
+    from pydantic import ValidationError
+
+    from main import BirthInput
+
+    for bad in ({"lat": True}, {"lon": True}):
+        with pytest.raises(ValidationError):
+            BirthInput(**{**SAMPLE, "place_id": None, "lat": 27.7,
+                          "lon": 85.3, "tz": "Asia/Kathmandu", **bad})
+    assert BirthInput(**SAMPLE).lat is None
 
 
 def test_complete_report_pdf_out_of_range_date_is_400(monkeypatch):

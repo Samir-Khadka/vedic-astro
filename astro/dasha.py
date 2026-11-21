@@ -17,6 +17,24 @@ def _days(years: float) -> timedelta:
     return timedelta(days=years * YEAR_DAYS)
 
 
+def _tree_start(birth_dt: datetime, years: float) -> datetime:
+    """First-period start: birth minus the traversed balance.
+
+    Raises ValueError (a 400 at the API) when the start predates year 1:
+    a birth in AD 1-20 whose current period began before year 1 has no
+    representable start date — the same supported-range error the
+    ephemeris raises for out-of-range dates, instead of an OverflowError
+    that surfaced as a 500 on every chart endpoint.
+    """
+    try:
+        return birth_dt - _days(years)
+    except OverflowError as e:
+        raise ValueError(
+            "date is outside the supported range "
+            "(the app supports dates within roughly AD 1-3000)"
+        ) from e
+
+
 def _subdivide_years(start: datetime, total_years: float, first_lord: str,
                      sequence: list[str], years_map: dict, cycle_years: float) -> list[dict]:
     """Split a period into len(sequence) sub-periods beginning with
@@ -53,7 +71,10 @@ def period_at(tree: dict, at: datetime):
 
 def vimshottari_tree(birth_dt: datetime, moon_longitude: float, now: datetime | None = None) -> dict:
     """Full mahadasha tree with antardashas; pratyantardashas for the
-    currently running antardasha. Returns current MD/AD/PD resolution too."""
+    currently running antardasha. Returns current MD/AD/PD resolution too.
+    The 120-year sequence repeats, so enough cycles are built to cover
+    `now`; `current` is None only when `now` precedes the tree's start
+    (a birth well in the future)."""
     nak_idx = int((moon_longitude % 360.0) // NAKSHATRA_SPAN)
     first_lord = NAKSHATRA_LORDS[nak_idx]
     traversed = ((moon_longitude % 360.0) - nak_idx * NAKSHATRA_SPAN) / NAKSHATRA_SPAN
@@ -64,8 +85,16 @@ def vimshottari_tree(birth_dt: datetime, moon_longitude: float, now: datetime | 
     # The first mahadasha virtually began before birth; subdividing from its
     # true start keeps antardasha boundaries correct (the native is born
     # part-way through one of them). Intervals are true [start, end) ranges.
-    cursor = birth_dt - _days(traversed * DASHA_YEARS[first_lord])
-    for k in range(9):
+    cursor = _tree_start(birth_dt, traversed * DASHA_YEARS[first_lord])
+    # The 120-year sequence repeats: build enough cycles to cover `now`,
+    # so `current` resolves for births more than one cycle ago (a birth
+    # in 1900 is 126 years before today; the old single-cycle tree left
+    # `current` None and engine.py crashed on it with a 500).
+    at = now or datetime.now(birth_dt.tzinfo)
+    cycles = 1
+    while cursor + _days(120.0 * cycles) <= at:
+        cycles += 1
+    for k in range(9 * cycles):
         lord = DASHA_SEQUENCE[(i0 + k) % 9]
         years = float(DASHA_YEARS[lord])
         end = cursor + _days(years)
@@ -74,7 +103,7 @@ def vimshottari_tree(birth_dt: datetime, moon_longitude: float, now: datetime | 
         mahadashas.append(md)
         cursor = end
 
-    current = _resolve(mahadashas, now or datetime.now(birth_dt.tzinfo))
+    current = _resolve(mahadashas, at)
 
     # Pratyantardashas only for the running antardasha (keeps payload sane),
     # and Sookshma + Prana only for the running pratyantardasha / sookshma.
@@ -140,7 +169,7 @@ def yogini_periods(birth_dt: datetime, moon_longitude: float,
     balance_years = (1.0 - traversed) * years0
 
     periods = []
-    cursor = birth_dt - _days(traversed * years0)
+    cursor = _tree_start(birth_dt, traversed * years0)
     total = cycles * len(YOGINI_SEQUENCE)
     for k in range(total):
         name, planet, years = YOGINI_SEQUENCE[(start_idx + k) % 8]
@@ -166,7 +195,7 @@ def tribhagi_periods(birth_dt: datetime, moon_longitude: float,
 
     i0 = DASHA_SEQUENCE.index(first_lord)
     periods = []
-    cursor = birth_dt - _days(traversed * DASHA_YEARS[first_lord] / 3.0)
+    cursor = _tree_start(birth_dt, traversed * DASHA_YEARS[first_lord] / 3.0)
     for k in range(27):  # three full rounds = 120 years
         lord = DASHA_SEQUENCE[(i0 + k) % 9]
         years = DASHA_YEARS[lord] / 3.0
@@ -245,7 +274,7 @@ def ashtottari_tree(birth_dt: datetime, moon_longitude: float,
 
     i0 = ASHTOTTARI_SEQUENCE.index(first_lord)
     mahadashas = []
-    cursor = birth_dt - _days(div["traversed"] * ASHTOTTARI_YEARS[first_lord])
+    cursor = _tree_start(birth_dt, div["traversed"] * ASHTOTTARI_YEARS[first_lord])
     for k in range(8):
         lord = ASHTOTTARI_SEQUENCE[(i0 + k) % 8]
         years = float(ASHTOTTARI_YEARS[lord])
