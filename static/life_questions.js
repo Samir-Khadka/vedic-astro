@@ -196,7 +196,18 @@
       fetch("/api/places?q=" + encodeURIComponent(place)).then(function (r) { return r.json(); }).then(function (data) {
         var first = (data.places || [])[0];
         if (!first) throw new Error("noplace");
-        requestAnswer({ prashna: { number: num, place_id: first.id } });
+        /* Gazetteer hits carry an id; worldwide hits carry lat/lon/tz
+           and id null — sending only place_id 400s the answer for
+           every non-gazetteer place (verified live: place_id null ->
+           400 "provide place_id or lat/lon/tz", lat/lon/tz -> 200).
+           Send the coordinates the hit already carries instead. */
+        var prashna = { number: num };
+        if (first.id) prashna.place_id = first.id;
+        else if (first.lat != null && first.lon != null && first.tz) {
+          prashna.place_name = first.label || first.name;
+          prashna.lat = first.lat; prashna.lon = first.lon; prashna.tz = first.tz;
+        } else throw new Error("noplace");
+        requestAnswer({ prashna: prashna });
       }).catch(function () {
         showAnswerStatus(L === "ne" ? "स्थान भेटिएन — प्रश्न खण्डमा स्थान छान्नुहोस्।" : "Place not found — pick a place in the Prashna section.");
       });

@@ -438,6 +438,21 @@ test("flipbook yoga basis keeps HTML entities intact at the 140-char cut", () =>
    payload holds only place_id — no place_name — so the link opened
    with an empty place box. The name now travels in the URL (from the
    computed bundle's birth place, falling back to the place input). */
+/* ---- 2026-11-22: flipbook Moon sign by name, not index ----
+   buildBookPages took the Moon as planets[1] — true only while the
+   bundle keeps the engine's fixed planet order. A reordered bundle
+   silently showed another planet's sign as the Moon on the cover. */
+test("flipbook cover finds the Moon by name even when planets are reordered", () => {
+  const { h } = loadApp({ lang: "en" });
+  const bundle = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "b_sample.json"), "utf8"));
+  // Sun is Aries (0), Moon is Scorpio (7): swap them so index 1 is the Sun.
+  const [sun, moon, ...rest] = bundle.planets;
+  bundle.planets = [moon, sun, ...rest];
+  const cover = h.buildBookPages(bundle)[1];
+  assert.ok(cover.includes("<b>Scorpio</b>"), `cover must show the Moon's sign:\n${cover}`);
+  assert.ok(!cover.includes("<b>Aries</b>"), `cover must not show the Sun's sign as the Moon:\n${cover}`);
+});
+
 test("share button copies a link carrying the gazetteer place name", async () => {
   const { h, el, navigator } = loadApp({ lang: "en" });
   let copied = null;

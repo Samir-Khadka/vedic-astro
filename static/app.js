@@ -2069,7 +2069,12 @@ function buildBookPages(b) {
   const ne = LANG === "ne";
   const name = bkesc(b.name || t("book_cover_sub"));
   const birth = b.birth || {}, place = birth.place || {};
-  const lagna = b.lagna || {}, moon = (b.planets || [])[1] || {};
+  const lagna = b.lagna || {};
+  /* Find the Moon by name, not by index: the bundle's planet order is
+     fixed today (Sun, Moon, …) but the cover must not silently show
+     another planet's sign as the Moon if that order ever changes —
+     same pattern as renderCore. */
+  const moon = (b.planets || []).find((p) => p.planet === "Moon") || {};
   const bp = b.panchang_at_birth || {};
   const tithiName = bp.tithi_index != null
     ? ((ne ? (bp.paksha === "Shukla" ? "शुक्ल " : "कृष्ण ") : (bp.paksha || "") + " ") +
