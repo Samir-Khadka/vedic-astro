@@ -30,7 +30,7 @@ from .predictions import _bi, _placement_fact
 # Classical remedy tables
 # ---------------------------------------------------------------------------
 GEMSTONES = {
-    "Sun": ("Ruby", "माणिक", "Gold", "सुन", "Ring finger", "कान्छी औंला", "Sunday", "आइतबार", "5 ratti"),
+    "Sun": ("Ruby", "माणिक", "Gold", "सुन", "Ring finger", "साहिंली औंला", "Sunday", "आइतबार", "5 ratti"),
     "Moon": ("Pearl", "मोती", "Silver", "चाँदी", "Little finger", "कान्छी औंला", "Monday", "सोमबार", "5 ratti"),
     "Mars": ("Red Coral", "मुँगा", "Gold/Copper", "सुन/तामा", "Ring finger", "साहिंली औंला", "Tuesday", "मङ्गलबार", "6 ratti"),
     "Mercury": ("Emerald", "पन्ना", "Gold", "सुन", "Little finger", "कान्छी औंला", "Wednesday", "बुधबार", "5 ratti"),

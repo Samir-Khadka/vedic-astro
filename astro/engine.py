@@ -734,27 +734,26 @@ def _dasha_sandhi(person: dict, marriage_day: date) -> dict:
     traditionally asks for remedies or a shifted date. Returns the
     nearest boundary in the window, if any.
     """
-    from datetime import datetime, timedelta
+    from datetime import datetime
     from zoneinfo import ZoneInfo
 
     from . import dasha as dasha_module
 
     moment = datetime.combine(marriage_day, time(12, 0), tzinfo=ZoneInfo(person["tz"]))
     tree = dasha_module.vimshottari_tree(person["birth_dt"], person["moon_lon"], moment)
-    window = timedelta(days=180)
     hits = []
     for md in tree["mahadashas"]:
         for label, start, end, lord in (
             ("Mahadasha", md["start"], md["end"], md["lord"]),
         ):
             for boundary, kind in ((start, "starts"), (end, "ends")):
-                if abs((boundary - moment).days) <= 180 and boundary.date() != marriage_day:
+                if abs((boundary - moment).days) <= 180:
                     hits.append({"level": label, "lord": lord, "kind": kind,
                                  "date": boundary.date().isoformat(),
                                  "days_away": (boundary.date() - marriage_day).days})
         for ad in md["antardashas"]:
             for boundary, kind in ((ad["start"], "starts"), (ad["end"], "ends")):
-                if abs((boundary - moment).days) <= 180 and boundary.date() != marriage_day:
+                if abs((boundary - moment).days) <= 180:
                     hits.append({"level": "Antardasha", "lord": ad["lord"], "kind": kind,
                                  "date": boundary.date().isoformat(),
                                  "days_away": (boundary.date() - marriage_day).days})

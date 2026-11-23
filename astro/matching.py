@@ -130,9 +130,9 @@ def _maitri_points(groom_lord: str, bride_lord: str) -> float:
     if combo == frozenset(("neutral",)):
         return 3.0
     if combo == frozenset(("friend", "enemy")):
-        return 0.0
-    if combo == frozenset(("neutral", "enemy")):
         return 1.0
+    if combo == frozenset(("neutral", "enemy")):
+        return 0.5
     return 0.0  # enemy / enemy
 
 
