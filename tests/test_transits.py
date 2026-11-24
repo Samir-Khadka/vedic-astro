@@ -112,10 +112,118 @@ def test_next_ingress_memo_without_events_raises():
 
 def test_ingress_jd_no_ingress_raises(monkeypatch):
     """ingress_jd gives up after 4000 days of no sign change instead of
-    scanning forever — forced here by a stubbed sign that never moves."""
-    monkeypatch.setattr(transits, "_sign_at", lambda planet, jd: 0)
+    scanning forever — forced here by a stubbed longitude that never
+    moves (the scan reads the longitude directly for its step size)."""
+    monkeypatch.setattr(ephemeris, "planet_longitude_at",
+                        lambda name, jd: 15.0)
     with pytest.raises(ValueError, match="no ingress found"):
         transits.ingress_jd("Saturn", JD_2026)
+
+
+# --- Longitude-aware scan steps (2026-11-24) ---------------------------
+#
+# The ingress scan used to walk _STEP_DAYS at a time (Saturn: 10 days,
+# ~91 steps per sign); it now takes longitude-aware steps that can
+# never cross a sign boundary (see _scan_step / _VMAX_DEG_PER_DAY),
+# falling back to exactly _STEP_DAYS near a boundary. These tests pin
+# the step sizes, the no-crossing invariant, the equivalence with the
+# old fixed-step walk, and the cost.
+
+
+def test_scan_step_sizes():
+    """Far from a boundary the scan takes wide steps; near one it
+    falls back to exactly _STEP_DAYS (the old scan's resolution)."""
+    assert transits._scan_step("Saturn", 15.0) == pytest.approx(15.0 / 0.20)
+    assert transits._scan_step("Saturn", 29.9) == transits._STEP_DAYS["Saturn"]
+    assert transits._scan_step("Saturn", 0.1) == transits._STEP_DAYS["Saturn"]
+    assert transits._scan_step("Moon", 15.0) == pytest.approx(15.0 / 23.0)
+    assert transits._scan_step("Sun", 15.0) == pytest.approx(15.0 / 1.50)
+
+
+def test_scan_step_never_crosses_a_boundary():
+    """The safety invariant itself, pinned: a step wider than the
+    fixed step must never carry the planet into another sign — in
+    either direction, for every planet. Seeded sweep over real
+    longitudes (a step that could cross would break the equivalence
+    test below by skipping an ingress)."""
+    import random
+
+    rng = random.Random(20261124)
+    jd0 = ephemeris.to_julian_day(datetime(2020, 1, 1, 0, 0))
+    jd1 = ephemeris.to_julian_day(datetime(2032, 1, 1, 0, 0))
+    for planet in ("Saturn", "Jupiter", "Rahu", "Ketu", "Mars", "Sun",
+                   "Venus", "Mercury", "Moon"):
+        for _ in range(100):
+            jd = rng.uniform(jd0, jd1)
+            lon = ephemeris.planet_longitude_at(planet, jd)
+            step = transits._scan_step(planet, lon)
+            if step <= transits._STEP_DAYS[planet]:
+                continue  # fixed steps may cross; only wide steps are pinned
+            sign = transits._sign_at(planet, jd)
+            assert transits._sign_at(planet, jd + step) == sign, (planet, jd, lon, step)
+            assert transits._sign_at(planet, jd - step) == sign, (planet, jd, lon, step)
+
+
+def _old_ingress_jd(planet, jd_from):
+    """The pre-2026-11-24 implementation, kept as the reference:
+    fixed _STEP_DAYS steps, same bisection."""
+    start_sign = transits._sign_at(planet, jd_from)
+    step = transits._STEP_DAYS[planet]
+    lo = jd_from
+    hi = jd_from + step
+    while transits._sign_at(planet, hi) == start_sign:
+        lo = hi
+        hi += step
+        if hi - jd_from > 4000:
+            raise ValueError("no ingress found")
+    return transits._bisect_ingress(planet, lo, hi, start_sign, forward=True)
+
+
+@pytest.mark.parametrize("planet", ["Saturn", "Jupiter", "Rahu", "Ketu",
+                                    "Mars", "Sun", "Venus", "Mercury", "Moon"])
+def test_scan_matches_fixed_step_walk(planet):
+    """Every ingress in 2024-2027 must match the old fixed-step walk:
+    same count, same signs, same UTC dates, JDs within ~90 s (the
+    true node wobbles across the boundary, so two methods can land on
+    adjacent genuine crossings seconds apart)."""
+    jd0 = ephemeris.to_julian_day(datetime(2024, 1, 1, 0, 0))
+    jd1 = ephemeris.to_julian_day(datetime(2027, 1, 1, 0, 0))
+    transits._INGRESS_MEMO.clear()
+    new_events = transits._ingress_events(planet, jd0, jd1)
+    old_events = []
+    cursor = jd0
+    while cursor < jd1:
+        njd = _old_ingress_jd(planet, cursor)
+        if njd > jd1:
+            break
+        old_events.append((njd, transits._sign_at(planet, njd + 0.01)))
+        cursor = njd + 1.0
+    assert new_events, f"fixture must hold an ingress for {planet}"
+    assert len(new_events) == len(old_events), planet
+    for (nj, ns), (oj, os_) in zip(new_events, old_events):
+        assert ns == os_, (planet, nj, oj)
+        _assert_same_crossing(nj, oj)
+
+
+def test_saturn_walk_scan_cost(monkeypatch):
+    """The speedup itself, pinned: the 100-year Saturn walk must cost
+    far fewer ephemeris evaluations than the ~8k the fixed 10-day
+    steps needed (86 ingresses, measured 2,279 calls). Counts
+    planet_longitude_at, which every single-planet lookup routes
+    through."""
+    calls = {"n": 0}
+    orig = ephemeris.planet_longitude_at
+
+    def counting(name, jd):
+        calls["n"] += 1
+        return orig(name, jd)
+
+    monkeypatch.setattr(ephemeris, "planet_longitude_at", counting)
+    transits._INGRESS_MEMO.clear()
+    jd_birth = ephemeris.to_julian_day(datetime(1998, 5, 14, 6, 30))
+    events = transits._ingress_events("Saturn", jd_birth, jd_birth + 100 * 365.25)
+    assert len(events) > 40, len(events)  # a century of Saturn holds 40+ ingresses
+    assert calls["n"] < 3000, calls["n"]
 
 
 def test_saturn_moon_span_direct_scan_fallback(monkeypatch):

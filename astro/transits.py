@@ -20,6 +20,94 @@ _STEP_DAYS = {
 INGRESS_PLANETS = ["Saturn", "Jupiter", "Rahu", "Ketu", "Mars", "Sun"]
 
 
+# Max |sidereal speed| (deg/day) per planet — measured 2026-11-24 over
+# 100 years of daily samples (Saturn 0.13, Jupiter 0.24, Mars 0.79, Sun
+# 1.02, Venus 1.26, Mercury 2.20, Moon 15.38, true node 0.25; the node
+# was also sampled hourly over 2 years: 0.23). Each bound carries
+# ~1.5-2.4x headroom over the measured maximum, and the scan step below
+# only ever advances the distance to the nearest sign boundary at that
+# speed — so a step can never carry the planet across a boundary, and
+# a retrograde dip (cross and come back: over twice that distance)
+# would need a true speed above 2x the bound. A sign change is
+# therefore only ever detected in a step of exactly _STEP_DAYS,
+# exactly as the old fixed-step scan detected it.
+_VMAX_DEG_PER_DAY = {
+    "Saturn": 0.20, "Jupiter": 0.35, "Rahu": 0.60, "Ketu": 0.60,
+    "Mars": 1.20, "Sun": 1.50, "Venus": 1.90, "Mercury": 3.30, "Moon": 23.0,
+}
+
+
+def _scan_step(planet: str, lon: float) -> float:
+    """Days to advance the ingress scan from sidereal longitude `lon`.
+
+    Far from a sign boundary the planet cannot reach one within the
+    step, so those steps skip dead walking (Saturn mid-sign: 37.5 days
+    instead of 10); near a boundary the step is exactly
+    _STEP_DAYS[planet], preserving the old scan's resolution where a
+    sign change can actually happen. Pure arithmetic — no ephemeris
+    call — so the scan loop can carry the longitude forward instead of
+    re-reading it at every cursor.
+    """
+    pos = lon % 30.0
+    d_near = min(pos, 30.0 - pos)
+    # The full distance, not half: the planet's speed is bounded by
+    # _VMAX_DEG_PER_DAY, so in one step it travels at most d_near
+    # degrees and cannot reach either boundary — a step wider than
+    # _STEP_DAYS therefore cannot contain a sign change. Missing a
+    # retrograde dip would need it to cross a boundary AND come back
+    # inside one step (over 2 * d_near of travel), i.e. a true speed
+    # above 2x the bound — physically impossible for every graha at
+    # these margins (worst case the Moon: 2x23 = 46 deg/day against a
+    # ~15.5 deg/day physical maximum). Landing exactly on a boundary
+    # is still a valid bracket: the sign at hi differs and the
+    # bisection finds the crossing inside [lo, hi].
+    return max(_STEP_DAYS[planet], d_near / _VMAX_DEG_PER_DAY[planet])
+
+
+def _sign_lon_at(planet: str, jd: float) -> tuple[int, float]:
+    """(sign, sidereal longitude) of one graha at `jd` — a single
+    swe.calc_ut, shared by the sign check and the step computation."""
+    lon = ephemeris.planet_longitude_at(planet, jd)
+    return ephemeris.sign_of(lon), lon
+
+
+def _scan_bracket_forward(planet: str, jd_from: float,
+                          max_days: float) -> tuple[float, float, int] | None:
+    """First [lo, hi] bracket after `jd_from` whose endpoints straddle a
+    sign change (sign(lo) == start_sign, sign(hi) != start_sign), or
+    None if none is found within `max_days` — the crossing is still
+    returned when it lands just past `max_days`, matching the old
+    fixed-step scan. A step wider than _STEP_DAYS can never contain a
+    sign change (see _scan_step), so the detecting step is always
+    exactly _STEP_DAYS wide, exactly as before."""
+    start_sign, lon_lo = _sign_lon_at(planet, jd_from)
+    lo = jd_from
+    while True:
+        hi = lo + _scan_step(planet, lon_lo)
+        hi_sign, lon_hi = _sign_lon_at(planet, hi)
+        if hi_sign != start_sign:
+            return lo, hi, start_sign
+        if hi - jd_from > max_days:
+            return None
+        lo, lon_lo = hi, lon_hi
+
+
+def _scan_bracket_backward(planet: str, jd_from: float,
+                           max_days: float) -> tuple[float, float, int] | None:
+    """Mirror image for the backward scan: [lo, hi] with sign(lo) !=
+    start_sign and sign(hi) == start_sign, or None within `max_days`."""
+    start_sign, lon_hi = _sign_lon_at(planet, jd_from)
+    hi = jd_from
+    while True:
+        lo = hi - _scan_step(planet, lon_hi)
+        lo_sign, lon_lo = _sign_lon_at(planet, lo)
+        if lo_sign != start_sign:
+            return lo, hi, start_sign
+        if jd_from - lo > max_days:
+            return None
+        hi, lon_hi = lo, lon_lo
+
+
 def _sign_at(planet: str, jd: float) -> int:
     # Single-planet fast path: the scanners below call this ~8k times per
     # chart, and the old planet_longitudes() route spent nine swe.calc_ut
@@ -192,15 +280,10 @@ def next_ingress(planet: str, jd_from: float, max_days: float = 900.0) -> dict:
     # No covering walk: scan directly for the one ingress (the shared
     # walk builds a whole window, which for fast planets like the Sun
     # would be dozens of ingresses just to answer "the next one").
-    start_sign = _sign_at(planet, jd_from)
-    step = _STEP_DAYS[planet]
-    lo = jd_from
-    hi = jd_from + step
-    while _sign_at(planet, hi) == start_sign:
-        lo = hi
-        hi += step
-        if hi - jd_from > max_days:
-            raise ValueError(f"no ingress found for {planet}")
+    bracket = _scan_bracket_forward(planet, jd_from, max_days)
+    if bracket is None:
+        raise ValueError(f"no ingress found for {planet}")
+    lo, hi, start_sign = bracket
     # Bisect: sign at lo == start_sign, sign at hi != start_sign.
     jd_ing = _bisect_ingress(planet, lo, hi, start_sign, forward=True)
     return {
@@ -229,15 +312,10 @@ def prev_ingress(planet: str, jd_from: float, max_days: float = 1200.0) -> dict:
             }
         raise ValueError(f"no previous ingress found for {planet}")
     # No covering walk: scan directly for the one ingress.
-    start_sign = _sign_at(planet, jd_from)
-    step = _STEP_DAYS[planet]
-    hi = jd_from
-    lo = jd_from - step
-    while _sign_at(planet, lo) == start_sign:
-        hi = lo
-        lo -= step
-        if jd_from - lo > max_days:
-            raise ValueError(f"no previous ingress found for {planet}")
+    bracket = _scan_bracket_backward(planet, jd_from, max_days)
+    if bracket is None:
+        raise ValueError(f"no previous ingress found for {planet}")
+    lo, hi, start_sign = bracket
     # Bisect: sign at lo != start_sign, sign at hi == start_sign.
     jd_ing = _bisect_ingress(planet, lo, hi, start_sign, forward=False)
     return {
@@ -251,15 +329,10 @@ def prev_ingress(planet: str, jd_from: float, max_days: float = 1200.0) -> dict:
 
 def ingress_jd(planet: str, jd_from: float) -> float:
     """JD of the next ingress of `planet` after `jd_from` (bisected)."""
-    start_sign = _sign_at(planet, jd_from)
-    step = _STEP_DAYS[planet]
-    lo = jd_from
-    hi = jd_from + step
-    while _sign_at(planet, hi) == start_sign:
-        lo = hi
-        hi += step
-        if hi - jd_from > 4000:
-            raise ValueError(f"no ingress found for {planet}")
+    bracket = _scan_bracket_forward(planet, jd_from, 4000.0)
+    if bracket is None:
+        raise ValueError(f"no ingress found for {planet}")
+    lo, hi, start_sign = bracket
     return _bisect_ingress(planet, lo, hi, start_sign, forward=True)
 
 

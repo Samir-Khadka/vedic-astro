@@ -331,21 +331,23 @@ def test_ingress_events_match_direct_walk():
 
 def test_shared_saturn_walk_serves_span_and_chain():
     """After the lifetime walk is built, the Sade Sati span, the Saturn
-    10-year chain and the next Saturn ingress must cost ~no new sign
-    lookups — they slice the same walk instead of re-scanning."""
+    10-year chain and the next Saturn ingress must cost ~no new
+    ephemeris lookups — they slice the same walk instead of
+    re-scanning. Counts planet_longitude_at, which every
+    single-planet lookup routes through."""
     from astro import ephemeris as eph
     from astro import transits
     jd_now = ephemeris.to_julian_day(datetime(2026, 11, 8, 0, 0))
     jd_birth = ephemeris.to_julian_day(datetime(1998, 5, 14, 6, 30))
     transits._INGRESS_MEMO.clear()
     calls = [0]
-    orig = eph.planet_sign_at
+    orig = eph.planet_longitude_at
 
     def counting(name, jd):
         calls[0] += 1
         return orig(name, jd)
 
-    eph.planet_sign_at = counting
+    eph.planet_longitude_at = counting
     try:
         transits.sade_sati_lifetime(11, jd_birth, jd_now)
         assert calls[0] > 1000  # the walk itself still costs the scans
@@ -356,7 +358,7 @@ def test_shared_saturn_walk_serves_span_and_chain():
         assert span is not None and chain and nxt["date"] == chain[0]["date"]
         assert calls[0] <= 10, calls[0]
     finally:
-        eph.planet_sign_at = orig
+        eph.planet_longitude_at = orig
 
 
 def test_next_ingress_fast_path_matches_direct_scan():
@@ -376,23 +378,25 @@ def test_next_ingress_fast_path_matches_direct_scan():
 
 
 def test_compute_kundali_lookup_budget():
-    """Regression guard for the shared-walk optimisation: one chart must
-    stay well under the ~11k single-planet sign lookups the unshared
-    scanners needed (measured ~9.0k after the change)."""
+    """Regression guard for the ingress-scan optimisation: one chart
+    must stay well under the ~7.4k single-planet ephemeris calls the
+    fixed-step scanners needed (measured ~4.2k after the
+    longitude-aware scan). Counts planet_longitude_at, which every
+    single-planet lookup routes through."""
     from astro import ephemeris as eph
     from astro import transits
     transits._INGRESS_MEMO.clear()
     calls = [0]
-    orig = eph.planet_sign_at
+    orig = eph.planet_longitude_at
 
     def counting(name, jd):
         calls[0] += 1
         return orig(name, jd)
 
-    eph.planet_sign_at = counting
+    eph.planet_longitude_at = counting
     try:
         engine.compute_kundali(SAMPLE, now=datetime(2026, 11, 8, 12, 0,
                                                      tzinfo=ZoneInfo("Asia/Kathmandu")))
     finally:
-        eph.planet_sign_at = orig
-    assert calls[0] < 10000, calls[0]
+        eph.planet_longitude_at = orig
+    assert calls[0] < 6000, calls[0]
